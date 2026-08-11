@@ -37,9 +37,11 @@ def display_ancestry_tree(df):
 
     for author, author_df in df.groupby('Author'):
         parts.append(
-            f'<details class="tree-author">'
-            f'<summary>🌳 {html.escape(str(author))} '
-            f'({len(author_df)})</summary>'
+            f'<details class="tree-author-details">'
+            f'<summary><div class="author-card">'
+            f'<span class="author-name">🌳 {html.escape(str(author))}</span>'
+            f'<span class="author-count">({len(author_df)} books)</span>'
+            f'</div></summary>'
             f'<div class="tree-series-row">'
         )
 
@@ -48,15 +50,27 @@ def display_ancestry_tree(df):
         for series in series_list:
             series_books = author_df[author_df['Series'] == series]
             parts.append(
-                f'<details class="tree-series">'
-                f'<summary>📂 {html.escape(str(series))} '
-                f'({len(series_books)})</summary>'
-                f'<ul class="tree-books">'
+                f'<details class="tree-series-details">'
+                f'<summary><div class="series-card">'
+                f'<span class="series-name">📂 {html.escape(str(series))}</span>'
+                f'<span class="series-count">({len(series_books)})</span>'
+                f'</div></summary>'
+                f'<div class="tree-books-list">'
             )
             for _, book in series_books.iterrows():
                 title = html.escape(str(book.get('Title', '')))
-                parts.append(f'<li>📖 {title}</li>')
-            parts.append('</ul></details>')
+                status = html.escape(str(book.get('Status', '') or ''))
+                genre = html.escape(str(book.get('Genre', '') or ''))
+                meta = status
+                if genre:
+                    meta += f' · {genre}' if meta else genre
+                parts.append(
+                    f'<div class="book-branch">'
+                    f'<div class="book-title">📖 {title}</div>'
+                    + (f'<div class="book-meta">{meta}</div>' if meta else '')
+                    + '</div>'
+                )
+            parts.append('</div></details>')
 
         parts.append('</div></details>')
 
@@ -65,52 +79,50 @@ def display_ancestry_tree(df):
     st.html(
         f"""
         <style>
-        .book-ancestry-tree {{
-            font-family: 'Libre Baskerville', Georgia, serif;
-        }}
-        .tree-author {{
-            margin-bottom: 6px;
-        }}
-        .tree-author > summary {{
+        /* Reuse the app's own author-card / series-card / book-branch
+           theme classes (already defined in the global stylesheet)
+           so all three tree levels look consistent, instead of the
+           plain bullet-list placeholder styling. */
+
+        .book-ancestry-tree summary {{
             cursor: pointer;
             list-style: none;
-            font-family: 'Berkshire Swash', Georgia, serif;
-            font-size: 20px;
-            color: var(--accent, #D8A93A);
-            padding: 8px 4px;
         }}
-        .tree-author > summary::-webkit-details-marker {{
+        .book-ancestry-tree summary::-webkit-details-marker {{
             display: none;
         }}
+        .book-ancestry-tree summary::marker {{
+            content: "";
+        }}
+
+        .tree-author-details {{
+            margin: 25px 0;
+        }}
+        .tree-author-details > summary .author-card {{
+            display: flex;
+            align-items: baseline;
+            gap: 10px;
+        }}
+
         .tree-series-row {{
             display: flex;
             flex-wrap: wrap;
-            gap: 14px;
-            padding: 4px 0 10px 20px;
+            gap: 16px;
+            padding-left: 35px;
+            margin-top: 10px;
         }}
-        .tree-series {{
-            flex: 1 1 220px;
-            min-width: 200px;
+        .tree-series-details {{
+            flex: 1 1 240px;
+            min-width: 220px;
         }}
-        .tree-series > summary {{
-            cursor: pointer;
-            list-style: none;
-            font-weight: bold;
-            color: var(--text, #FFF7DE);
-            padding: 4px 0;
+        .tree-series-details > summary .series-card {{
+            display: flex;
+            align-items: baseline;
+            gap: 8px;
         }}
-        .tree-series > summary::-webkit-details-marker {{
-            display: none;
-        }}
-        .tree-books {{
-            list-style: none;
-            margin: 0;
-            padding-left: 10px;
-        }}
-        .tree-books li {{
-            margin: 4px 0;
-            color: var(--text, #FFF7DE);
-            font-size: 14px;
+
+        .tree-books-list {{
+            margin-top: 6px;
         }}
         </style>
         {''.join(parts)}
