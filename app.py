@@ -160,18 +160,6 @@ theme = THEMES[st.session_state.theme]
 
 st.html(f"""
 <style>
-    /* Hide Streamlit's own top header */
-    header[data-testid="stHeader"] {{
-        display: none !important;
-    }}
-
-    .stApp {{
-        padding-top: 0 !important;
-    }}
-
-    .block-container {{
-        padding-top: 1rem !important;
-    }}
 
 @import url('https://fonts.googleapis.com/css2?family=Berkshire+Swash&family=Libre+Baskerville:wght@400;700&display=swap');
 
