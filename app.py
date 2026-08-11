@@ -66,6 +66,5 @@ st.markdown("""
 st.markdown("""
 <div class="book-tree-title">
     <h1>My Book Tree</h1>
-    <p>where every story has a branch</p>
 </div>
 """, unsafe_allow_html=True)
