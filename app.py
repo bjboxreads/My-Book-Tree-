@@ -1648,6 +1648,7 @@ with books_tab:
              choice = st.radio("Show", ["All", "Favorites", "Read", "Currently Reading", "Want to Read"], horizontal=True, key="unique_books_radio")
        
         books = library.copy()
+       
         if choice == "Favorites":
             books = books[books["Favorite"] == True]
         elif choice != "All":
