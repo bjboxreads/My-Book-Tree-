@@ -3,61 +3,97 @@ import streamlit as st
 st.set_page_config(
     page_title="My Book Tree",
     page_icon="🌿",
-    layout="wide"
+    layout="wide",
+    initial_sidebar_state="collapsed"
 )
+
+# ============================================================
+# MY BOOK TREE — FOUNDATION
+# ============================================================
 
 st.markdown("""
 <style>
 
-@import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Libre+Baskerville:wght@400;700&display=swap');
+
+:root {
+    --background: #160D13;
+    --text: #F4E7D8;
+    --accent: #C88B9A;
+    --gold: #C8A46A;
+}
+
+/* Main application */
 
 .stApp {
-    background: #120B10;
-    color: #F5E8DC;
+    background: var(--background);
+    color: var(--text);
 }
+
+/* Remove Streamlit's default top spacing */
 
 .block-container {
     max-width: 1500px;
-    padding: 40px;
+    padding-top: 35px;
+    padding-left: 50px;
+    padding-right: 50px;
+}
+
+/* Main typography */
+
+html,
+body,
+.stApp,
+.stApp * {
+    font-family: "Libre Baskerville", Georgia, serif;
+}
+
+/* Hide Streamlit branding */
+
+#MainMenu {
+    visibility: hidden;
+}
+
+footer {
+    visibility: hidden;
+}
+
+header {
+    visibility: hidden;
+}
+
+/* Title */
+
+.book-tree-title {
+    text-align: center;
+    margin-top: 20px;
+}
+
+.book-tree-title h1 {
+    margin: 0;
+    padding: 0;
+    color: var(--text);
+    font-size: 76px;
+    font-weight: 400;
+    letter-spacing: 1px;
+    line-height: 1.05;
+}
+
+.book-tree-title p {
+    margin-top: 14px;
+    color: var(--accent);
+    font-size: 18px;
+    font-style: italic;
+    letter-spacing: 3px;
 }
 
 </style>
 """, unsafe_allow_html=True)
+
+
 st.markdown("""
-<style>
-
-.book-title {
-    text-align: center;
-    margin-top: 55px;
-    position: relative;
-    z-index: 10;
-}
-
-.book-title-main {
-    font-family: "Caslon 540 Roman", "Caslon 540", "Big Caslon", Caslon;
-    font-size: 88px;
-    font-weight: 600;
-    letter-spacing: 2px;
-    line-height: 1;
-    color: #F4E6D7;
-    text-shadow:
-        0 3px 8px rgba(0, 0, 0, 0.65),
-        0 0 25px rgba(201, 138, 157, 0.15);
-}
-
-.book-title-subtitle {
-    font-family: font-family: "Caslon 540 Roman", "Caslon 540", "Big Caslon", Caslon;
-    font-size: 20px;
-    font-style: italic;
-    letter-spacing: 5px;
-    color: #C98A9D;
-    margin-top: 14px;
-}
-
-</style>
-
-<div class="book-title">
-    <div class="book-title-main">My Book Tree</div>
-    <div class="book-title-subtitle"></div>
+<div class="book-tree-title">
+    <h1>My Book Tree</h1>
+    <p>where every story has a branch</p>
 </div>
 """, unsafe_allow_html=True)
