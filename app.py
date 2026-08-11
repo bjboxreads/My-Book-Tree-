@@ -106,7 +106,7 @@ THEMES = {
         "button_text": "#FFF6DF",
     },
 
-    "Old World Library": {
+    "Old Bookshop": {
         "page": "#172322",
         "surface": "#243633",
         "surface2": "#36504A",
@@ -683,320 +683,218 @@ st.html(css)
 st.html(
     """
     <div class="book-header">
+
         <div class="book-header-title">
             My Book Tree
         </div>
+
     </div>
 
     <div class="willow-logo">
 
-        <svg viewBox="0 0 1200 310"
-             xmlns="http://www.w3.org/2000/svg"
-             aria-label="Decorative willow tree">
+        <svg
+            viewBox="0 0 1000 330"
+            xmlns="http://www.w3.org/2000/svg"
+        >
 
-            <!-- MAIN TRUNK -->
-
+            <!-- TRUNK -->
             <path
-                class="willow-trunk"
-                d="
-                M600 305
-                C592 260 585 215 592 170
-                C598 125 608 82 625 38
-                "
+                d="M500 325
+                   C490 275 492 225 500 180
+                   C508 135 520 95 535 55"
+                fill="none"
+                stroke="#51352C"
+                stroke-width="30"
+                stroke-linecap="round"
             />
 
             <path
-                class="willow-trunk-highlight"
-                d="
-                M605 300
-                C598 250 596 210 602 168
-                C608 120 618 78 630 42
-                "
+                d="M505 320
+                   C498 270 500 225 508 180
+                   C515 135 527 95 540 58"
+                fill="none"
+                stroke="#795449"
+                stroke-width="7"
+                stroke-linecap="round"
             />
 
-            <!-- LEFT MAIN BRANCHES -->
+            <!-- LEFT BRANCHES -->
+            <g
+                fill="none"
+                stroke="#51352C"
+                stroke-linecap="round"
+            >
+                <path
+                    d="M505 180
+                       C445 145 370 115 285 105"
+                    stroke-width="14"
+                />
 
-            <path
-                class="willow-main-branch"
-                stroke-width="13"
-                d="M602 155 C535 120 458 82 360 70"
-            />
+                <path
+                    d="M500 205
+                       C425 180 340 175 245 190"
+                    stroke-width="11"
+                />
 
-            <path
-                class="willow-main-branch"
-                stroke-width="10"
-                d="M600 180 C520 150 430 145 320 155"
-            />
-
-            <path
-                class="willow-main-branch"
-                stroke-width="9"
-                d="M602 125 C550 82 520 52 492 18"
-            />
-
-            <!-- RIGHT MAIN BRANCHES -->
-
-            <path
-                class="willow-main-branch"
-                stroke-width="13"
-                d="M612 150 C680 112 760 78 850 68"
-            />
-
-            <path
-                class="willow-main-branch"
-                stroke-width="10"
-                d="M612 178 C690 148 780 140 875 150"
-            />
-
-            <path
-                class="willow-main-branch"
-                stroke-width="9"
-                d="M620 118 C680 78 715 45 742 12"
-            />
-
-            <!-- LEFT HANGING BRANCHES -->
-
-            <path class="willow-hanging"
-                d="M360 70 C348 125 355 190 372 255"/>
-
-            <path class="willow-hanging"
-                d="M405 75 C394 135 404 205 422 275"/>
-
-            <path class="willow-hanging"
-                d="M450 80 C440 145 450 215 470 280"/>
-
-            <path class="willow-hanging"
-                d="M495 87 C485 145 498 205 515 270"/>
-
-            <path class="willow-hanging"
-                d="M535 105 C530 155 538 205 550 250"/>
-
-            <path class="willow-hanging"
-                d="M320 155 C315 200 322 240 338 282"/>
-
-            <!-- RIGHT HANGING BRANCHES -->
-
-            <path class="willow-hanging"
-                d="M680 90 C690 150 682 215 665 275"/>
-
-            <path class="willow-hanging"
-                d="M725 78 C738 140 730 210 712 280"/>
-
-            <path class="willow-hanging"
-                d="M770 72 C785 130 778 200 758 265"/>
-
-            <path class="willow-hanging"
-                d="M815 68 C830 125 822 190 805 250"/>
-
-            <path class="willow-hanging"
-                d="M850 150 C860 195 853 240 838 282"/>
-
-            <!-- LEFT LEAVES -->
-
-            <g>
-                <ellipse class="willow-leaf-light"
-                    cx="360" cy="108" rx="7" ry="22"
-                    transform="rotate(-24 360 108)"/>
-
-                <ellipse class="willow-leaf"
-                    cx="370" cy="158" rx="7" ry="23"
-                    transform="rotate(18 370 158)"/>
-
-                <ellipse class="willow-leaf-deep"
-                    cx="380" cy="205" rx="7" ry="21"
-                    transform="rotate(-18 380 205)"/>
-
-                <ellipse class="willow-leaf-light"
-                    cx="405" cy="135" rx="7" ry="22"
-                    transform="rotate(20 405 135)"/>
-
-                <ellipse class="willow-leaf"
-                    cx="420" cy="185" rx="7" ry="23"
-                    transform="rotate(-15 420 185)"/>
-
-                <ellipse class="willow-leaf-deep"
-                    cx="425" cy="235" rx="7" ry="22"
-                    transform="rotate(18 425 235)"/>
-
-                <ellipse class="willow-leaf"
-                    cx="450" cy="120" rx="7" ry="22"
-                    transform="rotate(-20 450 120)"/>
-
-                <ellipse class="willow-leaf-light"
-                    cx="465" cy="170" rx="7" ry="23"
-                    transform="rotate(16 465 170)"/>
-
-                <ellipse class="willow-leaf"
-                    cx="480" cy="225" rx="7" ry="22"
-                    transform="rotate(-18 480 225)"/>
-
-                <ellipse class="willow-leaf-deep"
-                    cx="500" cy="145" rx="7" ry="21"
-                    transform="rotate(19 500 145)"/>
-
-                <ellipse class="willow-leaf-light"
-                    cx="515" cy="195" rx="7" ry="23"
-                    transform="rotate(-15 515 195)"/>
-
-                <ellipse class="willow-leaf"
-                    cx="525" cy="235" rx="7" ry="21"
-                    transform="rotate(16 525 235)"/>
-
-                <ellipse class="willow-leaf"
-                    cx="340" cy="205" rx="7" ry="22"
-                    transform="rotate(-15 340 205)"/>
-
-                <ellipse class="willow-leaf-light"
-                    cx="350" cy="255" rx="7" ry="22"
-                    transform="rotate(17 350 255)"/>
+                <path
+                    d="M510 145
+                       C465 105 425 70 395 30"
+                    stroke-width="10"
+                />
             </g>
 
-            <!-- RIGHT LEAVES -->
+            <!-- RIGHT BRANCHES -->
+            <g
+                fill="none"
+                stroke="#51352C"
+                stroke-linecap="round"
+            >
+                <path
+                    d="M515 175
+                       C575 140 650 110 735 105"
+                    stroke-width="14"
+                />
 
-            <g>
-                <ellipse class="willow-leaf-light"
-                    cx="840" cy="108" rx="7" ry="22"
-                    transform="rotate(23 840 108)"/>
+                <path
+                    d="M515 205
+                       C590 180 675 175 760 190"
+                    stroke-width="11"
+                />
 
-                <ellipse class="willow-leaf"
-                    cx="830" cy="158" rx="7" ry="23"
-                    transform="rotate(-18 830 158)"/>
-
-                <ellipse class="willow-leaf-deep"
-                    cx="820" cy="205" rx="7" ry="21"
-                    transform="rotate(18 820 205)"/>
-
-                <ellipse class="willow-leaf-light"
-                    cx="795" cy="135" rx="7" ry="22"
-                    transform="rotate(-20 795 135)"/>
-
-                <ellipse class="willow-leaf"
-                    cx="780" cy="185" rx="7" ry="23"
-                    transform="rotate(15 780 185)"/>
-
-                <ellipse class="willow-leaf-deep"
-                    cx="775" cy="235" rx="7" ry="22"
-                    transform="rotate(-18 775 235)"/>
-
-                <ellipse class="willow-leaf"
-                    cx="750" cy="120" rx="7" ry="22"
-                    transform="rotate(20 750 120)"/>
-
-                <ellipse class="willow-leaf-light"
-                    cx="735" cy="170" rx="7" ry="23"
-                    transform="rotate(-16 735 170)"/>
-
-                <ellipse class="willow-leaf"
-                    cx="720" cy="225" rx="7" ry="22"
-                    transform="rotate(18 720 225)"/>
-
-                <ellipse class="willow-leaf-deep"
-                    cx="700" cy="145" rx="7" ry="21"
-                    transform="rotate(-19 700 145)"/>
-
-                <ellipse class="willow-leaf-light"
-                    cx="685" cy="195" rx="7" ry="23"
-                    transform="rotate(15 685 195)"/>
-
-                <ellipse class="willow-leaf"
-                    cx="675" cy="235" rx="7" ry="21"
-                    transform="rotate(-16 675 235)"/>
-
-                <ellipse class="willow-leaf"
-                    cx="860" cy="205" rx="7" ry="22"
-                    transform="rotate(15 860 205)"/>
-
-                <ellipse class="willow-leaf-light"
-                    cx="850" cy="255" rx="7" ry="22"
-                    transform="rotate(-17 850 255)"/>
+                <path
+                    d="M520 140
+                       C565 100 605 65 635 25"
+                    stroke-width="10"
+                />
             </g>
 
-            <!-- SMALL ROSE BLOSSOMS -->
+            <!-- WILLOW HANGING BRANCHES -->
+            <g
+                fill="none"
+                stroke="#687653"
+                stroke-width="4"
+                stroke-linecap="round"
+            >
+                <path d="M285 105 C275 160 282 225 300 300"/>
+                <path d="M330 115 C320 175 330 245 345 315"/>
+                <path d="M375 125 C365 185 375 250 390 305"/>
+                <path d="M420 140 C410 195 420 250 435 290"/>
+                <path d="M460 155 C450 205 458 250 470 280"/>
+                <path d="M245 190 C238 235 245 270 260 310"/>
 
-            <g>
-                <g class="willow-flower">
-                    <circle cx="405" cy="104" r="5"/>
-                    <circle cx="414" cy="108" r="5"/>
-                    <circle cx="410" cy="99" r="5"/>
-                    <circle cx="401" cy="101" r="5"/>
-                </g>
+                <path d="M735 105 C745 160 738 225 720 300"/>
+                <path d="M690 115 C700 175 690 245 675 315"/>
+                <path d="M645 125 C655 185 645 250 630 305"/>
+                <path d="M600 140 C610 195 600 250 585 290"/>
+                <path d="M560 155 C570 205 562 250 550 280"/>
+                <path d="M760 190 C767 235 760 270 745 310"/>
+            </g>
 
-                <circle
-                    class="willow-flower-center"
-                    cx="407"
-                    cy="104"
-                    r="2"
-                />
+            <!-- LEAVES -->
+            <g fill="#7D8C65">
 
-                <g class="willow-flower">
-                    <circle cx="478" cy="143" r="5"/>
-                    <circle cx="487" cy="147" r="5"/>
-                    <circle cx="483" cy="138" r="5"/>
-                    <circle cx="474" cy="140" r="5"/>
-                </g>
+                <ellipse cx="285" cy="145" rx="7" ry="24"
+                    transform="rotate(-18 285 145)"/>
+                <ellipse cx="300" cy="205" rx="7" ry="25"
+                    transform="rotate(16 300 205)"/>
+                <ellipse cx="305" cy="260" rx="7" ry="24"
+                    transform="rotate(-14 305 260)"/>
 
-                <circle
-                    class="willow-flower-center"
-                    cx="480"
-                    cy="143"
-                    r="2"
-                />
+                <ellipse cx="330" cy="155" rx="7" ry="24"
+                    transform="rotate(18 330 155)"/>
+                <ellipse cx="345" cy="220" rx="7" ry="25"
+                    transform="rotate(-15 345 220)"/>
+                <ellipse cx="350" cy="275" rx="7" ry="23"
+                    transform="rotate(15 350 275)"/>
 
-                <g class="willow-flower">
-                    <circle cx="520" cy="176" r="5"/>
-                    <circle cx="529" cy="180" r="5"/>
-                    <circle cx="525" cy="171" r="5"/>
-                    <circle cx="516" cy="173" r="5"/>
-                </g>
+                <ellipse cx="375" cy="165" rx="7" ry="24"
+                    transform="rotate(-18 375 165)"/>
+                <ellipse cx="390" cy="225" rx="7" ry="25"
+                    transform="rotate(15 390 225)"/>
 
-                <circle
-                    class="willow-flower-center"
-                    cx="522"
-                    cy="176"
-                    r="2"
-                />
+                <ellipse cx="420" cy="175" rx="7" ry="24"
+                    transform="rotate(16 420 175)"/>
+                <ellipse cx="435" cy="230" rx="7" ry="24"
+                    transform="rotate(-16 435 230)"/>
 
-                <g class="willow-flower">
-                    <circle cx="795" cy="143" r="5"/>
-                    <circle cx="804" cy="147" r="5"/>
-                    <circle cx="800" cy="138" r="5"/>
-                    <circle cx="791" cy="140" r="5"/>
-                </g>
+                <ellipse cx="720" cy="145" rx="7" ry="24"
+                    transform="rotate(18 720 145)"/>
+                <ellipse cx="705" cy="205" rx="7" ry="25"
+                    transform="rotate(-16 705 205)"/>
+                <ellipse cx="700" cy="260" rx="7" ry="24"
+                    transform="rotate(14 700 260)"/>
 
-                <circle
-                    class="willow-flower-center"
-                    cx="797"
-                    cy="143"
-                    r="2"
-                />
+                <ellipse cx="675" cy="155" rx="7" ry="24"
+                    transform="rotate(-18 675 155)"/>
+                <ellipse cx="660" cy="220" rx="7" ry="25"
+                    transform="rotate(15 660 220)"/>
+                <ellipse cx="655" cy="275" rx="7" ry="23"
+                    transform="rotate(-15 655 275)"/>
 
-                <g class="willow-flower">
-                    <circle cx="735" cy="105" r="5"/>
-                    <circle cx="744" cy="109" r="5"/>
-                    <circle cx="740" cy="100" r="5"/>
-                    <circle cx="731" cy="102" r="5"/>
-                </g>
+                <ellipse cx="630" cy="165" rx="7" ry="24"
+                    transform="rotate(18 630 165)"/>
+                <ellipse cx="615" cy="225" rx="7" ry="25"
+                    transform="rotate(-15 615 225)"/>
 
-                <circle
-                    class="willow-flower-center"
-                    cx="737"
-                    cy="105"
-                    r="2"
-                />
+                <ellipse cx="585" cy="175" rx="7" ry="24"
+                    transform="rotate(-16 585 175)"/>
+                <ellipse cx="570" cy="230" rx="7" ry="24"
+                    transform="rotate(16 570 230)"/>
 
-                <g class="willow-flower">
-                    <circle cx="690" cy="175" r="5"/>
-                    <circle cx="699" cy="179" r="5"/>
-                    <circle cx="695" cy="170" r="5"/>
-                    <circle cx="686" cy="172" r="5"/>
-                </g>
+            </g>
 
-                <circle
-                    class="willow-flower-center"
-                    cx="692"
-                    cy="175"
-                    r="2"
-                />
+            <!-- LIGHTER LEAVES -->
+            <g fill="#92A06F">
+
+                <ellipse cx="320" cy="130" rx="6" ry="21"
+                    transform="rotate(-20 320 130)"/>
+                <ellipse cx="360" cy="195" rx="6" ry="22"
+                    transform="rotate(18 360 195)"/>
+                <ellipse cx="410" cy="145" rx="6" ry="21"
+                    transform="rotate(-17 410 145)"/>
+
+                <ellipse cx="680" cy="130" rx="6" ry="21"
+                    transform="rotate(20 680 130)"/>
+                <ellipse cx="640" cy="195" rx="6" ry="22"
+                    transform="rotate(-18 640 195)"/>
+                <ellipse cx="590" cy="145" rx="6" ry="21"
+                    transform="rotate(17 590 145)"/>
+
+            </g>
+
+            <!-- SMALL FLOWERS -->
+            <g fill="#B97888">
+
+                <circle cx="320" cy="120" r="5"/>
+                <circle cx="327" cy="124" r="5"/>
+                <circle cx="324" cy="116" r="5"/>
+                <circle cx="316" cy="117" r="5"/>
+
+                <circle cx="410" cy="150" r="5"/>
+                <circle cx="417" cy="154" r="5"/>
+                <circle cx="414" cy="146" r="5"/>
+                <circle cx="406" cy="147" r="5"/>
+
+                <circle cx="680" cy="120" r="5"/>
+                <circle cx="687" cy="124" r="5"/>
+                <circle cx="684" cy="116" r="5"/>
+                <circle cx="676" cy="117" r="5"/>
+
+                <circle cx="590" cy="150" r="5"/>
+                <circle cx="597" cy="154" r="5"/>
+                <circle cx="594" cy="146" r="5"/>
+                <circle cx="586" cy="147" r="5"/>
+
+            </g>
+
+            <!-- GOLD CENTERS -->
+            <g fill="#E2B35E">
+
+                <circle cx="321" cy="120" r="2"/>
+                <circle cx="411" cy="150" r="2"/>
+                <circle cx="681" cy="120" r="2"/>
+                <circle cx="591" cy="150" r="2"/>
+
             </g>
 
         </svg>
