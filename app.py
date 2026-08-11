@@ -158,7 +158,7 @@ theme = THEMES[st.session_state.theme]
 # CSS
 # ============================================================
 
-st.html(f"""
+st.html(f""")
 <style>
 
 @import url('https://fonts.googleapis.com/css2?family=Berkshire+Swash&family=Libre+Baskerville:wght@400;700&display=swap');
@@ -319,7 +319,7 @@ st.markdown(
     </style>
     """, 
     unsafe_allow_html=True
-)
+
     }}
     </style>
     """, 
