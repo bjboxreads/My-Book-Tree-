@@ -202,6 +202,7 @@ p, label {{
 
 .book-header {{
     text-align: center;
+    margin-top: 60px !important; /* Force it to apply */
 }}
 
 .book-header-title {{
