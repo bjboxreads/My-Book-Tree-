@@ -17,9 +17,9 @@ st.markdown("""
 @import url('https://fonts.googleapis.com/css2?family=Libre+Baskerville:wght@400;700&display=swap');
 
 :root {
-    --background: #4A0000;
-    --text: #FFD700;
-    --accent: #FFA6C9;
+    --background: #872657;
+    --text: #F27D33;
+    --accent: #FFECD1;
     --gold: #C8A46A;
 }
 
