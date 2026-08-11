@@ -17,9 +17,9 @@ st.markdown("""
 @import url('https://fonts.googleapis.com/css2?family=Libre+Baskerville:wght@400;700&display=swap');
 
 :root {
-    --background: #160D13;
-    --text: #F4E7D8;
-    --accent: #C88B9A;
+    --background: #4A0000;
+    --text: #FFD700;
+    --accent: #FFA6C9;
     --gold: #C8A46A;
 }
 
@@ -94,6 +94,5 @@ header {
 st.markdown("""
 <div class="book-tree-title">
     <h1>My Book Tree</h1>
-    <p>where every story has a branch</p>
 </div>
 """, unsafe_allow_html=True)
