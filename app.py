@@ -23,30 +23,99 @@ st.markdown("""
 
 def display_ancestry_tree(df):
     # 1. Clean data: Fill empty Series with 'Standalone'
+    df = df.copy()
     df['Series'] = df['Series'].fillna('Standalone').replace('', 'Standalone')
-    
-    # 2. Iterate through each Author (The Trunk)
+
+    # Build the entire tree as ONE html string instead of looping
+    # st.expander / st.columns / st.write per author/series/book.
+    # Each Streamlit widget call used to add several wrapper <div>s
+    # (stLayoutWrapper, stVerticalBlock, stHorizontalBlock,
+    # stElementContainer) — with hundreds of books that multiplied
+    # into tens of thousands of DOM nodes. <details>/<summary> gives
+    # native collapse/expand for free, with no JS and no extra nodes.
+    parts = ['<div class="book-ancestry-tree">']
+
     for author, author_df in df.groupby('Author'):
-        # Creating the main trunk expander (Closed by default)
-        with st.expander(f"🌳 {author}", expanded=False):
-            
-            # 3. Get all Series for this specific author
-            series_list = author_df['Series'].unique()
-            
-            # 4. Create Columns so Series appear side-by-side (Siblings)
-            # This makes the "ancestry" horizontal row
-            cols = st.columns(len(series_list))
-            
-            for i, series in enumerate(series_list):
-                with cols[i]:
-                    # 5. Create a branch for each Series (Closed by default)
-                    with st.expander(f"📂 {series}", expanded=False):
-                        
-                        # 6. List the Books vertically underneath (The Kids)
-                        series_books = author_df[author_df['Series'] == series]
-                        for _, book in series_books.iterrows():
-                            # You can use st.info or st.write here
-                            st.write(f"📖 {book['Title']}")
+        parts.append(
+            f'<details class="tree-author">'
+            f'<summary>🌳 {html.escape(str(author))} '
+            f'({len(author_df)})</summary>'
+            f'<div class="tree-series-row">'
+        )
+
+        series_list = author_df['Series'].unique()
+
+        for series in series_list:
+            series_books = author_df[author_df['Series'] == series]
+            parts.append(
+                f'<details class="tree-series">'
+                f'<summary>📂 {html.escape(str(series))} '
+                f'({len(series_books)})</summary>'
+                f'<ul class="tree-books">'
+            )
+            for _, book in series_books.iterrows():
+                title = html.escape(str(book.get('Title', '')))
+                parts.append(f'<li>📖 {title}</li>')
+            parts.append('</ul></details>')
+
+        parts.append('</div></details>')
+
+    parts.append('</div>')
+
+    st.html(
+        f"""
+        <style>
+        .book-ancestry-tree {{
+            font-family: 'Libre Baskerville', Georgia, serif;
+        }}
+        .tree-author {{
+            margin-bottom: 6px;
+        }}
+        .tree-author > summary {{
+            cursor: pointer;
+            list-style: none;
+            font-family: 'Berkshire Swash', Georgia, serif;
+            font-size: 20px;
+            color: var(--accent, #D8A93A);
+            padding: 8px 4px;
+        }}
+        .tree-author > summary::-webkit-details-marker {{
+            display: none;
+        }}
+        .tree-series-row {{
+            display: flex;
+            flex-wrap: wrap;
+            gap: 14px;
+            padding: 4px 0 10px 20px;
+        }}
+        .tree-series {{
+            flex: 1 1 220px;
+            min-width: 200px;
+        }}
+        .tree-series > summary {{
+            cursor: pointer;
+            list-style: none;
+            font-weight: bold;
+            color: var(--text, #FFF7DE);
+            padding: 4px 0;
+        }}
+        .tree-series > summary::-webkit-details-marker {{
+            display: none;
+        }}
+        .tree-books {{
+            list-style: none;
+            margin: 0;
+            padding-left: 10px;
+        }}
+        .tree-books li {{
+            margin: 4px 0;
+            color: var(--text, #FFF7DE);
+            font-size: 14px;
+        }}
+        </style>
+        {''.join(parts)}
+        """
+    )
 
 # Usage:
 # if not df.empty:
