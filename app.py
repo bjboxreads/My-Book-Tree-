@@ -16,126 +16,117 @@ st.set_page_config(
 )
 
 # ============================================================
-# THEMES
+# WHIMSICAL BOOKISH THEMES
 # ============================================================
 
 THEMES = {
 
     "Enchanted Garden": {
-        "page": "#101A15",
-        "surface": "#18291F",
-        "surface2": "#233B2C",
-        "card": "#304D39",
-        "text": "#FFF5DF",
-        "muted": "#D2C7B2",
-        "accent": "#D9B45A",
-        "accent2": "#A9B97C",
-        "line": "#8E6E36",
-        "rose": "#C98A92",
+        "page": "#17120F",
+        "surface": "#211A16",
+        "surface2": "#30251F",
+        "card": "#3A2D24",
+        "text": "#F8EBD1",
+        "muted": "#CBBDA7",
+        "accent": "#D8AE68",
+        "accent2": "#78906A",
+        "line": "#9C7950",
     },
 
-    "Moonlit Manor": {
-        "page": "#111526",
-        "surface": "#1A2038",
-        "surface2": "#252E4C",
-        "card": "#354061",
-        "text": "#FFF6E7",
-        "muted": "#D0CBD6",
-        "accent": "#D8B86A",
-        "accent2": "#AFA4D0",
-        "line": "#776B99",
-        "rose": "#C39AAE",
+    "Roses & Old Books": {
+        "page": "#1B1015",
+        "surface": "#29171E",
+        "surface2": "#3B202B",
+        "card": "#4A2834",
+        "text": "#F8E7DC",
+        "muted": "#D5BFC0",
+        "accent": "#D59A9F",
+        "accent2": "#9C7180",
+        "line": "#A66A72",
     },
 
-    "Velvet Rose": {
-        "page": "#1B0D16",
-        "surface": "#2A121F",
-        "surface2": "#421A2D",
-        "card": "#5A2740",
-        "text": "#FFF2E6",
-        "muted": "#DEC5CA",
-        "accent": "#D9AD62",
-        "accent2": "#D28A9B",
-        "line": "#9D5069",
-        "rose": "#E1A5B1",
+    "Moonlit Library": {
+        "page": "#101522",
+        "surface": "#181F30",
+        "surface2": "#252D43",
+        "card": "#303951",
+        "text": "#F4EBD5",
+        "muted": "#C4C8D0",
+        "accent": "#D8B878",
+        "accent2": "#7888A7",
+        "line": "#857A66",
     },
 
-    "Autumn Romance": {
-        "page": "#21130D",
-        "surface": "#332015",
-        "surface2": "#4B2D1B",
-        "card": "#684127",
-        "text": "#FFF0D2",
-        "muted": "#D9C3A4",
-        "accent": "#D8A34D",
-        "accent2": "#C97855",
-        "line": "#96542F",
-        "rose": "#B97767",
+    "Autumn Storybook": {
+        "page": "#21150F",
+        "surface": "#2D1D14",
+        "surface2": "#432A1B",
+        "card": "#56351F",
+        "text": "#F7E6C8",
+        "muted": "#D3BFA0",
+        "accent": "#D49A50",
+        "accent2": "#9C694B",
+        "line": "#9C6039",
     },
 
-    "Twilight Fairytale": {
-        "page": "#160F22",
-        "surface": "#211633",
-        "surface2": "#30214A",
-        "card": "#44305F",
-        "text": "#FFF3E5",
-        "muted": "#D5C9DC",
-        "accent": "#D9B76B",
-        "accent2": "#B59ACF",
-        "line": "#765C92",
-        "rose": "#C895B4",
+    "Velvet & Violets": {
+        "page": "#17111D",
+        "surface": "#25182D",
+        "surface2": "#362342",
+        "card": "#493058",
+        "text": "#F5E9DC",
+        "muted": "#CFC0D3",
+        "accent": "#C9A3C9",
+        "accent2": "#84729A",
+        "line": "#8F6B8D",
     },
 
-    "Secret Garden": {
-        "page": "#092126",
-        "surface": "#10363A",
-        "surface2": "#174B4D",
-        "card": "#226260",
-        "text": "#FFF3DC",
-        "muted": "#C9D9D0",
-        "accent": "#E0B65B",
-        "accent2": "#9AB58A",
-        "line": "#5D8C80",
-        "rose": "#D28D8D",
+    "Secret Conservatory": {
+        "page": "#101A17",
+        "surface": "#182722",
+        "surface2": "#263B33",
+        "card": "#355044",
+        "text": "#F4E9D2",
+        "muted": "#C2CDBF",
+        "accent": "#D5B56B",
+        "accent2": "#78977F",
+        "line": "#71846B",
     },
 
-    "Old World Library": {
-        "page": "#191713",
-        "surface": "#28231B",
-        "surface2": "#3B3225",
-        "card": "#544634",
-        "text": "#F8E9C9",
-        "muted": "#D2C3A6",
-        "accent": "#D3A64F",
-        "accent2": "#A79B70",
-        "line": "#80633A",
-        "rose": "#B67D79",
+    "Gothic Romance": {
+        "page": "#160D12",
+        "surface": "#24131B",
+        "surface2": "#351C28",
+        "card": "#482536",
+        "text": "#F8E8E1",
+        "muted": "#D0B9BC",
+        "accent": "#C98A91",
+        "accent2": "#92708A",
+        "line": "#895362",
     },
 
-    "Fairytale Blue": {
-        "page": "#0E1725",
-        "surface": "#17263A",
-        "surface2": "#253A55",
-        "card": "#355274",
-        "text": "#FFF5E5",
-        "muted": "#CBD3DF",
-        "accent": "#E0BB68",
-        "accent2": "#9DAED0",
-        "line": "#667FA4",
-        "rose": "#C99AAE",
+    "Fairytale Library": {
+        "page": "#16141B",
+        "surface": "#24202A",
+        "surface2": "#332E3C",
+        "card": "#433B4D",
+        "text": "#F8EEDC",
+        "muted": "#C9C2C5",
+        "accent": "#D9B875",
+        "accent2": "#8D879F",
+        "line": "#89765C",
     },
 
-    "Victorian Romance": {
-        "page": "#1D1013",
-        "surface": "#32181D",
-        "surface2": "#4B2229",
-        "card": "#642F38",
-        "text": "#FFF0DC",
-        "muted": "#DCC5B7",
-        "accent": "#D8B064",
-        "accent2": "#C28C91",
-        "line": "#8E4E57",
-        "rose": "#D99BA2",
+    "Wildflower & Ink": {
+        "page": "#141817",
+        "surface": "#1D2421",
+        "surface2": "#2A3530",
+        "card": "#39453E",
+        "text": "#F4EBD8",
+        "muted": "#C4C8BA",
+        "accent": "#D0AA67",
+        "accent2": "#829477",
+        "line": "#777D63",
     },
 }
 
@@ -180,15 +171,11 @@ theme = THEMES[st.session_state.theme]
 # CSS
 # ============================================================
 
-st.markdown(
+st.html(
     f"""
 <style>
 
-@import url('https://fonts.googleapis.com/css2?family=Berkshire+Swash&family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;0,700;1,400;1,500;1,600&family=Libre+Baskerville:wght@400;700&display=swap');
-
-/* ==========================================================
-   ROOT
-========================================================== */
+@import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;500;600;700&family=Libre+Baskerville:wght@400;700&family=Italianno&display=swap');
 
 :root {{
     --page: {theme["page"]};
@@ -200,8 +187,11 @@ st.markdown(
     --accent: {theme["accent"]};
     --accent2: {theme["accent2"]};
     --line: {theme["line"]};
-    --rose: {theme["rose"]};
 }}
+
+/* ============================================================
+   PAGE
+   ============================================================ */
 
 .stApp {{
     background:
@@ -219,17 +209,13 @@ st.markdown(
     padding-bottom: 4rem;
 }}
 
-#MainMenu {{
-    visibility: hidden;
+p, label, span {{
+    color: var(--text);
 }}
 
-footer {{
-    visibility: hidden;
-}}
-
-/* ==========================================================
-   GENERAL TYPOGRAPHY
-========================================================== */
+/* ============================================================
+   TYPOGRAPHY
+   ============================================================ */
 
 h1, h2, h3, h4 {{
     font-family:
@@ -239,240 +225,153 @@ h1, h2, h3, h4 {{
     color: var(--text) !important;
 }}
 
-p, label {{
-    color: var(--text) !important;
-}}
-
-.stMarkdown,
-.stTextInput,
-.stSelectbox,
-.stRadio,
-.stFileUploader {{
-    color: var(--text);
-}}
-
-/* ==========================================================
-   HEADER
-========================================================== */
-
 .book-header {{
-    text-align: center;
-    padding: 25px 0 5px;
     position: relative;
+    text-align: center;
+    padding: 35px 0 25px;
+}}
+
+.book-header::before,
+.book-header::after {{
+    content: "❦";
+    position: absolute;
+    top: 43px;
+    color: var(--accent);
+    font-size: 25px;
+    opacity: .75;
+}}
+
+.book-header::before {{
+    left: 25%;
+}}
+
+.book-header::after {{
+    right: 25%;
 }}
 
 .book-header-title {{
     font-family:
-        "Berkshire Swash",
-        cursive !important;
+        "Cormorant Garamond",
+        Georgia,
+        serif;
+
     font-size: 76px;
-    line-height: 1;
-    font-weight: 400;
-    color: #E7C979 !important;
+    line-height: .9;
+    font-weight: 600;
+    letter-spacing: .02em;
+
+    color: var(--text);
+
     text-shadow:
-        0 3px 12px rgba(0,0,0,.65),
-        0 0 25px rgba(231,201,121,.12);
+        0 3px 12px rgba(0,0,0,.35);
 }}
 
 .book-header-subtitle {{
     font-family:
-        "Cormorant Garamond",
+        "Libre Baskerville",
         Georgia,
         serif;
+
     color: var(--muted);
-    margin-top: 12px;
-    font-size: 18px;
-    font-style: italic;
-    letter-spacing: .08em;
+    margin-top: 18px;
+    font-size: 13px;
+    letter-spacing: .06em;
 }}
 
-/* ==========================================================
-   WILLOW TREE
-========================================================== */
-
-.willow-container {{
-    width: 100%;
-    height: 360px;
-    margin: 0 auto 8px;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    overflow: hidden;
-}}
-
-.willow-tree {{
-    width: 100%;
-    max-width: 1200px;
-    height: 360px;
-    display: block;
-}}
-
-/* ==========================================================
-   ORNAMENTAL DIVIDER
-========================================================== */
-
-.ornament {{
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 13px;
-    margin: 4px auto 25px;
+.book-header-subtitle::before {{
+    content: "✦  ";
     color: var(--accent);
 }}
 
-.ornament-line {{
-    height: 1px;
-    width: 110px;
-    background: linear-gradient(
-        to right,
-        transparent,
-        var(--line)
-    );
-}}
-
-.ornament-line.right {{
-    background: linear-gradient(
-        to left,
-        transparent,
-        var(--line)
-    );
-}}
-
-.ornament-symbol {{
-    font-size: 18px;
+.book-header-subtitle::after {{
+    content: "  ✦";
     color: var(--accent);
 }}
 
-/* ==========================================================
-   THEME AREA
-========================================================== */
-
-.theme-panel {{
-    max-width: 700px;
-    margin: 0 auto 28px;
-    text-align: center;
-}}
+/* ============================================================
+   THEME SELECTOR
+   ============================================================ */
 
 .theme-heading {{
     font-family:
         "Cormorant Garamond",
         Georgia,
         serif;
+
     font-size: 25px;
     font-weight: 600;
-    font-style: italic;
     color: var(--text);
-    margin-bottom: 7px;
+    margin: 12px 0 5px;
 }}
-
-.theme-caption {{
-    color: var(--muted);
-    font-family:
-        "Libre Baskerville",
-        Georgia,
-        serif;
-    font-size: 11px;
-    letter-spacing: .05em;
-    margin-bottom: 8px;
-}}
-
-/* ==========================================================
-   SELECTOR
-========================================================== */
 
 div[data-baseweb="select"] > div {{
-    background: var(--surface) !important;
-    border: 1px solid var(--accent) !important;
-    border-radius: 18px !important;
-    min-height: 48px !important;
-    box-shadow:
-        0 5px 18px rgba(0,0,0,.2);
+    background: rgba(20,15,15,.45) !important;
+    border: 0 !important;
+    border-bottom: 1px solid var(--accent) !important;
+    border-radius: 0 !important;
+    min-height: 46px !important;
 }}
 
 div[data-baseweb="select"] span {{
     color: var(--text) !important;
-}}
-
-div[data-baseweb="select"] input {{
-    color: var(--text) !important;
+    font-family:
+        "Libre Baskerville",
+        Georgia,
+        serif !important;
 }}
 
 div[role="listbox"] {{
-    background: #171717 !important;
+    background: #211B1A !important;
     border: 1px solid var(--accent) !important;
-    border-radius: 14px !important;
-    box-shadow:
-        0 18px 45px rgba(0,0,0,.65) !important;
+    border-radius: 4px !important;
 }}
 
 div[role="option"] {{
-    background: #171717 !important;
-    color: #FFFFFF !important;
-    padding: 12px 16px !important;
-    border-radius: 8px !important;
+    background: #211B1A !important;
+    color: #F7EBD7 !important;
     font-family:
-        "Cormorant Garamond",
+        "Libre Baskerville",
         Georgia,
         serif !important;
-    font-size: 17px !important;
-}}
-
-div[role="option"] span {{
-    color: #FFFFFF !important;
+    padding: 12px 15px !important;
 }}
 
 div[role="option"]:hover {{
-    background: #3A3A3A !important;
+    background: #3A302C !important;
 }}
 
 div[role="option"][aria-selected="true"] {{
-    background: #705323 !important;
+    background: #554235 !important;
 }}
 
-/* ==========================================================
-   STAT BOOKPLATES
-========================================================== */
-
-.stats-wrap {{
-    display: flex;
-    justify-content: center;
-    gap: 15px;
-    margin: 10px auto 32px;
-    flex-wrap: wrap;
-}}
+/* ============================================================
+   STATS
+   ============================================================ */
 
 .stat-card {{
-    min-width: 145px;
-    background:
-        linear-gradient(
-            145deg,
-            var(--surface2),
-            var(--surface)
-        );
-    border: 1px solid var(--line);
-    border-radius: 15px;
-    padding: 15px 20px;
-    text-align: center;
-    box-shadow:
-        0 7px 20px rgba(0,0,0,.16);
     position: relative;
+
+    background: transparent;
+
+    padding: 14px 8px 18px;
+    text-align: center;
+
+    border: 0;
+    border-bottom: 1px solid var(--line);
 }}
 
-.stat-card::before,
 .stat-card::after {{
-    content: "✦";
-    color: var(--accent);
+    content: "❧";
     position: absolute;
-    font-size: 9px;
-    top: 8px;
-}}
+    bottom: -10px;
+    left: 50%;
+    transform: translateX(-50%);
 
-.stat-card::before {{
-    left: 10px;
-}}
+    background: var(--page);
+    color: var(--accent);
 
-.stat-card::after {{
-    right: 10px;
+    padding: 0 8px;
+    font-size: 15px;
 }}
 
 .stat-number {{
@@ -480,35 +379,392 @@ div[role="option"][aria-selected="true"] {{
         "Cormorant Garamond",
         Georgia,
         serif;
-    font-size: 35px;
-    font-weight: 700;
+
+    font-size: 40px;
+    font-weight: 600;
     color: var(--accent);
-    line-height: 1;
 }}
 
 .stat-label {{
     color: var(--muted);
+
     font-family:
         "Libre Baskerville",
         Georgia,
         serif;
+
     font-size: 9px;
     text-transform: uppercase;
-    letter-spacing: .13em;
-    margin-top: 5px;
+    letter-spacing: .18em;
 }}
 
-/* ==========================================================
+/* ============================================================
+   TREE AREA
+   ============================================================ */
+
+.tree-area {{
+    position: relative;
+
+    margin-top: 35px;
+    padding: 35px 20px 40px;
+
+    background:
+        radial-gradient(
+            ellipse at center,
+            rgba(255,255,255,.025),
+            transparent 70%
+        );
+
+    border-top: 1px solid var(--line);
+    border-bottom: 1px solid var(--line);
+}}
+
+.tree-area::before {{
+    content: "❦";
+    display: block;
+
+    text-align: center;
+
+    color: var(--accent);
+    font-size: 28px;
+    margin-bottom: 8px;
+}}
+
+.tree-area::after {{
+    content: "❧";
+    display: block;
+
+    text-align: center;
+
+    color: var(--accent);
+    font-size: 24px;
+    margin-top: 30px;
+}}
+
+/* ============================================================
+   ROOT
+   ============================================================ */
+
+.root-node {{
+    position: relative;
+
+    width: fit-content;
+    min-width: 280px;
+
+    margin: 0 auto 45px;
+    padding: 10px 35px 15px;
+
+    background: transparent;
+
+    text-align: center;
+
+    border-bottom: 1px solid var(--accent);
+}}
+
+.root-node::before {{
+    content: "✦";
+    display: block;
+
+    color: var(--accent);
+    font-size: 18px;
+    margin-bottom: -2px;
+}}
+
+.root-node-title {{
+    color: var(--text);
+
+    font-family:
+        "Cormorant Garamond",
+        Georgia,
+        serif;
+
+    font-size: 38px;
+    font-weight: 600;
+    letter-spacing: .03em;
+}}
+
+.root-node-small {{
+    color: var(--muted);
+
+    font-family:
+        "Libre Baskerville",
+        Georgia,
+        serif;
+
+    font-size: 10px;
+    letter-spacing: .08em;
+}}
+
+/* ============================================================
+   TREE BUTTONS
+   ============================================================ */
+
+.stButton {{
+    margin-bottom: -12px;
+}}
+
+.stButton > button {{
+    background: transparent !important;
+    border: 0 !important;
+
+    color: var(--text) !important;
+
+    font-family:
+        "Cormorant Garamond",
+        Georgia,
+        serif !important;
+
+    font-size: 22px !important;
+    font-weight: 600 !important;
+
+    text-align: left !important;
+
+    box-shadow: none !important;
+}}
+
+.stButton > button:hover {{
+    background: transparent !important;
+    color: var(--accent) !important;
+    border: 0 !important;
+}}
+
+.stButton > button:focus {{
+    box-shadow: none !important;
+}}
+
+/* ============================================================
+   AUTHOR
+   ============================================================ */
+
+.author-info {{
+    position: relative;
+
+    margin: 3px 0 10px;
+    padding: 8px 18px 10px 28px;
+
+    background: transparent;
+
+    border-left: 1px solid var(--accent2);
+}}
+
+.author-info::before {{
+    content: "✦";
+
+    position: absolute;
+    left: -7px;
+    top: 8px;
+
+    background: var(--page);
+
+    color: var(--accent);
+
+    font-size: 12px;
+}}
+
+.author-name {{
+    font-family:
+        "Cormorant Garamond",
+        Georgia,
+        serif;
+
+    font-size: 29px;
+    font-weight: 600;
+
+    letter-spacing: .02em;
+}}
+
+.author-count {{
+    color: var(--muted);
+
+    font-family:
+        "Libre Baskerville",
+        Georgia,
+        serif;
+
+    font-size: 10px;
+    margin-top: -2px;
+}}
+
+/* ============================================================
+   SERIES
+   ============================================================ */
+
+.series-info {{
+    position: relative;
+
+    margin-left: 50px;
+    padding: 8px 15px 8px 24px;
+
+    background: transparent;
+
+    border-left: 1px solid var(--line);
+}}
+
+.series-info::before {{
+    content: "❧";
+
+    position: absolute;
+    left: -9px;
+    top: 4px;
+
+    background: var(--page);
+
+    color: var(--accent2);
+
+    font-size: 15px;
+}}
+
+.series-name {{
+    font-family:
+        "Cormorant Garamond",
+        Georgia,
+        serif;
+
+    font-size: 25px;
+    font-weight: 600;
+
+    letter-spacing: .015em;
+}}
+
+.series-count {{
+    color: var(--muted);
+
+    font-family:
+        "Libre Baskerville",
+        Georgia,
+        serif;
+
+    font-size: 10px;
+}}
+
+/* ============================================================
+   BOOKS
+   ============================================================ */
+
+.book-info {{
+    position: relative;
+
+    margin-left: 105px;
+    margin-top: 9px;
+    padding: 9px 12px;
+
+    background: rgba(255,255,255,.018);
+
+    border: 0;
+    border-bottom: 1px solid rgba(255,255,255,.08);
+
+    transition:
+        transform .2s ease,
+        background .2s ease;
+}}
+
+.book-info:hover {{
+    transform: translateX(4px);
+
+    background: rgba(255,255,255,.035);
+}}
+
+.book-info::before {{
+    content: "•";
+
+    position: absolute;
+    left: -18px;
+    top: 12px;
+
+    color: var(--accent);
+    font-size: 16px;
+}}
+
+.book-title {{
+    font-family:
+        "Cormorant Garamond",
+        Georgia,
+        serif;
+
+    font-size: 22px;
+    font-weight: 600;
+
+    color: var(--text);
+}}
+
+.book-meta {{
+    color: var(--muted);
+
+    font-family:
+        "Libre Baskerville",
+        Georgia,
+        serif;
+
+    font-size: 10px;
+    margin-top: 3px;
+}}
+
+.book-cover {{
+    width: 55px;
+    height: 80px;
+
+    object-fit: cover;
+
+    border-radius: 2px;
+
+    border: 1px solid var(--line);
+
+    box-shadow:
+        3px 4px 10px rgba(0,0,0,.35);
+}}
+
+/* ============================================================
+   SEARCH
+   ============================================================ */
+
+div[data-baseweb="input"] > div {{
+    background: transparent !important;
+
+    border: 0 !important;
+    border-bottom: 1px solid var(--line) !important;
+
+    border-radius: 0 !important;
+}}
+
+div[data-baseweb="input"] input {{
+    color: var(--text) !important;
+
+    font-family:
+        "Libre Baskerville",
+        Georgia,
+        serif !important;
+}}
+
+div[data-baseweb="input"] input::placeholder {{
+    color: var(--muted) !important;
+}}
+
+/* ============================================================
+   TEXT INPUTS / TEXTAREAS
+   ============================================================ */
+
+textarea {{
+    background: var(--surface) !important;
+    color: var(--text) !important;
+
+    border: 1px solid var(--line) !important;
+    border-radius: 3px !important;
+}}
+
+/* ============================================================
    TABS
-========================================================== */
+   ============================================================ */
 
 button[data-baseweb="tab"] {{
     font-family:
         "Cormorant Garamond",
         Georgia,
         serif !important;
-    font-size: 18px !important;
+
+    font-size: 19px !important;
     color: var(--muted) !important;
+
+    background: transparent !important;
 }}
 
 button[data-baseweb="tab"][aria-selected="true"] {{
@@ -517,522 +773,89 @@ button[data-baseweb="tab"][aria-selected="true"] {{
 
 div[data-baseweb="tab-highlight"] {{
     background: var(--accent) !important;
+    height: 1px !important;
 }}
 
-/* ==========================================================
-   TREE
-========================================================== */
+/* ============================================================
+   RADIO BUTTONS
+   ============================================================ */
 
-.tree-area {{
-    margin-top: 10px;
-    padding: 32px 30px 40px;
-    background:
-        linear-gradient(
-            145deg,
-            rgba(255,255,255,.025),
-            rgba(0,0,0,.13)
-        );
-    border: 1px solid var(--line);
-    border-radius: 22px;
-    box-shadow:
-        inset 0 0 35px rgba(0,0,0,.12);
-}}
-
-.root-node {{
-    width: 330px;
-    margin: 0 auto 40px;
-    padding: 18px 25px;
-    background:
-        linear-gradient(
-            135deg,
-            var(--accent),
-            #B88D42
-        );
-    color: {theme["page"]};
-    border-radius: 60px;
-    text-align: center;
-    box-shadow:
-        0 10px 30px rgba(0,0,0,.3);
-}}
-
-.root-node-title {{
-    color: {theme["page"]};
+div[role="radiogroup"] label {{
     font-family:
-        "Berkshire Swash",
-        cursive;
-    font-size: 30px;
-}}
-
-.root-node-small {{
-    color: {theme["page"]};
-    font-family:
-        "Libre Baskerville",
+        "Cormorant Garamond",
         Georgia,
-        serif;
-    font-size: 10px;
-    margin-top: 3px;
+        serif !important;
+
+    color: var(--text) !important;
 }}
 
-/* ==========================================================
-   TREE BUTTONS
-========================================================== */
+/* ============================================================
+   GENERAL BUTTONS
+   ============================================================ */
 
-.stButton > button {{
+button[kind="primary"] {{
     background: transparent !important;
-    color: var(--text) !important;
-    border: 0 !important;
-    text-align: left !important;
-    font-family:
-        "Cormorant Garamond",
-        Georgia,
-        serif !important;
-    font-size: 19px !important;
-    font-weight: 600 !important;
-    padding: 7px 12px !important;
-}}
 
-.stButton > button:hover {{
-    background: rgba(255,255,255,.035) !important;
     color: var(--accent) !important;
-    border: 0 !important;
-}}
 
-/* ==========================================================
-   AUTHOR
-========================================================== */
+    border: 1px solid var(--accent) !important;
 
-.author-info {{
-    padding: 8px 18px 8px 20px;
-    margin: -3px 0 3px 5px;
-    border-left: 4px solid var(--accent);
-    background:
-        linear-gradient(
-            to right,
-            var(--surface),
-            transparent
-        );
-    border-radius: 0 14px 14px 0;
-}}
+    border-radius: 2px !important;
 
-.author-name {{
-    font-family:
-        "Cormorant Garamond",
-        Georgia,
-        serif;
-    font-size: 29px;
-    font-weight: 700;
-    color: var(--text);
-}}
-
-.author-count {{
-    color: var(--muted);
-    font-family:
-        "Libre Baskerville",
-        Georgia,
-        serif;
-    font-size: 10px;
-    letter-spacing: .03em;
-}}
-
-/* ==========================================================
-   SERIES
-========================================================== */
-
-.series-info {{
-    margin-left: 58px;
-    padding: 9px 16px;
-    border-left: 3px solid var(--accent2);
-    background:
-        linear-gradient(
-            to right,
-            var(--surface2),
-            transparent
-        );
-    border-radius: 0 12px 12px 0;
-}}
-
-.series-name {{
-    font-family:
-        "Cormorant Garamond",
-        Georgia,
-        serif;
-    font-size: 24px;
-    font-weight: 700;
-}}
-
-.series-count {{
-    color: var(--muted);
-    font-family:
-        "Libre Baskerville",
-        Georgia,
-        serif;
-    font-size: 10px;
-}}
-
-/* ==========================================================
-   BOOKS
-========================================================== */
-
-.book-info {{
-    margin-left: 110px;
-    margin-top: 7px;
-    padding: 10px 15px;
-    background:
-        linear-gradient(
-            to right,
-            var(--card),
-            rgba(0,0,0,.05)
-        );
-    border-left: 2px solid var(--line);
-    border-radius: 0 12px 12px 0;
-}}
-
-.book-title {{
-    font-family:
-        "Cormorant Garamond",
-        Georgia,
-        serif;
-    font-size: 21px;
-    font-weight: 700;
-    color: var(--text);
-}}
-
-.book-meta {{
-    color: var(--muted);
-    font-family:
-        "Libre Baskerville",
-        Georgia,
-        serif;
-    font-size: 10px;
-    margin-top: 3px;
-}}
-
-.book-cover {{
-    width: 55px;
-    height: 80px;
-    object-fit: cover;
-    border-radius: 5px;
-    border: 1px solid var(--accent);
-    box-shadow:
-        0 4px 12px rgba(0,0,0,.3);
-}}
-
-/* ==========================================================
-   INPUTS
-========================================================== */
-
-div[data-baseweb="input"] > div {{
-    background: var(--surface) !important;
-    border: 1px solid var(--line) !important;
-    border-radius: 12px !important;
-}}
-
-div[data-baseweb="input"] input {{
-    color: var(--text) !important;
-}}
-
-textarea {{
-    background: var(--surface) !important;
-    color: var(--text) !important;
-    border-color: var(--line) !important;
-}}
-
-/* ==========================================================
-   SEARCH
-========================================================== */
-
-.search-title {{
-    font-family:
-        "Cormorant Garamond",
-        Georgia,
-        serif;
-    font-size: 25px;
-    font-style: italic;
-    color: var(--accent);
-    margin-bottom: 5px;
-}}
-
-/* ==========================================================
-   HEADERS
-========================================================== */
-
-.stSubheader,
-.stHeader {{
     font-family:
         "Cormorant Garamond",
         Georgia,
         serif !important;
-    color: var(--text) !important;
+
+    font-size: 18px !important;
 }}
 
-/* ==========================================================
+button[kind="primary"]:hover {{
+    background: rgba(216,174,104,.08) !important;
+}}
+
+/* ============================================================
    FILE UPLOADER
-========================================================== */
+   ============================================================ */
 
-section[data-testid="stFileUploader"] {{
-    background: var(--surface) !important;
-    border: 1px dashed var(--line) !important;
-    border-radius: 15px !important;
-    padding: 10px !important;
+[data-testid="stFileUploader"] {{
+    border: 1px dashed var(--line);
+    padding: 15px;
+    background: rgba(255,255,255,.015);
 }}
 
-/* ==========================================================
-   CHECKBOX / RADIO
-========================================================== */
+/* ============================================================
+   DIVIDERS
+   ============================================================ */
 
-.stCheckbox label,
-.stRadio label {{
-    color: var(--text) !important;
-    font-family:
-        "Cormorant Garamond",
-        Georgia,
-        serif !important;
-    font-size: 17px !important;
+hr {{
+    border: 0 !important;
+    border-top: 1px solid var(--line) !important;
+    opacity: .65;
 }}
 
 </style>
-""",
-    unsafe_allow_html=True,
+"""
 )
 
 # ============================================================
-# HEADER + WILLOW
+# HEADER
 # ============================================================
 
 st.html(
-    f"""
-<div class="book-header">
+    """
+    <div class="book-header">
 
-    <div class="book-header-title">
-        My Book Tree
+        <div class="book-header-title">
+            My Book Tree
+        </div>
+
+        <div class="book-header-subtitle">
+            Your books, connected from author to series to story.
+        </div>
+
     </div>
-
-    <div class="book-header-subtitle">
-        where every story has a branch
-    </div>
-
-</div>
-
-<div class="willow-container">
-
-<svg class="willow-tree"
-     viewBox="0 0 1200 360"
-     xmlns="http://www.w3.org/2000/svg">
-
-    <!-- TRUNK -->
-
-    <path
-        d="M600 360
-           C580 300 580 235 590 175
-           C595 135 605 95 620 55"
-        fill="none"
-        stroke="#493128"
-        stroke-width="30"
-        stroke-linecap="round"
-    />
-
-    <path
-        d="M607 350
-           C595 290 595 235 603 180
-           C608 135 617 95 625 58"
-        fill="none"
-        stroke="#775447"
-        stroke-width="7"
-        stroke-linecap="round"
-    />
-
-    <!-- LEFT MAIN BRANCHES -->
-
-    <g fill="none"
-       stroke="#493128"
-       stroke-linecap="round">
-
-        <path
-            d="M598 185
-               C530 145 460 105 365 85"
-            stroke-width="13"
-        />
-
-        <path
-            d="M590 215
-               C510 185 430 175 330 180"
-            stroke-width="10"
-        />
-
-        <path
-            d="M600 150
-               C550 110 510 65 485 20"
-            stroke-width="9"
-        />
-
-        <path
-            d="M575 175
-               C515 130 475 110 420 100"
-            stroke-width="7"
-        />
-
-    </g>
-
-    <!-- RIGHT MAIN BRANCHES -->
-
-    <g fill="none"
-       stroke="#493128"
-       stroke-linecap="round">
-
-        <path
-            d="M615 180
-               C685 140 755 105 845 85"
-            stroke-width="13"
-        />
-
-        <path
-            d="M620 210
-               C700 180 780 175 870 180"
-            stroke-width="10"
-        />
-
-        <path
-            d="M625 145
-               C680 105 715 60 740 18"
-            stroke-width="9"
-        />
-
-        <path
-            d="M645 175
-               C705 130 750 105 800 98"
-            stroke-width="7"
-        />
-
-    </g>
-
-    <!-- LEFT WEEPING BRANCHES -->
-
-    <g fill="none"
-       stroke="#71805D"
-       stroke-width="4"
-       stroke-linecap="round">
-
-        <path d="M365 85 C350 140 355 205 375 275"/>
-        <path d="M400 92 C385 155 390 225 410 305"/>
-        <path d="M440 105 C425 165 430 235 450 320"/>
-        <path d="M480 115 C465 175 470 235 490 300"/>
-        <path d="M520 135 C505 190 510 245 525 285"/>
-        <path d="M330 180 C315 225 320 270 335 315"/>
-
-    </g>
-
-    <!-- RIGHT WEEPING BRANCHES -->
-
-    <g fill="none"
-       stroke="#71805D"
-       stroke-width="4"
-       stroke-linecap="round">
-
-        <path d="M845 85 C860 140 855 205 835 275"/>
-        <path d="M810 92 C825 155 820 225 800 305"/>
-        <path d="M770 105 C785 165 780 235 760 320"/>
-        <path d="M730 115 C745 175 740 235 720 300"/>
-        <path d="M690 135 C705 190 700 245 685 285"/>
-        <path d="M870 180 C885 225 880 270 865 315"/>
-
-    </g>
-
-    <!-- LEAVES -->
-
-    <g fill="#7E9167">
-
-        <ellipse cx="350" cy="140" rx="7" ry="20"
-                 transform="rotate(-18 350 140)"/>
-
-        <ellipse cx="375" cy="185" rx="7" ry="21"
-                 transform="rotate(15 375 185)"/>
-
-        <ellipse cx="390" cy="235" rx="7" ry="22"
-                 transform="rotate(-15 390 235)"/>
-
-        <ellipse cx="410" cy="270" rx="7" ry="21"
-                 transform="rotate(15 410 270)"/>
-
-        <ellipse cx="430" cy="150" rx="7" ry="20"
-                 transform="rotate(-18 430 150)"/>
-
-        <ellipse cx="450" cy="210" rx="7" ry="22"
-                 transform="rotate(15 450 210)"/>
-
-        <ellipse cx="475" cy="265" rx="7" ry="21"
-                 transform="rotate(-15 475 265)"/>
-
-        <ellipse cx="510" cy="190" rx="7" ry="21"
-                 transform="rotate(15 510 190)"/>
-
-        <ellipse cx="530" cy="245" rx="7" ry="20"
-                 transform="rotate(-15 530 245)"/>
-
-        <ellipse cx="330" cy="235" rx="7" ry="20"
-                 transform="rotate(-15 330 235)"/>
-
-        <ellipse cx="335" cy="285" rx="7" ry="21"
-                 transform="rotate(15 335 285)"/>
-
-        <ellipse cx="850" cy="140" rx="7" ry="20"
-                 transform="rotate(18 850 140)"/>
-
-        <ellipse cx="825" cy="185" rx="7" ry="21"
-                 transform="rotate(-15 825 185)"/>
-
-        <ellipse cx="810" cy="235" rx="7" ry="22"
-                 transform="rotate(15 810 235)"/>
-
-        <ellipse cx="790" cy="270" rx="7" ry="21"
-                 transform="rotate(-15 790 270)"/>
-
-        <ellipse cx="770" cy="150" rx="7" ry="20"
-                 transform="rotate(18 770 150)"/>
-
-        <ellipse cx="750" cy="210" rx="7" ry="22"
-                 transform="rotate(-15 750 210)"/>
-
-        <ellipse cx="725" cy="265" rx="7" ry="21"
-                 transform="rotate(15 725 265)"/>
-
-        <ellipse cx="690" cy="190" rx="7" ry="21"
-                 transform="rotate(-15 690 190)"/>
-
-        <ellipse cx="670" cy="245" rx="7" ry="20"
-                 transform="rotate(15 670 245)"/>
-
-        <ellipse cx="870" cy="235" rx="7" ry="20"
-                 transform="rotate(15 870 235)"/>
-
-        <ellipse cx="865" cy="285" rx="7" ry="21"
-                 transform="rotate(-15 865 285)"/>
-
-    </g>
-
-    <!-- SMALL ROSE BLOSSOMS -->
-
-    <g fill="#C98A92">
-
-        <circle cx="405" cy="120" r="4"/>
-        <circle cx="455" cy="165" r="4"/>
-        <circle cx="500" cy="205" r="4"/>
-
-        <circle cx="795" cy="120" r="4"/>
-        <circle cx="745" cy="165" r="4"/>
-        <circle cx="700" cy="205" r="4"/>
-
-    </g>
-
-</svg>
-
-</div>
-
-<div class="ornament">
-    <div class="ornament-line"></div>
-    <div class="ornament-symbol">❦</div>
-    <div class="ornament-line right"></div>
-</div>
-"""
+    """
 )
 
 # ============================================================
@@ -1040,16 +863,7 @@ st.html(
 # ============================================================
 
 st.html(
-    """
-    <div class="theme-panel">
-        <div class="theme-heading">
-            Choose the mood of your library
-        </div>
-        <div class="theme-caption">
-            Change the colors and atmosphere of your book tree
-        </div>
-    </div>
-    """
+    '<div class="theme-heading">Choose your bookish world</div>'
 )
 
 theme_choice = st.selectbox(
@@ -1184,10 +998,10 @@ def get_cover(title, author="", isbn=""):
 def detect_series(title):
 
     patterns = [
-        r"\(([^()]*?)#\s*\d+(?:\.\d+)?[^()]*\)",
-        r"\[([^\[\]]*?)#\s*\d+(?:\.\d+)?[^\[\]]*\]",
-        r"\(([^()]*?)\bBook\s+\d+(?:\.\d+)?[^()]*\)",
-        r"\[([^\[\]]*?)\bBook\s+\d+(?:\.\d+)?[^\[\]]*\]",
+        r"\(([^()]*)#\s*\d+(?:\.\d+)?[^()]*\)",
+        r"\[([^\[\]]*)#\s*\d+(?:\.\d+)?[^\[\]]*\]",
+        r"\(([^()]*)\bBook\s+\d+(?:\.\d+)?[^()]*\)",
+        r"\[([^\[\]]*)\bBook\s+\d+(?:\.\d+)?[^\[\]]*\]",
     ]
 
     for pattern in patterns:
@@ -1380,11 +1194,13 @@ def import_books(uploaded):
         if rating_col:
 
             try:
+
                 rating = float(
                     row.get(
                         rating_col
                     )
                 )
+
             except Exception:
                 pass
 
@@ -1429,9 +1245,7 @@ def import_books(uploaded):
             }
         )
 
-    new_library = pd.DataFrame(
-        books
-    )
+    new_library = pd.DataFrame(books)
 
     if new_library.empty:
 
@@ -1516,10 +1330,6 @@ favorites = (
 # STATS
 # ============================================================
 
-st.html(
-    '<div class="stats-wrap">'
-)
-
 columns = st.columns(5)
 
 stats = [
@@ -1553,20 +1363,16 @@ for col, (number, label) in zip(
             """
         )
 
-st.html(
-    "</div>"
-)
-
 # ============================================================
 # TABS
 # ============================================================
 
 tree_tab, books_tab, add_tab, import_tab = st.tabs(
     [
-        "🌿 My Book Tree",
-        "📖 My Books",
-        "✦ Add a Book",
-        "❧ Import Library",
+        "🌿 Book Tree",
+        "📖 Books",
+        "✦ Add Book",
+        "❧ Import",
     ]
 )
 
@@ -1579,24 +1385,17 @@ with tree_tab:
     if library.empty:
 
         st.info(
-            "Your tree is waiting for its first story. "
+            "Your tree is empty. "
             "Import your library or add your first book."
         )
 
     else:
 
-        st.html(
-            """
-            <div class="search-title">
-                Find a story in your tree
-            </div>
-            """
-        )
-
         search = st.text_input(
             "Search your tree",
-            placeholder="Search by author, series, or book title...",
-            label_visibility="collapsed",
+            placeholder=(
+                "Search author, series, or book..."
+            )
         )
 
         filtered = library.copy()
@@ -1737,7 +1536,7 @@ with tree_tab:
                         <div class="series-info">
 
                             <div class="series-name">
-                                Standalone Stories
+                                Standalone Books
                             </div>
 
                             <div class="series-count">
@@ -2062,12 +1861,6 @@ with books_tab:
                 books["Status"] == choice
             ]
 
-        if books.empty:
-
-            st.info(
-                "Nothing here yet."
-            )
-
         for index, book in books.iterrows():
 
             col1, col2, col3 = st.columns(
@@ -2277,11 +2070,11 @@ with add_tab:
 with import_tab:
 
     st.header(
-        "Bring Your Books Into the Tree"
+        "Import Your Library"
     )
 
     st.write(
-        "Upload your Goodreads CSV, StoryGraph export, "
+        "Upload a Goodreads CSV, StoryGraph export, "
         "or another compatible book-list CSV."
     )
 
