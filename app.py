@@ -269,47 +269,59 @@ div[data-baseweb="input"] input {{
 }}
 
 .stat-card {{
-    position: relative;
-    background: var(--surface2) !important;
-    border-radius: 20px !important;
-    padding: 30px 15px !important;
-    border: 1px solid var(--accent) !important;
-    overflow: hidden;
+    background: var(--surface) !important;
+    border: 2px solid var(--accent) !important;
+    padding: 30px 20px !important;
     text-align: center;
-    transition: all 0.5s cubic-bezier(0.23, 1, 0.32, 1);
-    box-shadow: 0 10px 30px rgba(0,0,0,0.4);
+    position: relative;
+    transition: all 0.4s ease;
     display: flex;
     flex-direction: column;
     align-items: center;
     justify-content: center;
-}}
+    box-shadow: 0 10px 25px rgba(0,0,0,0.5), inset 0 0 10px rgba(0,0,0,0.5);
+    
+    /* The Wavy Scalloped Shape */
+    border-radius: 30% 70% 30% 70% / 70% 30% 70% 30% !important;
+    min-height: 140px;
+    margin: 10px;
+}
 
+/* Floral Filigree Ornament at the Top */
 .stat-card::before {{
+    content: '❦'; 
+    position: absolute;
+    top: -15px;
+    color: var(--accent);
+    font-size: 24px;
+    background: var(--surface);
+    padding: 0 10px;
+}
+
+/* Elegant Inner "Double Frame" Line */
+.stat-card::after {{
     content: '';
     position: absolute;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 5px;
-    background: linear-gradient(90deg, transparent, var(--accent), transparent);
-    opacity: 0.8;
-}}
+    inset: 6px;
+    border: 1px double var(--accent);
+    border-radius: inherit;
+    opacity: 0.3;
+    pointer-events: none;
+}
 
 .stat-card:hover {{
-    transform: translateY(-8px) scale(1.02);
-    border-color: var(--accent);
-}}
+    transform: scale(1.05);
+    border-color: var(--text) !important;
+    box-shadow: 0 15px 35px rgba(0,0,0,0.6), inset 0 0 15px var(--accent);
+}
 
 .stat-number {{
-    font-family: "Berkshire Swash", serif !important;
-    font-size: 56px !important;
-    background: linear-gradient(180deg, var(--text) 30%, var(--accent) 100%);
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
-    font-weight: 700 !important;
+    font-family: "Berkshire Swash", Georgia, serif !important;
+    font-size: 42px !important;
+    color: var(--accent) !important;
     margin: 0 !important;
     line-height: 1 !important;
-}}
+}
 
 .stat-label {{
     font-family: "Berkshire Swash", serif !important;
@@ -317,12 +329,8 @@ div[data-baseweb="input"] input {{
     font-size: 11px !important;
     text-transform: uppercase;
     letter-spacing: 2px !important;
-    margin-right: -2px !important; /* Fixes off-center appearance */
     margin-top: 10px;
     font-style: italic;
-    width: 100%;
-    text-align: center;
-}}
 }}
 
 .tree-container {{
