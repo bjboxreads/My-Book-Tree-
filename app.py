@@ -271,50 +271,34 @@ div[data-baseweb="input"] input {{
 py
 st.markdown(
    st.markdown(
+    """st.markdown(
     """
     <style>
-    @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700&family=Montserrat:wght@300;600&display=swap');
-
-    .stat-card {{
-        position: relative;
-        .stat-card {
+    /* Fancy adaptive stat cards */
+    .stat-card {
         position: relative;
         background: var(--surface2) !important;
-        border-radius: 20px;
-        padding: 30px 15px;
+        border-radius: 20px !important;
+        padding: 30px 15px !important;
         border: 1px solid var(--accent) !important;
         overflow: hidden;
         text-align: center;
         transition: all 0.5s ease;
         box-shadow: 0 10px 30px rgba(0,0,0,0.3);
-}}
-        transition: all 0.5s cubic-bezier(0.23, 1, 0.32, 1);
-        box-shadow: 0 10px 30px rgba(0,0,0,0.3);
         display: flex;
         flex-direction: column;
         align-items: center;
         justify-content: center;
-    }}
-
-    .stat-card::before {
-        content: '';
-        position: absolute;
-        top: 0;
-        left: 0;
-        width: 100%;
-        height: 4px;
-        background: linear-gradient(90deg, transparent, var(--accent), transparent);
-        opacity: 0.8;
-    }}
+    }
 
     .stat-card:hover {
         transform: translateY(-8px);
         background: var(--card) !important;
-        border-color: var(--accent);
-    }}
+        border-color: var(--accent) !important;
+    }
 
     .stat-number {
-        font-family: 'Playfair Display', serif !important;
+        font-family: serif !important;
         font-size: 52px !important;
         background: linear-gradient(180deg, var(--text) 30%, var(--accent) 100%);
         -webkit-background-clip: text;
@@ -322,16 +306,20 @@ st.markdown(
         font-weight: 700 !important;
         margin: 0 !important;
         line-height: 1.1 !important;
-    }}
+    }
 
     .stat-label {
-        font-family: 'Montserrat', sans-serif !important;
         color: var(--muted) !important;
         font-size: 10px !important;
         text-transform: uppercase;
         letter-spacing: 4px !important;
         font-weight: 600 !important;
         margin-top: 15px;
+    }
+    </style>
+    """, 
+    unsafe_allow_html=True
+)
     }}
     </style>
     """, 
