@@ -208,8 +208,12 @@ p, label {{
 .book-header-title {{
     font-family: "Berkshire Swash", Georgia, serif !important;
     font-size: clamp(48px, 6vw, 76px);
-    color: var(--text);
-    text-shadow: 0 3px 12px rgba(0,0,0,.35);
+    
+    /* Change from var(--text) to var(--accent) */
+    color: var(--accent); 
+    
+    /* Keep the shadow to ensure it pops on light themes too */
+    text-shadow: 0 3px 12px rgba(0,0,0,0.35);
 }}
 
 .willow-logo {{
