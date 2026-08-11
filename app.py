@@ -31,6 +31,14 @@ st.markdown(
         color: #d4b9b0;
         margin-top: 10px;
     }
+
+    .test {
+        text-align: center;
+        margin-top: 45px;
+        font-family: Georgia, serif;
+        font-size: 18px;
+        color: #d8c6b5;
+    }
     </style>
     """,
     unsafe_allow_html=True
@@ -46,7 +54,8 @@ st.markdown(
     unsafe_allow_html=True
 )
 
-st.write("")
-
-st.success("The new app is working.")
+st.markdown(
+    '<div class="test">Your Streamlit app is working.</div>',
+    unsafe_allow_html=True
+)
 ```
