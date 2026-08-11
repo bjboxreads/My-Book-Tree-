@@ -1,8 +1,3 @@
-Library
-/
-My_Book_Tree_visual_update.py
-
-
 import streamlit as st
 import pandas as pd
 import requests
