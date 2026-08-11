@@ -1641,7 +1641,7 @@ with books_tab:
             ]
 
 with books_tab:
-    if library.empty:
+        if library.empty:
         st.info("No books yet.")
         else:
         # Keep your radio buttons if you want to filter the tree!
