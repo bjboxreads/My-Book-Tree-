@@ -34,7 +34,7 @@ st.markdown("""
 }
 
 .book-title-main {
-    font-family: "Cormorant Garamond", Georgia, serif;
+    font-family: "Caslon 540 Roman,", Georgia, serif;
     font-size: 88px;
     font-weight: 600;
     letter-spacing: 2px;
