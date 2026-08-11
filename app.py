@@ -269,11 +269,15 @@ div[data-baseweb="input"] input {{
 }}
 
 .stat-card {{
-    background: var(--surface);
-    border-bottom: 2px solid var(--line);
-    border-radius: 5px 18px 5px 18px;
-    padding: 15px;
-    text-align: center;
+    background: linear-gradient(135deg, #0e2924 0%, #153d35 100%);
+    border: 1px solid rgba(216, 169, 58, 0.2);
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
+    transition: transform 0.2s ease;
+}}
+
+.stat-card:hover {
+    transform: translateY(-2px);
+}
 }}
 
 .stat-number {{
