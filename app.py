@@ -1,2108 +1,1530 @@
-```python
-import streamlit as st
-import pandas as pd
-import requests
-import re
-import html
+import React, { useState, useEffect, useMemo, useCallback, useRef } from "react";
+import Papa from "papaparse";
+import {
+  ChevronRight,
+  ChevronDown,
+  Search,
+  Plus,
+  Upload,
+  Star,
+  Heart,
+  X,
+  Loader2,
+  BookOpen,
+  Feather,
+  Trees,
+  Sparkles,
+} from "lucide-react";
 
-# ============================================================
-# PAGE
-# ============================================================
+/* ------------------------------------------------------------------ */
+/*  THEMES                                                             */
+/* ------------------------------------------------------------------ */
 
-st.set_page_config(
-    page_title="My Book Tree",
-    page_icon="📚",
-    layout="wide",
-    initial_sidebar_state="collapsed",
-)
+const THEMES = {
+  emerald: {
+    label: "Emerald Athenaeum",
+    bg: "#0c1f16",
+    bg2: "#173321",
+    surface: "#152b1d",
+    surface2: "#1c3826",
+    parchment: "#f6ecd4",
+    parchmentDark: "#e9dcb8",
+    primary: "#2d6a4f",
+    primaryLight: "#4f9c78",
+    accent: "#d4af37",
+    accentSoft: "#eeda9a",
+    text: "#f1e9d2",
+    ink: "#2a2115",
+    muted: "#a8c3b0",
+    border: "#3d6b4f",
+    trunk: "#4a3728",
+    leaf: "#4f7a63",
+    leafDark: "#24402f",
+    flower: "#d4af37",
+  },
+  rose: {
+    label: "Midnight Rose",
+    bg: "#210c15",
+    bg2: "#3a1626",
+    surface: "#2c101c",
+    surface2: "#3d1625",
+    parchment: "#f7e9e4",
+    parchmentDark: "#ecd3ca",
+    primary: "#7a1f3d",
+    primaryLight: "#b0446a",
+    accent: "#d9a6a1",
+    accentSoft: "#f0c9c2",
+    text: "#f5e6ea",
+    ink: "#2c1218",
+    muted: "#c99aa8",
+    border: "#5c2438",
+    trunk: "#3d2418",
+    leaf: "#6b2c42",
+    leafDark: "#39131f",
+    flower: "#e3bdb8",
+  },
+  sapphire: {
+    label: "Sapphire Chronicles",
+    bg: "#081522",
+    bg2: "#152338",
+    surface: "#0f1d30",
+    surface2: "#182a45",
+    parchment: "#eef2f9",
+    parchmentDark: "#dbe3f0",
+    primary: "#1d4e89",
+    primaryLight: "#3d76bd",
+    accent: "#c9d6e8",
+    accentSoft: "#e7edf8",
+    text: "#e8eef7",
+    ink: "#101d2e",
+    muted: "#9fb3cc",
+    border: "#2a4870",
+    trunk: "#2f2419",
+    leaf: "#274472",
+    leafDark: "#0f1d30",
+    flower: "#dce6f4",
+  },
+  amethyst: {
+    label: "Amethyst Grimoire",
+    bg: "#170b25",
+    bg2: "#2a1640",
+    surface: "#1e0f34",
+    surface2: "#2e1747",
+    parchment: "#f2e9f7",
+    parchmentDark: "#e2d1ee",
+    primary: "#6b3fa0",
+    primaryLight: "#9a6ecb",
+    accent: "#c9a660",
+    accentSoft: "#e5cb8f",
+    text: "#ede4f7",
+    ink: "#211031",
+    muted: "#b79fd4",
+    border: "#4a2a6e",
+    trunk: "#3d2818",
+    leaf: "#5b3a7a",
+    leafDark: "#241238",
+    flower: "#d8bd7a",
+  },
+};
 
-# ============================================================
-# THEMES
-# ============================================================
+const STATUS_OPTIONS = ["Want to Read", "Currently Reading", "Read"];
+const FILTERS = ["All", "Favorites", "Read", "Currently Reading", "Want to Read"];
 
-THEMES = {
+/* ------------------------------------------------------------------ */
+/*  HELPERS                                                            */
+/* ------------------------------------------------------------------ */
 
-    "Emerald Library": {
-        "page": "#071B18",
-        "surface": "#0E2924",
-        "surface2": "#164239",
-        "card": "#1C5146",
-        "text": "#FFF7DE",
-        "muted": "#C7D8CF",
-        "accent": "#D8A93A",
-        "accent2": "#6FB39A",
-        "line": "#B9822C",
-        "button": "#163D35",
-        "button_text": "#FFF7DE",
-    },
+const uid = () => Math.random().toString(36).slice(2) + Date.now().toString(36);
 
-    "Sapphire & Gold": {
-        "page": "#071426",
-        "surface": "#0D2340",
-        "surface2": "#15365D",
-        "card": "#1C4774",
-        "text": "#FFF7E1",
-        "muted": "#C7D5E5",
-        "accent": "#E5B94D",
-        "accent2": "#75B5D4",
-        "line": "#B8862F",
-        "button": "#16365A",
-        "button_text": "#FFF7E1",
-    },
-
-    "Gothic Rose": {
-        "page": "#180B16",
-        "surface": "#2A1024",
-        "surface2": "#421735",
-        "card": "#592044",
-        "text": "#FFF4F5",
-        "muted": "#DEC8D0",
-        "accent": "#E36A83",
-        "accent2": "#C79AD7",
-        "line": "#A83F5C",
-        "button": "#3A1730",
-        "button_text": "#FFF4F5",
-    },
-
-    "Autumn Library": {
-        "page": "#24130A",
-        "surface": "#38200F",
-        "surface2": "#5A3015",
-        "card": "#70401D",
-        "text": "#FFF1D5",
-        "muted": "#DCC4A1",
-        "accent": "#E2A33D",
-        "accent2": "#C9663C",
-        "line": "#A84F2B",
-        "button": "#4B2914",
-        "button_text": "#FFF1D5",
-    },
-
-    "Midnight Fantasy": {
-        "page": "#0C0A20",
-        "surface": "#151235",
-        "surface2": "#211C51",
-        "card": "#30276A",
-        "text": "#FFF8E7",
-        "muted": "#D1CAE7",
-        "accent": "#E8C34D",
-        "accent2": "#8B73D1",
-        "line": "#6851A8",
-        "button": "#211C4C",
-        "button_text": "#FFF8E7",
-    },
-
-    "Teal & Coral Bookshop": {
-        "page": "#08252A",
-        "surface": "#0E3B42",
-        "surface2": "#14565D",
-        "card": "#1C6B70",
-        "text": "#FFF6DF",
-        "muted": "#C9D9D4",
-        "accent": "#F0BD4D",
-        "accent2": "#F27A63",
-        "line": "#D65D4B",
-        "button": "#14515A",
-        "button_text": "#FFF6DF",
-    },
-
-    "Vintage Reader": {
-        "page": "#172322",
-        "surface": "#243633",
-        "surface2": "#36504A",
-        "card": "#49665D",
-        "text": "#FFF3D8",
-        "muted": "#D2D5C6",
-        "accent": "#D8A84A",
-        "accent2": "#A9B86B",
-        "line": "#B47B31",
-        "button": "#304943",
-        "button_text": "#FFF3D8",
-    },
-
-    "Electric Bookstore": {
-        "page": "#111225",
-        "surface": "#1B1E3A",
-        "surface2": "#292E59",
-        "card": "#353B76",
-        "text": "#FFFFFF",
-        "muted": "#D0D3E9",
-        "accent": "#F4C84D",
-        "accent2": "#6AD6D0",
-        "line": "#A66CDB",
-        "button": "#24284D",
-        "button_text": "#FFFFFF",
-    },
-
-    "Classic Crimson": {
-        "page": "#210D0D",
-        "surface": "#351313",
-        "surface2": "#531B1B",
-        "card": "#6A2524",
-        "text": "#FFF4DF",
-        "muted": "#DCC8B4",
-        "accent": "#E3B34B",
-        "accent2": "#D57958",
-        "line": "#A83E32",
-        "button": "#461717",
-        "button_text": "#FFF4DF",
-    },
+function emptyBook(overrides = {}) {
+  return {
+    id: uid(),
+    title: "",
+    author: "",
+    series: "",
+    seriesNumber: "",
+    genre: "",
+    isbn: "",
+    rating: 0,
+    status: "Want to Read",
+    favorite: false,
+    cover: "",
+    description: "",
+    publisher: "",
+    pages: "",
+    dateRead: "",
+    ...overrides,
+  };
 }
 
-# ============================================================
-# SESSION STATE
-# ============================================================
-
-if (
-    "theme" not in st.session_state
-    or st.session_state.theme not in THEMES
-):
-    st.session_state.theme = "Emerald Library"
-
-if "library" not in st.session_state:
-    st.session_state.library = pd.DataFrame(
-        columns=[
-            "Title",
-            "Author",
-            "Series",
-            "Series Number",
-            "ISBN",
-            "My Rating",
-            "Status",
-            "Favorite",
-            "Cover",
-            "Description",
-            "Publisher",
-            "Pages",
-            "Date Read",
-        ]
-    )
-
-if "open_authors" not in st.session_state:
-    st.session_state.open_authors = set()
-
-if "open_series" not in st.session_state:
-    st.session_state.open_series = set()
-
-theme = THEMES[st.session_state.theme]
-
-# ============================================================
-# CSS
-# ============================================================
-
-st.markdown(
-    f"""
-<style>
-
-@import url(
-    'https://fonts.googleapis.com/css2?family=Berkshire+Swash&family=Cormorant+Garamond:wght@500;600;700&family=Libre+Baskerville:wght@400;700&display=swap'
-);
-
-:root {{
-    --page: {theme["page"]};
-    --surface: {theme["surface"]};
-    --surface2: {theme["surface2"]};
-    --card: {theme["card"]};
-    --text: {theme["text"]};
-    --muted: {theme["muted"]};
-    --accent: {theme["accent"]};
-    --accent2: {theme["accent2"]};
-    --line: {theme["line"]};
-}}
-
-html, body, [class*="css"] {{
-    font-family: "Libre Baskerville", Georgia, serif;
-}}
-
-.stApp {{
-    background:
-        radial-gradient(
-            ellipse at 50% -10%,
-            var(--surface2) 0%,
-            var(--page) 48%,
-            var(--page) 100%
-        );
-    color: var(--text);
-}}
-
-.block-container {{
-    max-width: 1450px !important;
-    padding-top: 2.5rem !important;
-    padding-bottom: 4rem !important;
-}}
-
-#MainMenu {{
-    visibility: hidden;
-}}
-
-footer {{
-    visibility: hidden;
-}}
-
-header[data-testid="stHeader"] {{
-    background: transparent !important;
-}}
-
-p, label {{
-    color: var(--text);
-}}
-
-/* ============================================================
-   HEADER
-   ============================================================ */
-
-.book-header {{
-    width: 100%;
-    text-align: center;
-    padding-top: 1rem;
-    margin-bottom: 0;
-}}
-
-.book-header-title {{
-    font-family: "Berkshire Swash", cursive !important;
-    font-size: clamp(58px, 7vw, 94px);
-    line-height: 1.15;
-    font-weight: 400;
-    letter-spacing: 0.01em;
-    color: var(--text) !important;
-    text-shadow:
-        0 3px 10px rgba(0,0,0,.35);
-    margin: 0;
-    padding: 0 20px;
-}}
-
-/* ============================================================
-   WILLOW TREE
-   ============================================================ */
-
-.willow-header {{
-    width: 100%;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    margin-top: 5px;
-    margin-bottom: 18px;
-    overflow: visible;
-}}
-
-.willow-header svg {{
-    width: min(920px, 92vw);
-    height: 270px;
-    overflow: visible;
-    display: block;
-}}
-
-/* ============================================================
-   THEME SELECTOR
-   ============================================================ */
-
-.theme-section {{
-    max-width: 520px;
-    margin: 0 auto 30px auto;
-}}
-
-.theme-heading {{
-    font-family: "Cormorant Garamond", Georgia, serif;
-    font-size: 21px;
-    font-weight: 700;
-    color: var(--text);
-    margin-bottom: 7px;
-    text-align: center;
-}}
-
-div[data-baseweb="select"] > div {{
-    background: #171717 !important;
-    border: 2px solid var(--accent) !important;
-    border-radius: 10px !important;
-    min-height: 48px !important;
-}}
-
-div[data-baseweb="select"] span {{
-    color: #FFFFFF !important;
-    font-weight: 600 !important;
-}}
-
-div[data-baseweb="select"] input {{
-    color: #FFFFFF !important;
-}}
-
-div[role="listbox"] {{
-    background: #171717 !important;
-    border: 2px solid #D7A83A !important;
-    border-radius: 10px !important;
-    padding: 5px !important;
-    box-shadow: 0 15px 40px rgba(0,0,0,.6) !important;
-}}
-
-div[role="option"] {{
-    background: #171717 !important;
-    color: #FFFFFF !important;
-    padding: 12px 14px !important;
-    border-radius: 7px !important;
-    font-family: "Libre Baskerville", Georgia, serif !important;
-    font-size: 14px !important;
-}}
-
-div[role="option"] *,
-div[role="option"] span {{
-    color: #FFFFFF !important;
-}}
-
-div[role="option"]:hover {{
-    background: #3C3C3C !important;
-}}
-
-div[role="option"][aria-selected="true"] {{
-    background: #8A641E !important;
-}}
-
-div[role="option"][aria-selected="true"] * {{
-    color: #FFFFFF !important;
-}}
-
-/* ============================================================
-   STATS — SIMPLE, NOT BOXES
-   ============================================================ */
-
-.stats-row {{
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    gap: 0;
-    margin: 8px auto 30px;
-    max-width: 900px;
-}}
-
-.stat-item {{
-    min-width: 145px;
-    padding: 3px 24px;
-    text-align: center;
-    border-right: 1px solid var(--line);
-}}
-
-.stat-item:last-child {{
-    border-right: none;
-}}
-
-.stat-number {{
-    font-family: "Berkshire Swash", cursive !important;
-    font-size: 31px;
-    line-height: 1;
-    color: var(--accent);
-}}
-
-.stat-label {{
-    color: var(--muted);
-    font-family: "Libre Baskerville", Georgia, serif;
-    font-size: 9px;
-    text-transform: uppercase;
-    letter-spacing: .13em;
-    margin-top: 7px;
-}}
-
-/* ============================================================
-   TREE AREA — OPEN, ORGANIC
-   ============================================================ */
-
-.tree-area {{
-    position: relative;
-    margin-top: 15px;
-    padding: 30px 15px 45px;
-    background: transparent;
-    border: none;
-}}
-
-/* ============================================================
-   ROOT
-   ============================================================ */
-
-.root-node {{
-    width: min(360px, 85%);
-    margin: 0 auto 42px;
-    padding: 15px 28px 17px;
-    background: transparent;
-    border-top: 1px solid var(--line);
-    border-bottom: 1px solid var(--line);
-    text-align: center;
-}}
-
-.root-node-title {{
-    color: var(--accent) !important;
-    font-family: "Berkshire Swash", cursive !important;
-    font-size: 36px;
-    font-weight: 400;
-}}
-
-.root-node-small {{
-    color: var(--muted) !important;
-    font-size: 10px;
-    margin-top: 5px;
-}}
-
-/* ============================================================
-   AUTHOR
-   ============================================================ */
-
-.author-info {{
-    padding: 8px 15px 8px 18px;
-    margin: 10px 0 4px;
-    border-left: 2px solid var(--accent);
-    background: transparent;
-}}
-
-.author-name {{
-    font-family: "Berkshire Swash", cursive !important;
-    font-size: 28px;
-    font-weight: 400;
-    color: var(--text) !important;
-}}
-
-.author-count {{
-    color: var(--muted) !important;
-    font-size: 10px;
-    margin-top: 2px;
-}}
-
-/* ============================================================
-   SERIES
-   ============================================================ */
-
-.series-info {{
-    margin-left: 45px;
-    padding: 7px 15px;
-    border-left: 1px solid var(--accent2);
-    background: transparent;
-}}
-
-.series-name {{
-    font-family: "Cormorant Garamond", Georgia, serif;
-    font-size: 24px;
-    font-weight: 700;
-    color: var(--text) !important;
-}}
-
-.series-count {{
-    color: var(--muted) !important;
-    font-size: 10px;
-}}
-
-/* ============================================================
-   BOOK
-   ============================================================ */
-
-.book-info {{
-    margin-left: 92px;
-    margin-top: 7px;
-    padding: 8px 12px;
-    background: transparent;
-    border-left: 1px solid var(--line);
-}}
-
-.book-title {{
-    font-family: "Cormorant Garamond", Georgia, serif;
-    font-size: 21px;
-    font-weight: 700;
-    color: var(--text) !important;
-}}
-
-.book-meta {{
-    color: var(--muted) !important;
-    font-size: 10px;
-    margin-top: 3px;
-}}
-
-.book-cover {{
-    width: 55px;
-    height: 80px;
-    object-fit: cover;
-    border-radius: 2px;
-    border: 1px solid var(--accent);
-}}
-
-/* ============================================================
-   BUTTONS
-   ============================================================ */
-
-.stButton > button {{
-    background: transparent !important;
-    color: var(--text) !important;
-    border: none !important;
-    border-bottom: 1px solid transparent !important;
-    border-radius: 0 !important;
-    font-family: "Cormorant Garamond", Georgia, serif !important;
-    font-size: 17px !important;
-    font-weight: 700 !important;
-    text-align: left !important;
-    box-shadow: none !important;
-}}
-
-.stButton > button:hover {{
-    background: transparent !important;
-    color: var(--accent) !important;
-    border-color: var(--accent) !important;
-}}
-
-/* ============================================================
-   INPUTS
-   ============================================================ */
-
-div[data-baseweb="input"] > div {{
-    background: var(--surface) !important;
-    border-color: var(--line) !important;
-}}
-
-div[data-baseweb="input"] input {{
-    color: var(--text) !important;
-}}
-
-textarea {{
-    background: var(--surface) !important;
-    color: var(--text) !important;
-}}
-
-div[data-baseweb="textarea"] > div {{
-    background: var(--surface) !important;
-    border-color: var(--line) !important;
-}}
-
-/* ============================================================
-   TABS
-   ============================================================ */
-
-button[data-baseweb="tab"] {{
-    font-family: "Cormorant Garamond", Georgia, serif !important;
-    font-size: 18px !important;
-    color: var(--muted) !important;
-}}
-
-button[data-baseweb="tab"][aria-selected="true"] {{
-    color: var(--accent) !important;
-}}
-
-div[data-baseweb="tab-highlight"] {{
-    background-color: var(--accent) !important;
-}}
-
-/* ============================================================
-   CHECKBOX
-   ============================================================ */
-
-div[data-testid="stCheckbox"] label {{
-    color: var(--text) !important;
-}}
-
-/* ============================================================
-   MOBILE
-   ============================================================ */
-
-@media (max-width: 700px) {{
-
-    .block-container {{
-        padding-top: 1.5rem !important;
-    }}
-
-    .book-header-title {{
-        font-size: 58px;
-    }}
-
-    .willow-header svg {{
-        height: 205px;
-    }}
-
-    .stats-row {{
-        flex-wrap: wrap;
-    }}
-
-    .stat-item {{
-        min-width: 100px;
-        padding: 8px 15px;
-    }}
-
-    .stat-item:nth-child(3) {{
-        border-right: none;
-    }}
-
-    .book-info {{
-        margin-left: 35px;
-    }}
-
-    .series-info {{
-        margin-left: 20px;
-    }}
-}}
-
-</style>
-""",
-    unsafe_allow_html=True,
-)
-
-# ============================================================
-# HEADER + ACTUAL WILLOW TREE
-# ============================================================
-
-st.markdown(
-    """
-<div class="book-header">
-
-    <div class="book-header-title">
-        My Book Tree
-    </div>
-
-    <div class="willow-header">
-
-        <svg
-            viewBox="300 0 600 280"
-            xmlns="http://www.w3.org/2000/svg"
-            aria-label="Decorative willow tree"
-        >
-
-            <!-- trunk -->
-            <path
-                d="M600 310
-                   C590 250 585 190 595 135
-                   C600 105 610 75 625 45"
-                fill="none"
-                stroke="#4A3028"
-                stroke-width="28"
-                stroke-linecap="round"
-            />
-
-            <path
-                d="M604 305
-                   C598 245 597 190 605 140
-                   C610 105 620 75 630 48"
-                fill="none"
-                stroke="#765044"
-                stroke-width="7"
-                stroke-linecap="round"
-            />
-
-            <!-- main branches -->
-            <g
-                fill="none"
-                stroke="#54372E"
-                stroke-linecap="round"
-            >
-
-                <path
-                    d="M605 150 C535 115 470 85 390 70"
-                    stroke-width="12"
-                />
-
-                <path
-                    d="M610 140 C675 100 745 72 825 65"
-                    stroke-width="12"
-                />
-
-                <path
-                    d="M600 180 C520 155 445 145 350 150"
-                    stroke-width="9"
-                />
-
-                <path
-                    d="M615 175 C690 145 770 135 860 145"
-                    stroke-width="9"
-                />
-
-                <path
-                    d="M600 115 C550 75 520 45 500 15"
-                    stroke-width="8"
-                />
-
-                <path
-                    d="M625 110 C680 70 710 40 730 10"
-                    stroke-width="8"
-                />
-
-            </g>
-
-            <!-- hanging willow branches -->
-            <g
-                fill="none"
-                stroke="#657452"
-                stroke-width="4"
-                stroke-linecap="round"
-            >
-
-                <path d="M390 70 C380 125 390 175 405 235"/>
-                <path d="M430 75 C420 135 430 195 445 250"/>
-                <path d="M475 82 C465 145 475 205 490 255"/>
-                <path d="M520 90 C510 145 520 205 535 245"/>
-
-                <path d="M680 88 C690 145 680 205 665 250"/>
-                <path d="M725 75 C735 135 725 195 710 255"/>
-                <path d="M770 70 C780 125 770 185 755 235"/>
-                <path d="M815 68 C825 120 815 175 800 225"/>
-
-                <path d="M350 150 C345 190 350 225 360 270"/>
-                <path d="M860 145 C865 190 860 225 850 270"/>
-
-            </g>
-
-            <!-- leaves -->
-            <g fill="#74835D">
-
-                <ellipse
-                    cx="380" cy="115"
-                    rx="7" ry="20"
-                    transform="rotate(-20 380 115)"
-                />
-
-                <ellipse
-                    cx="398" cy="150"
-                    rx="7" ry="21"
-                    transform="rotate(18 398 150)"
-                />
-
-                <ellipse
-                    cx="415" cy="190"
-                    rx="7" ry="20"
-                    transform="rotate(-15 415 190)"
-                />
-
-                <ellipse
-                    cx="435" cy="215"
-                    rx="7" ry="22"
-                    transform="rotate(17 435 215)"
-                />
-
-                <ellipse
-                    cx="465" cy="130"
-                    rx="7" ry="21"
-                    transform="rotate(-18 465 130)"
-                />
-
-                <ellipse
-                    cx="485" cy="180"
-                    rx="7" ry="22"
-                    transform="rotate(16 485 180)"
-                />
-
-                <ellipse
-                    cx="510" cy="215"
-                    rx="7" ry="20"
-                    transform="rotate(-18 510 215)"
-                />
-
-                <ellipse
-                    cx="820" cy="115"
-                    rx="7" ry="20"
-                    transform="rotate(20 820 115)"
-                />
-
-                <ellipse
-                    cx="802" cy="150"
-                    rx="7" ry="21"
-                    transform="rotate(-18 802 150)"
-                />
-
-                <ellipse
-                    cx="785" cy="190"
-                    rx="7" ry="20"
-                    transform="rotate(15 785 190)"
-                />
-
-                <ellipse
-                    cx="765" cy="215"
-                    rx="7" ry="22"
-                    transform="rotate(-17 765 215)"
-                />
-
-                <ellipse
-                    cx="735" cy="130"
-                    rx="7" ry="21"
-                    transform="rotate(18 735 130)"
-                />
-
-                <ellipse
-                    cx="715" cy="180"
-                    rx="7" ry="22"
-                    transform="rotate(-16 715 180)"
-                />
-
-                <ellipse
-                    cx="690" cy="215"
-                    rx="7" ry="20"
-                    transform="rotate(18 690 215)"
-                />
-
-                <ellipse
-                    cx="350" cy="205"
-                    rx="7" ry="20"
-                    transform="rotate(-15 350 205)"
-                />
-
-                <ellipse
-                    cx="360" cy="245"
-                    rx="7" ry="21"
-                    transform="rotate(15 360 245)"
-                />
-
-                <ellipse
-                    cx="850" cy="205"
-                    rx="7" ry="20"
-                    transform="rotate(15 850 205)"
-                />
-
-                <ellipse
-                    cx="840" cy="245"
-                    rx="7" ry="21"
-                    transform="rotate(-15 840 245)"
-                />
-
-            </g>
-
-            <!-- subtle rose blossoms -->
-            <g fill="#B87587">
-
-                <circle cx="430" cy="105" r="4"/>
-                <circle cx="475" cy="145" r="4"/>
-                <circle cx="520" cy="175" r="4"/>
-
-                <circle cx="770" cy="145" r="4"/>
-                <circle cx="725" cy="105" r="4"/>
-                <circle cx="680" cy="175" r="4"/>
-
-            </g>
-
-        </svg>
-
-    </div>
-
-</div>
-""",
-    unsafe_allow_html=True,
-)
-
-# ============================================================
-# THEME PICKER
-# ============================================================
-
-st.markdown(
-    '<div class="theme-section">'
-    '<div class="theme-heading">Choose your bookish theme</div>'
-    '</div>',
-    unsafe_allow_html=True,
-)
-
-theme_choice = st.selectbox(
-    "Bookish theme",
-    list(THEMES.keys()),
-    index=list(THEMES.keys()).index(
-        st.session_state.theme
-    ),
-    key="theme_selector",
-    label_visibility="collapsed",
-)
-
-if theme_choice != st.session_state.theme:
-    st.session_state.theme = theme_choice
-    st.rerun()
-
-# ============================================================
-# COVER SEARCH
-# ============================================================
-
-@st.cache_data(show_spinner=False)
-def get_cover(title, author="", isbn=""):
-
-    isbn = re.sub(
-        r"\D",
-        "",
-        str(isbn)
-    )
-
-    if isbn:
-
-        url = (
-            "https://covers.openlibrary.org/b/isbn/"
-            f"{isbn}-L.jpg"
-        )
-
-        try:
-
-            r = requests.get(
-                url,
-                timeout=8
-            )
-
-            if (
-                r.status_code == 200
-                and len(r.content) > 1000
-            ):
-                return url
-
-        except Exception:
-            pass
-
-    try:
-
-        r = requests.get(
-            "https://openlibrary.org/search.json",
-            params={
-                "title": title,
-                "author": author,
-                "limit": 1,
-            },
-            timeout=10,
-        )
-
-        if r.status_code == 200:
-
-            docs = r.json().get(
-                "docs",
-                []
-            )
-
-            if docs:
-
-                cover_id = docs[0].get(
-                    "cover_i"
-                )
-
-                if cover_id:
-
-                    return (
-                        "https://covers.openlibrary.org/"
-                        f"b/id/{cover_id}-L.jpg"
-                    )
-
-    except Exception:
-        pass
-
-    try:
-
-        r = requests.get(
-            "https://www.googleapis.com/books/v1/volumes",
-            params={
-                "q": f"{title} {author}",
-                "maxResults": 1,
-            },
-            timeout=10,
-        )
-
-        if r.status_code == 200:
-
-            items = r.json().get(
-                "items",
-                []
-            )
-
-            if items:
-
-                image = (
-                    items[0]
-                    .get("volumeInfo", {})
-                    .get("imageLinks", {})
-                    .get("thumbnail")
-                )
-
-                if image:
-
-                    return image.replace(
-                        "http://",
-                        "https://"
-                    )
-
-    except Exception:
-        pass
-
-    return ""
-
-
-# ============================================================
-# SERIES HELPERS
-# ============================================================
-
-def detect_series(title):
-
-    patterns = [
-        r"\(([^()]*?)#\s*\d+(?:\.\d+)?[^()]*\)",
-        r"\[([^\[\]]*?)#\s*\d+(?:\.\d+)?[^\[\]]*\]",
-        r"\(([^()]*?)\bBook\s+\d+(?:\.\d+)?[^()]*\)",
-        r"\[([^\[\]]*?)\bBook\s+\d+(?:\.\d+)?[^\[\]]*\]",
-    ]
-
-    for pattern in patterns:
-
-        match = re.search(
-            pattern,
-            str(title),
-            re.I
-        )
-
-        if match:
-
-            series = match.group(1)
-
-            series = re.sub(
-                r",?\s*#\s*\d+(?:\.\d+)?",
-                "",
-                series,
-                flags=re.I
-            )
-
-            series = re.sub(
-                r"\bBook\s+\d+(?:\.\d+)?",
-                "",
-                series,
-                flags=re.I
-            )
-
-            series = re.sub(
-                r"\s+",
-                " ",
-                series
-            ).strip(" ,-:")
-
-            if series:
-                return series
-
-    return "Standalone"
-
-
-def detect_series_number(title):
-
-    patterns = [
-        r"#\s*(\d+(?:\.\d+)?)",
-        r"\bBook\s+(\d+(?:\.\d+)?)",
-        r"\bVol(?:ume)?\.?\s+(\d+(?:\.\d+)?)",
-    ]
-
-    for pattern in patterns:
-
-        match = re.search(
-            pattern,
-            str(title),
-            re.I
-        )
-
-        if match:
-
-            try:
-                return float(
-                    match.group(1)
-                )
-            except Exception:
-                pass
-
-    return None
-
-
-def safe_id(text):
-
-    return re.sub(
-        r"[^a-zA-Z0-9_-]",
-        "_",
-        str(text)
-    )
-
-
-# ============================================================
-# IMPORT
-# ============================================================
-
-def import_books(uploaded):
-
-    try:
-
-        df = pd.read_csv(
-            uploaded,
-            low_memory=False
-        )
-
-    except Exception:
-
-        df = pd.read_csv(
-            uploaded,
-            encoding="latin-1",
-            low_memory=False
-        )
-
-    columns = {
-        str(c).strip().lower(): c
-        for c in df.columns
+async function fetchCoverByISBN(isbn) {
+  const clean = (isbn || "").replace(/[^0-9Xx]/g, "");
+  if (!clean) return null;
+  try {
+    const res = await fetch(
+      `https://openlibrary.org/api/books?bibkeys=ISBN:${clean}&format=json&jscmd=data`
+    );
+    const data = await res.json();
+    const entry = data[`ISBN:${clean}`];
+    if (entry && entry.cover) {
+      return entry.cover.large || entry.cover.medium || entry.cover.small || null;
     }
+  } catch (e) {
+    /* ignore, fall through */
+  }
+  return null;
+}
 
-    def find_column(names):
+async function fetchFromGoogleBooks(title, author, isbn) {
+  try {
+    let q;
+    if (isbn) {
+      q = `isbn:${(isbn || "").replace(/[^0-9Xx]/g, "")}`;
+    } else {
+      q = `intitle:${title || ""}${author ? "+inauthor:" + author : ""}`;
+    }
+    const res = await fetch(
+      `https://www.googleapis.com/books/v1/volumes?q=${encodeURIComponent(q)}&maxResults=1`
+    );
+    const data = await res.json();
+    const item = data.items && data.items[0];
+    if (!item) return null;
+    const info = item.volumeInfo || {};
+    return {
+      cover: info.imageLinks
+        ? (info.imageLinks.thumbnail || info.imageLinks.smallThumbnail || "").replace(
+            "http://",
+            "https://"
+          )
+        : null,
+      description: info.description || "",
+      publisher: info.publisher || "",
+      pages: info.pageCount || "",
+      genre: (info.categories && info.categories[0]) || "",
+    };
+  } catch (e) {
+    return null;
+  }
+}
 
-        for name in names:
+async function lookupBookInfo({ title, author, isbn }) {
+  let cover = await fetchCoverByISBN(isbn);
+  let extra = null;
+  if (!cover) {
+    extra = await fetchFromGoogleBooks(title, author, isbn);
+    if (extra && extra.cover) cover = extra.cover;
+  }
+  return { cover, extra };
+}
 
-            if name.lower() in columns:
-                return columns[name.lower()]
+function parseSeriesFromTitle(rawTitle) {
+  const m = rawTitle.match(/^(.*?)\s*\(([^,()]+),\s*#?([\d.]+)\)\s*$/);
+  if (m) {
+    return { title: m[1].trim(), series: m[2].trim(), seriesNumber: m[3].trim() };
+  }
+  return { title: rawTitle.trim(), series: "", seriesNumber: "" };
+}
 
-        return None
+function mapGoodreadsShelf(shelf) {
+  const s = (shelf || "").toLowerCase();
+  if (s.includes("currently")) return "Currently Reading";
+  if (s.includes("read")) return "Read";
+  return "Want to Read";
+}
 
-    title_col = find_column(
-        ["title", "book title"]
-    )
+function buildTree(books) {
+  const authors = {};
+  books.forEach((b) => {
+    const authorName = b.author && b.author.trim() ? b.author.trim() : "Unknown Author";
+    if (!authors[authorName]) {
+      authors[authorName] = { name: authorName, seriesMap: {}, standalone: [] };
+    }
+    if (b.series && b.series.trim()) {
+      const sName = b.series.trim();
+      if (!authors[authorName].seriesMap[sName]) {
+        authors[authorName].seriesMap[sName] = { name: sName, books: [] };
+      }
+      authors[authorName].seriesMap[sName].books.push(b);
+    } else {
+      authors[authorName].standalone.push(b);
+    }
+  });
+  Object.values(authors).forEach((a) => {
+    Object.values(a.seriesMap).forEach((s) => {
+      s.books.sort((x, y) => (parseFloat(x.seriesNumber) || 0) - (parseFloat(y.seriesNumber) || 0));
+    });
+  });
+  return Object.values(authors).sort((a, b) => a.name.localeCompare(b.name));
+}
 
-    author_col = find_column(
-        ["author", "authors"]
-    )
+function patternDataUri(color) {
+  const c = encodeURIComponent(color);
+  const svg =
+    "<svg xmlns='http://www.w3.org/2000/svg' width='84' height='84'>" +
+    `<g fill='none' stroke='${color}' stroke-width='1' opacity='0.10'>` +
+    "<path d='M42 10 C50 24 64 26 42 42 C20 26 34 24 42 10 Z'/>" +
+    "<circle cx='12' cy='64' r='2.4' fill='" + color + "' stroke='none' opacity='0.14'/>" +
+    "<circle cx='72' cy='64' r='2.4' fill='" + color + "' stroke='none' opacity='0.14'/>" +
+    "<path d='M0 74 C 14 68, 28 68, 42 74 C 56 68, 70 68, 84 74' opacity='0.08'/>" +
+    "</g></svg>";
+  return `url("data:image/svg+xml,${svg.replace(/#/g, "%23").replace(/'/g, "%27")}")`;
+}
 
-    isbn_col = find_column(
-        ["isbn13", "isbn"]
-    )
+/* ------------------------------------------------------------------ */
+/*  DECORATIVE PIECES                                                  */
+/* ------------------------------------------------------------------ */
 
-    rating_col = find_column(
-        ["my rating", "rating"]
-    )
+function Flourish({ compact }) {
+  return (
+    <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 10, margin: compact ? "6px 0 14px" : "4px 0 22px" }}>
+      <svg width="70" height="14" viewBox="0 0 70 14">
+        <path d="M0 7 C 20 1, 40 13, 68 7" fill="none" stroke="var(--accent)" strokeWidth="1.1" opacity="0.75" />
+      </svg>
+      <svg width="11" height="11" viewBox="0 0 11 11">
+        <path d="M5.5 0 L8 4 L11 5.5 L8 7 L5.5 11 L3 7 L0 5.5 L3 4 Z" fill="var(--accent)" opacity="0.85" />
+      </svg>
+      <svg width="70" height="14" viewBox="0 0 70 14">
+        <path d="M70 7 C 50 1, 30 13, 2 7" fill="none" stroke="var(--accent)" strokeWidth="1.1" opacity="0.75" />
+      </svg>
+    </div>
+  );
+}
 
-    shelf_col = find_column(
-        [
-            "exclusive shelf",
-            "shelf",
-            "status"
-        ]
-    )
+function CornerFlourish({ corner }) {
+  const flips = {
+    tl: "scaleX(1) scaleY(1)",
+    tr: "scaleX(-1) scaleY(1)",
+    bl: "scaleX(1) scaleY(-1)",
+    br: "scaleX(-1) scaleY(-1)",
+  };
+  const pos = {
+    tl: { top: -2, left: -2 },
+    tr: { top: -2, right: -2 },
+    bl: { bottom: -2, left: -2 },
+    br: { bottom: -2, right: -2 },
+  };
+  return (
+    <svg
+      width="46"
+      height="46"
+      viewBox="0 0 46 46"
+      style={{ position: "absolute", ...pos[corner], transform: flips[corner], pointerEvents: "none" }}
+    >
+      <path
+        d="M2 2 C 2 20, 6 30, 26 34 C 14 34, 4 30, 2 44"
+        fill="none"
+        stroke="var(--accent)"
+        strokeWidth="1.4"
+        opacity="0.65"
+      />
+      <path d="M2 2 C 14 2, 24 6, 30 18" fill="none" stroke="var(--accent)" strokeWidth="1.4" opacity="0.65" />
+      <circle cx="2" cy="2" r="2.6" fill="var(--accent)" opacity="0.85" />
+      <circle cx="26" cy="34" r="1.8" fill="var(--accent)" opacity="0.6" />
+      <circle cx="30" cy="18" r="1.8" fill="var(--accent)" opacity="0.6" />
+    </svg>
+  );
+}
 
-    if not title_col:
+function OrnateFrame({ children, style }) {
+  return (
+    <div
+      style={{
+        position: "relative",
+        border: "1px solid var(--border)",
+        borderRadius: 18,
+        boxShadow:
+          "0 0 0 1px rgba(212,175,55,0.18), 0 18px 40px rgba(0,0,0,0.45), inset 0 0 40px rgba(0,0,0,0.25)",
+        ...style,
+      }}
+    >
+      <CornerFlourish corner="tl" />
+      <CornerFlourish corner="tr" />
+      <CornerFlourish corner="bl" />
+      <CornerFlourish corner="br" />
+      {children}
+    </div>
+  );
+}
 
-        st.error(
-            "I couldn't find a Title column in this CSV."
-        )
+function SectionTitle({ children }) {
+  return (
+    <div style={{ textAlign: "center" }}>
+      <div
+        style={{
+          fontFamily: "'Berkshire Swash', cursive",
+          fontSize: 24,
+          color: "var(--accentSoft)",
+          textShadow: "0 2px 10px rgba(0,0,0,0.4)",
+        }}
+      >
+        {children}
+      </div>
+      <Flourish compact />
+    </div>
+  );
+}
 
-        return False
+/* ------------------------------------------------------------------ */
+/*  SMALL UI PIECES                                                    */
+/* ------------------------------------------------------------------ */
 
-    books = []
+function Stars({ value, onChange, size = 16 }) {
+  return (
+    <div style={{ display: "flex", gap: 2 }}>
+      {[1, 2, 3, 4, 5].map((n) => (
+        <Star
+          key={n}
+          size={size}
+          onClick={onChange ? () => onChange(n === value ? 0 : n) : undefined}
+          style={{
+            cursor: onChange ? "pointer" : "default",
+            fill: n <= value ? "var(--accent)" : "transparent",
+            color: "var(--accent)",
+            filter: n <= value ? "drop-shadow(0 0 3px rgba(212,175,55,0.5))" : "none",
+          }}
+        />
+      ))}
+    </div>
+  );
+}
 
-    for _, row in df.iterrows():
+function Cover({ book, width = 64 }) {
+  const height = Math.round(width * 1.5);
+  const spineWidth = Math.max(3, Math.round(width * 0.07));
+  if (book.cover) {
+    return (
+      <div style={{ position: "relative", width, height, flexShrink: 0 }}>
+        <img
+          src={book.cover}
+          alt={book.title}
+          width={width}
+          height={height}
+          style={{
+            objectFit: "cover",
+            borderRadius: "2px 5px 5px 2px",
+            boxShadow: "3px 5px 14px rgba(0,0,0,0.55), 0 0 0 1px rgba(0,0,0,0.35)",
+            display: "block",
+          }}
+        />
+        <div
+          style={{
+            position: "absolute",
+            left: 0,
+            top: 0,
+            bottom: 0,
+            width: spineWidth,
+            background: "linear-gradient(90deg, rgba(0,0,0,0.55), rgba(0,0,0,0))",
+            borderRadius: "2px 0 0 2px",
+          }}
+        />
+        <div
+          style={{
+            position: "absolute",
+            inset: 0,
+            borderRadius: "2px 5px 5px 2px",
+            boxShadow: "inset 0 0 0 1px rgba(255,255,255,0.08)",
+          }}
+        />
+      </div>
+    );
+  }
+  return (
+    <div
+      style={{
+        width,
+        height,
+        borderRadius: "2px 5px 5px 2px",
+        background:
+          "repeating-linear-gradient(135deg, var(--surface2), var(--surface2) 6px, var(--bg2) 6px, var(--bg2) 12px)",
+        border: "1px solid var(--border)",
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        boxShadow: "3px 5px 14px rgba(0,0,0,0.5)",
+        flexShrink: 0,
+      }}
+    >
+      <Feather size={Math.round(width * 0.34)} color="var(--accent)" opacity={0.7} />
+    </div>
+  );
+}
 
-        title = str(
-            row.get(
-                title_col,
-                ""
-            )
-        ).strip()
+function StatusPill({ status }) {
+  const colors = {
+    Read: "var(--primaryLight)",
+    "Currently Reading": "var(--accent)",
+    "Want to Read": "var(--muted)",
+  };
+  return (
+    <span
+      style={{
+        fontSize: 10.5,
+        letterSpacing: 0.8,
+        textTransform: "uppercase",
+        fontFamily: "'Cormorant Garamond', serif",
+        fontWeight: 600,
+        padding: "3px 10px",
+        borderRadius: 999,
+        border: `1px solid ${colors[status] || "var(--muted)"}`,
+        color: colors[status] || "var(--muted)",
+        whiteSpace: "nowrap",
+        background: "rgba(0,0,0,0.15)",
+      }}
+    >
+      {status}
+    </span>
+  );
+}
 
-        if not title or title == "nan":
-            continue
+/* ------------------------------------------------------------------ */
+/*  WILLOW TREE HEADER SVG                                             */
+/* ------------------------------------------------------------------ */
 
-        author = "Unknown Author"
+function WillowTree() {
+  // Canopy built from soft overlapping masses (not a scatter of tiny twigs)
+  const canopy = [
+    { x: 410, y: 55, r: 72 },
+    { x: 300, y: 72, r: 54 },
+    { x: 520, y: 72, r: 54 },
+    { x: 205, y: 96, r: 42 },
+    { x: 615, y: 96, r: 42 },
+    { x: 130, y: 118, r: 32 },
+    { x: 690, y: 118, r: 32 },
+  ];
 
-        if author_col:
+  // Hanging strands: fewer, longer, gracefully curved, leaf tuft only at the tip
+  const strands = [
+    { x: 130, y: 128, len: 92, sway: -18 },
+    { x: 178, y: 116, len: 118, sway: 14 },
+    { x: 235, y: 104, len: 96, sway: -12 },
+    { x: 300, y: 96, len: 130, sway: 10 },
+    { x: 360, y: 90, len: 108, sway: -14 },
+    { x: 410, y: 88, len: 140, sway: 6 },
+    { x: 460, y: 90, len: 108, sway: 14 },
+    { x: 520, y: 96, len: 130, sway: -10 },
+    { x: 585, y: 104, len: 96, sway: 12 },
+    { x: 642, y: 116, len: 118, sway: -14 },
+    { x: 690, y: 128, len: 92, sway: 18 },
+  ];
 
-            author = str(
-                row.get(
-                    author_col,
-                    ""
-                )
-            ).strip()
+  return (
+    <svg viewBox="0 0 820 270" width="100%" height="100%" style={{ display: "block" }}>
+      <defs>
+        <radialGradient id="willowGlow" cx="50%" cy="28%" r="55%">
+          <stop offset="0%" stopColor="var(--accent)" stopOpacity="0.18" />
+          <stop offset="100%" stopColor="var(--accent)" stopOpacity="0" />
+        </radialGradient>
+        <radialGradient id="canopyGrad" cx="38%" cy="30%" r="75%">
+          <stop offset="0%" stopColor="var(--leaf)" />
+          <stop offset="65%" stopColor="var(--leaf)" />
+          <stop offset="100%" stopColor="var(--leafDark)" />
+        </radialGradient>
+      </defs>
 
-        if not author or author == "nan":
-            author = "Unknown Author"
+      <ellipse cx="410" cy="95" rx="330" ry="100" fill="url(#willowGlow)" />
 
-        isbn = ""
+      {/* Hanging strands — drawn first so the canopy overlaps their tops */}
+      <g>
+        {strands.map((s, i) => (
+          <g key={i}>
+            <path
+              d={`M${s.x} ${s.y} C ${s.x + s.sway * 0.4} ${s.y + s.len * 0.45}, ${s.x - s.sway * 0.3} ${
+                s.y + s.len * 0.8
+              }, ${s.x + s.sway * 0.15} ${s.y + s.len}`}
+              fill="none"
+              stroke="var(--leaf)"
+              strokeWidth="1.6"
+              strokeLinecap="round"
+              opacity="0.75"
+            />
+            <ellipse
+              cx={s.x + s.sway * 0.15}
+              cy={s.y + s.len}
+              rx="6"
+              ry="3"
+              fill={i % 4 === 0 ? "var(--flower)" : "var(--leaf)"}
+              opacity="0.9"
+              transform={`rotate(${s.sway > 0 ? 30 : -30} ${s.x + s.sway * 0.15} ${s.y + s.len})`}
+            />
+          </g>
+        ))}
+      </g>
 
-        if isbn_col:
+      {/* Trunk — a single tapered filled shape, not a stroked line */}
+      <path
+        d="M394 244 C 389 205, 384 168, 392 128 C 396 104, 388 84, 400 40
+           L 412 40 C 421 84, 414 104, 419 128 C 428 168, 424 205, 420 244 Z"
+        fill="var(--trunk)"
+      />
+      <path
+        d="M356 246 C 372 220, 390 220, 396 244 M 414 244 C 420 220, 438 220, 456 246"
+        fill="none"
+        stroke="var(--trunk)"
+        strokeWidth="7"
+        strokeLinecap="round"
+        opacity="0.85"
+      />
+      <path d="M401 190 C 399 160, 403 130, 400 100" fill="none" stroke="var(--bg)" strokeWidth="1.2" opacity="0.25" />
 
-            isbn = re.sub(
-                r"\D",
-                "",
-                str(
-                    row.get(
-                        isbn_col,
-                        ""
-                    )
-                )
-            )
+      {/* Canopy — soft overlapping masses */}
+      <g>
+        {canopy.map((c, i) => (
+          <circle key={"shadow" + i} cx={c.x + 5} cy={c.y + 7} r={c.r} fill="var(--leafDark)" opacity="0.35" />
+        ))}
+        {canopy.map((c, i) => (
+          <circle key={"base" + i} cx={c.x} cy={c.y} r={c.r} fill="url(#canopyGrad)" />
+        ))}
+        {canopy.map((c, i) => (
+          <circle
+            key={"hi" + i}
+            cx={c.x - c.r * 0.32}
+            cy={c.y - c.r * 0.35}
+            r={c.r * 0.5}
+            fill="var(--accentSoft)"
+            opacity="0.14"
+          />
+        ))}
+      </g>
 
-        rating = None
+      {/* Sparse blossoms across the canopy */}
+      {[
+        [340, 45], [410, 30], [480, 45], [260, 78], [560, 78], [200, 105], [620, 105],
+      ].map(([x, y], i) => (
+        <circle key={i} cx={x} cy={y} r="3.4" fill="var(--flower)" opacity="0.85" />
+      ))}
 
-        if rating_col:
+      {/* Base vine flourish under the trunk */}
+      <path
+        d="M300 258 C 340 248, 380 256, 410 250 C 440 256, 480 248, 520 258"
+        fill="none"
+        stroke="var(--accent)"
+        strokeWidth="1.3"
+        opacity="0.6"
+      />
+      {[330, 375, 410, 445, 490].map((x, i) => (
+        <circle key={i} cx={x} cy={i % 2 === 0 ? 253 : 250} r="2.2" fill="var(--accent)" opacity="0.7" />
+      ))}
+    </svg>
+  );
+}
 
-            try:
-                rating = float(
-                    row.get(
-                        rating_col
-                    )
-                )
-            except Exception:
-                pass
+/* ------------------------------------------------------------------ */
+/*  STAT ORNAMENT                                                      */
+/* ------------------------------------------------------------------ */
 
-        status = "Want to Read"
-
-        if shelf_col:
-
-            shelf = str(
-                row.get(
-                    shelf_col,
-                    ""
-                )
-            ).lower()
-
-            if "currently" in shelf:
-
-                status = "Currently Reading"
-
-            elif (
-                "read" in shelf
-                and "to-read" not in shelf
-            ):
-
-                status = "Read"
-
-        books.append(
-            {
-                "Title": title,
-                "Author": author,
-                "Series": detect_series(title),
-                "Series Number": detect_series_number(title),
-                "ISBN": isbn,
-                "My Rating": rating,
-                "Status": status,
-                "Favorite": False,
-                "Cover": "",
-                "Description": "",
-                "Publisher": "",
-                "Pages": "",
-                "Date Read": "",
-            }
-        )
-
-    new_library = pd.DataFrame(
-        books
-    )
-
-    if new_library.empty:
-
-        st.error(
-            "No books were found in the file."
-        )
-
-        return False
-
-    progress = st.progress(0)
-
-    for i in range(
-        len(new_library)
-    ):
-
-        new_library.loc[
-            i,
-            "Cover"
-        ] = get_cover(
-            new_library.loc[i, "Title"],
-            new_library.loc[i, "Author"],
-            new_library.loc[i, "ISBN"]
-        )
-
-        progress.progress(
-            (i + 1) / len(new_library)
-        )
-
-    progress.empty()
-
-    st.session_state.library = new_library
-    st.session_state.open_authors = set()
-    st.session_state.open_series = set()
-
-    return True
-
-
-# ============================================================
-# DATA
-# ============================================================
-
-library = st.session_state.library
-
-total = len(library)
-
-authors = (
-    library["Author"].nunique()
-    if total
-    else 0
-)
-
-series_count = (
-    library[
-        library["Series"] != "Standalone"
-    ]["Series"].nunique()
-    if total
-    else 0
-)
-
-read_count = (
-    len(
-        library[
-            library["Status"] == "Read"
-        ]
-    )
-    if total
-    else 0
-)
-
-favorites = (
-    len(
-        library[
-            library["Favorite"] == True
-        ]
-    )
-    if total
-    else 0
-)
-
-# ============================================================
-# STATS
-# ============================================================
-
-stats = [
-    (total, "Books"),
-    (authors, "Authors"),
-    (series_count, "Series"),
-    (read_count, "Read"),
-    (favorites, "Favorites"),
-]
-
-stats_html = '<div class="stats-row">'
-
-for number, label in stats:
-
-    stats_html += f"""
-        <div class="stat-item">
-            <div class="stat-number">{number}</div>
-            <div class="stat-label">{label}</div>
+function StatOrnament({ label, value, icon: Icon }) {
+  return (
+    <div style={{ display: "flex", flexDirection: "column", alignItems: "center" }}>
+      <svg width="18" height="20" viewBox="0 0 18 20" style={{ marginBottom: -2 }}>
+        <path d="M9 0 L9 14" stroke="var(--accent)" strokeWidth="1" opacity="0.6" />
+        <path d="M2 14 Q 9 20 16 14" fill="none" stroke="var(--accent)" strokeWidth="1" opacity="0.5" />
+      </svg>
+      <div
+        style={{
+          position: "relative",
+          width: 92,
+          height: 92,
+          borderRadius: "50%",
+          background: "radial-gradient(circle at 32% 28%, var(--surface2), var(--surface) 70%)",
+          border: "2px solid var(--accent)",
+          boxShadow:
+            "0 6px 16px rgba(0,0,0,0.4), inset 0 0 14px rgba(0,0,0,0.35), 0 0 0 4px rgba(212,175,55,0.08)",
+          display: "flex",
+          flexDirection: "column",
+          alignItems: "center",
+          justifyContent: "center",
+          gap: 2,
+        }}
+      >
+        <div
+          style={{
+            position: "absolute",
+            inset: 4,
+            borderRadius: "50%",
+            border: "1px solid var(--accent)",
+            opacity: 0.4,
+          }}
+        />
+        <Icon size={15} color="var(--accent)" />
+        <div
+          style={{
+            fontFamily: "'Berkshire Swash', cursive",
+            fontSize: 21,
+            color: "var(--accentSoft)",
+            lineHeight: 1,
+            textShadow: "0 1px 6px rgba(0,0,0,0.5)",
+          }}
+        >
+          {value}
         </div>
-    """
-
-stats_html += "</div>"
-
-st.markdown(
-    stats_html,
-    unsafe_allow_html=True
-)
-
-# ============================================================
-# TABS
-# ============================================================
-
-tree_tab, books_tab, add_tab, import_tab = st.tabs(
-    [
-        "🌳 Book Tree",
-        "📚 Books",
-        "➕ Add Book",
-        "📥 Import",
-    ]
-)
-
-# ============================================================
-# TREE
-# ============================================================
-
-with tree_tab:
-
-    if library.empty:
-
-        st.info(
-            "Your tree is empty. "
-            "Import your library or add your first book."
-        )
-
-    else:
-
-        search = st.text_input(
-            "Search your tree",
-            placeholder="Search author, series, or book..."
-        )
-
-        filtered = library.copy()
-
-        if search:
-
-            q = search.lower()
-
-            filtered = filtered[
-                filtered["Title"]
-                .fillna("")
-                .astype(str)
-                .str.lower()
-                .str.contains(q, na=False)
-                |
-                filtered["Author"]
-                .fillna("")
-                .astype(str)
-                .str.lower()
-                .str.contains(q, na=False)
-                |
-                filtered["Series"]
-                .fillna("")
-                .astype(str)
-                .str.lower()
-                .str.contains(q, na=False)
-            ]
-
-        st.markdown(
-            f"""
-            <div class="tree-area">
-                <div class="root-node">
-                    <div class="root-node-title">
-                        My Library
-                    </div>
-                    <div class="root-node-small">
-                        {len(filtered)} books ·
-                        {filtered["Author"].nunique()} authors
-                    </div>
-                </div>
-            </div>
-            """,
-            unsafe_allow_html=True
-        )
-
-        author_list = sorted(
-            filtered["Author"]
-            .fillna("Unknown Author")
-            .astype(str)
-            .unique(),
-            key=lambda x: x.lower()
-        )
-
-        for author in author_list:
-
-            author_id = safe_id(author)
-
-            author_books = filtered[
-                filtered["Author"]
-                .fillna("Unknown Author")
-                .astype(str)
-                == author
-            ]
-
-            opened = (
-                author_id
-                in st.session_state.open_authors
-            )
-
-            arrow = "▼" if opened else "▶"
-
-            if st.button(
-                f"{arrow}  {author}",
-                key=f"author_{author_id}",
-                use_container_width=True,
-            ):
-
-                if opened:
-
-                    st.session_state.open_authors.discard(
-                        author_id
-                    )
-
-                else:
-
-                    st.session_state.open_authors.add(
-                        author_id
-                    )
-
-                st.rerun()
-
-            st.markdown(
-                f"""
-                <div class="author-info">
-
-                    <div class="author-name">
-                        {html.escape(author)}
-                    </div>
-
-                    <div class="author-count">
-                        {len(author_books)}
-                        {"book" if len(author_books) == 1 else "books"}
-                    </div>
-
-                </div>
-                """,
-                unsafe_allow_html=True
-            )
-
-            if not opened:
-                continue
-
-            series_list = sorted(
-                author_books["Series"]
-                .fillna("Standalone")
-                .astype(str)
-                .unique(),
-                key=lambda x: x.lower()
-            )
-
-            for series in series_list:
-
-                if series == "Standalone":
-
-                    standalone_books = author_books[
-                        author_books["Series"]
-                        .fillna("Standalone")
-                        .astype(str)
-                        == "Standalone"
-                    ]
-
-                    st.markdown(
-                        f"""
-                        <div class="series-info">
-
-                            <div class="series-name">
-                                Standalone Books
-                            </div>
-
-                            <div class="series-count">
-                                {len(standalone_books)}
-                                {"book" if len(standalone_books) == 1 else "books"}
-                            </div>
-
-                        </div>
-                        """,
-                        unsafe_allow_html=True
-                    )
-
-                    for _, book in standalone_books.iterrows():
-
-                        cover = str(
-                            book.get(
-                                "Cover",
-                                ""
-                            ) or ""
-                        )
-
-                        title = html.escape(
-                            str(
-                                book.get(
-                                    "Title",
-                                    ""
-                                )
-                            )
-                        )
-
-                        status = html.escape(
-                            str(
-                                book.get(
-                                    "Status",
-                                    ""
-                                )
-                            )
-                        )
-
-                        if cover:
-
-                            st.markdown(
-                                f"""
-                                <div class="book-info">
-
-                                    <div style="
-                                        display:flex;
-                                        gap:14px;
-                                        align-items:center;
-                                    ">
-
-                                        <img
-                                            class="book-cover"
-                                            src="{html.escape(cover)}"
-                                        >
-
-                                        <div>
-
-                                            <div class="book-title">
-                                                {title}
-                                            </div>
-
-                                            <div class="book-meta">
-                                                {status}
-                                            </div>
-
-                                        </div>
-
-                                    </div>
-
-                                </div>
-                                """,
-                                unsafe_allow_html=True
-                            )
-
-                        else:
-
-                            st.markdown(
-                                f"""
-                                <div class="book-info">
-
-                                    <div class="book-title">
-                                        {title}
-                                    </div>
-
-                                    <div class="book-meta">
-                                        {status}
-                                    </div>
-
-                                </div>
-                                """,
-                                unsafe_allow_html=True
-                            )
-
-                    continue
-
-                series_id = (
-                    author_id
-                    + "::"
-                    + safe_id(series)
-                )
-
-                series_open = (
-                    series_id
-                    in st.session_state.open_series
-                )
-
-                arrow = (
-                    "▼"
-                    if series_open
-                    else "▶"
-                )
-
-                if st.button(
-                    f"{arrow}  {series}",
-                    key=f"series_{series_id}",
-                    use_container_width=True,
-                ):
-
-                    if series_open:
-
-                        st.session_state.open_series.discard(
-                            series_id
-                        )
-
-                    else:
-
-                        st.session_state.open_series.add(
-                            series_id
-                        )
-
-                    st.rerun()
-
-                series_books = author_books[
-                    author_books["Series"]
-                    .fillna("Standalone")
-                    .astype(str)
-                    == series
-                ].copy()
-
-                st.markdown(
-                    f"""
-                    <div class="series-info">
-
-                        <div class="series-name">
-                            {html.escape(series)}
-                        </div>
-
-                        <div class="series-count">
-                            {len(series_books)}
-                            {"book" if len(series_books) == 1 else "books"}
-                        </div>
-
-                    </div>
-                    """,
-                    unsafe_allow_html=True
-                )
-
-                if not series_open:
-                    continue
-
-                series_books = series_books.sort_values(
-                    by=[
-                        "Series Number",
-                        "Title"
-                    ],
-                    na_position="last"
-                )
-
-                for position, (_, book) in enumerate(
-                    series_books.iterrows(),
-                    1
-                ):
-
-                    number = book.get(
-                        "Series Number"
-                    )
-
-                    if pd.notna(number):
-
-                        try:
-
-                            if float(number).is_integer():
-
-                                number_text = (
-                                    f"Book {int(number)}"
-                                )
-
-                            else:
-
-                                number_text = (
-                                    f"Book {number}"
-                                )
-
-                        except Exception:
-
-                            number_text = (
-                                f"Book {position}"
-                            )
-
-                    else:
-
-                        number_text = (
-                            f"Book {position}"
-                        )
-
-                    cover = str(
-                        book.get(
-                            "Cover",
-                            ""
-                        ) or ""
-                    )
-
-                    title = html.escape(
-                        str(
-                            book.get(
-                                "Title",
-                                ""
-                            )
-                        )
-                    )
-
-                    status = html.escape(
-                        str(
-                            book.get(
-                                "Status",
-                                ""
-                            )
-                        )
-                    )
-
-                    if cover:
-
-                        st.markdown(
-                            f"""
-                            <div class="book-info">
-
-                                <div style="
-                                    display:flex;
-                                    gap:14px;
-                                    align-items:center;
-                                ">
-
-                                    <img
-                                        class="book-cover"
-                                        src="{html.escape(cover)}"
+        <div
+          style={{
+            fontSize: 9,
+            letterSpacing: 0.8,
+            textTransform: "uppercase",
+            color: "var(--muted)",
+            fontFamily: "'Cormorant Garamond', serif",
+          }}
+        >
+          {label}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/* ------------------------------------------------------------------ */
+/*  ADD / EDIT BOOK FORM                                               */
+/* ------------------------------------------------------------------ */
+
+function Field({ label, children, full }) {
+  return (
+    <div style={{ gridColumn: full ? "1 / -1" : "auto" }}>
+      <label
+        style={{
+          fontSize: 11.5,
+          letterSpacing: 0.9,
+          textTransform: "uppercase",
+          color: "var(--muted)",
+          marginBottom: 6,
+          display: "block",
+          fontFamily: "'Cormorant Garamond', serif",
+        }}
+      >
+        {label}
+      </label>
+      {children}
+    </div>
+  );
+}
+
+function BookForm({ initial, onSave, onCancel }) {
+  const [book, setBook] = useState(initial || emptyBook());
+  const [looking, setLooking] = useState(false);
+
+  const set = (field) => (e) => setBook((b) => ({ ...b, [field]: e && e.target ? e.target.value : e }));
+
+  const doLookup = async () => {
+    if (!book.title && !book.isbn) return;
+    setLooking(true);
+    const { cover, extra } = await lookupBookInfo(book);
+    setBook((b) => ({
+      ...b,
+      cover: cover || b.cover,
+      description: b.description || (extra && extra.description) || "",
+      publisher: b.publisher || (extra && extra.publisher) || "",
+      pages: b.pages || (extra && extra.pages) || "",
+      genre: b.genre || (extra && extra.genre) || "",
+    }));
+    setLooking(false);
+  };
+
+  const inputStyle = {
+    width: "100%",
+    padding: "10px 4px",
+    borderRadius: 0,
+    border: "none",
+    borderBottom: "1.5px solid var(--border)",
+    background: "transparent",
+    color: "var(--text)",
+    fontFamily: "'EB Garamond', serif",
+    fontSize: 16,
+    outline: "none",
+    transition: "border-color 0.2s",
+  };
+
+  return (
+    <OrnateFrame style={{ background: "linear-gradient(180deg, var(--surface), var(--surface2))", padding: 30 }}>
+      <SectionTitle>{initial ? "Revise This Volume" : "A New Leaf"}</SectionTitle>
+      <div style={{ display: "flex", gap: 26, flexWrap: "wrap" }}>
+        <div style={{ flexShrink: 0, margin: "0 auto" }}>
+          <Cover book={book} width={120} />
+          <button
+            onClick={doLookup}
+            disabled={looking}
+            style={{
+              marginTop: 12,
+              width: 120,
+              fontSize: 12,
+              padding: "7px 4px",
+              borderRadius: 999,
+              border: "1px solid var(--accent)",
+              background: "transparent",
+              color: "var(--accentSoft)",
+              cursor: "pointer",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              gap: 5,
+              fontFamily: "'Cormorant Garamond', serif",
+              letterSpacing: 0.4,
+            }}
+          >
+            {looking ? <Loader2 size={13} className="spin" /> : <Sparkles size={13} />}
+            {looking ? "Seeking…" : "Find Cover"}
+          </button>
+        </div>
+
+        <div style={{ flex: 1, minWidth: 280, display: "grid", gridTemplateColumns: "1fr 1fr", gap: 18 }}>
+          <Field label="Title" full>
+            <input style={inputStyle} value={book.title} onChange={set("title")} placeholder="The Enchanted Bindery" />
+          </Field>
+          <Field label="Author">
+            <input style={inputStyle} value={book.author} onChange={set("author")} />
+          </Field>
+          <Field label="Genre">
+            <input style={inputStyle} value={book.genre} onChange={set("genre")} />
+          </Field>
+          <Field label="Series">
+            <input style={inputStyle} value={book.series} onChange={set("series")} placeholder="optional" />
+          </Field>
+          <Field label="Series No.">
+            <input style={inputStyle} value={book.seriesNumber} onChange={set("seriesNumber")} placeholder="optional" />
+          </Field>
+          <Field label="ISBN">
+            <input style={inputStyle} value={book.isbn} onChange={set("isbn")} />
+          </Field>
+          <Field label="Status">
+            <select style={inputStyle} value={book.status} onChange={set("status")}>
+              {STATUS_OPTIONS.map((s) => (
+                <option key={s} value={s} style={{ background: "var(--surface)" }}>
+                  {s}
+                </option>
+              ))}
+            </select>
+          </Field>
+          <Field label="Publisher">
+            <input style={inputStyle} value={book.publisher} onChange={set("publisher")} />
+          </Field>
+          <Field label="Pages">
+            <input style={inputStyle} value={book.pages} onChange={set("pages")} />
+          </Field>
+          <Field label="Date Read">
+            <input type="date" style={inputStyle} value={book.dateRead} onChange={set("dateRead")} />
+          </Field>
+          <Field label="Favorite">
+            <button
+              type="button"
+              onClick={() => setBook((b) => ({ ...b, favorite: !b.favorite }))}
+              style={{ background: "none", border: "none", cursor: "pointer", padding: "8px 0" }}
+            >
+              <Heart
+                size={22}
+                style={{
+                  fill: book.favorite ? "var(--primaryLight)" : "transparent",
+                  color: "var(--primaryLight)",
+                }}
+              />
+            </button>
+          </Field>
+          <Field label="My Rating" full>
+            <Stars value={book.rating} onChange={(v) => setBook((b) => ({ ...b, rating: v }))} size={21} />
+          </Field>
+          <Field label="Description" full>
+            <textarea
+              style={{ ...inputStyle, minHeight: 76, resize: "vertical", border: "1px solid var(--border)", borderRadius: 8, padding: 10 }}
+              value={book.description}
+              onChange={set("description")}
+            />
+          </Field>
+        </div>
+      </div>
+
+      <div style={{ display: "flex", justifyContent: "center", gap: 14, marginTop: 28 }}>
+        <button onClick={onCancel} className="btn-ghost">
+          Cancel
+        </button>
+        <button onClick={() => book.title.trim() && onSave(book)} className="btn-gold">
+          Save to the Tree
+        </button>
+      </div>
+    </OrnateFrame>
+  );
+}
+
+/* ------------------------------------------------------------------ */
+/*  BOOK ROW / CARD                                                     */
+/* ------------------------------------------------------------------ */
+
+function BookRow({ book, onToggleFavorite, onClick }) {
+  return (
+    <div onClick={onClick} className="book-row">
+      <Cover book={book} width={44} />
+      <div style={{ flex: 1, minWidth: 0 }}>
+        <div style={{ fontFamily: "'Cormorant Garamond', serif", fontSize: 17.5, color: "var(--text)", fontWeight: 600 }}>
+          {book.title}
+          {book.seriesNumber ? <span style={{ color: "var(--muted)", fontSize: 13, fontWeight: 400 }}> · Vol. {book.seriesNumber}</span> : null}
+        </div>
+        <div style={{ fontSize: 13, color: "var(--muted)", display: "flex", gap: 10, flexWrap: "wrap", marginTop: 3, alignItems: "center", fontFamily: "'EB Garamond', serif", fontStyle: "italic" }}>
+          <span>{book.genre || "Unclassified"}</span>
+          {book.rating ? <Stars value={book.rating} size={11} /> : null}
+        </div>
+      </div>
+      <StatusPill status={book.status} />
+      <button
+        onClick={(e) => {
+          e.stopPropagation();
+          onToggleFavorite(book.id);
+        }}
+        style={{ background: "none", border: "none", cursor: "pointer", flexShrink: 0 }}
+      >
+        <Heart size={17} style={{ fill: book.favorite ? "var(--primaryLight)" : "transparent", color: "var(--primaryLight)" }} />
+      </button>
+    </div>
+  );
+}
+
+/* ------------------------------------------------------------------ */
+/*  TREE VIEW                                                          */
+/* ------------------------------------------------------------------ */
+
+/* ---- Genealogy-style node chart ---- */
+
+function TreeNode({ title, subtitle, icon: Icon, kind, open, onClick, badge }) {
+  const kindStyles = {
+    root: {
+      minWidth: 168,
+      padding: "16px 22px",
+      background: "radial-gradient(circle at 30% 25%, var(--surface2), var(--surface))",
+      border: "2.5px solid var(--accent)",
+      fontFamily: "'Berkshire Swash', cursive",
+      fontSize: 20,
+      boxShadow: "0 8px 22px rgba(0,0,0,0.5), 0 0 0 5px rgba(212,175,55,0.08)",
+    },
+    author: {
+      minWidth: 148,
+      padding: "12px 18px",
+      background: "linear-gradient(135deg, var(--surface2), var(--surface))",
+      border: "2px solid var(--accent)",
+      fontFamily: "'Cormorant Garamond', serif",
+      fontWeight: 700,
+      fontSize: 16.5,
+      boxShadow: "0 6px 16px rgba(0,0,0,0.4)",
+    },
+    series: {
+      minWidth: 128,
+      padding: "9px 15px",
+      background: "rgba(0,0,0,0.22)",
+      border: "1.5px solid var(--border)",
+      fontFamily: "'Cormorant Garamond', serif",
+      fontStyle: "italic",
+      fontWeight: 600,
+      fontSize: 14.5,
+      boxShadow: "0 4px 10px rgba(0,0,0,0.3)",
+    },
+  };
+  const st = kindStyles[kind];
+  return (
+    <button onClick={onClick} className="tree-node" style={{ ...st, position: "relative" }}>
+      {badge != null && (
+        <span
+          style={{
+            position: "absolute",
+            top: -9,
+            right: -9,
+            background: "var(--primary)",
+            color: "#fff",
+            border: "1.5px solid var(--accent)",
+            borderRadius: 999,
+            fontSize: 10.5,
+            fontFamily: "'Cormorant Garamond', serif",
+            padding: "1px 7px",
+            fontWeight: 700,
+          }}
+        >
+          {badge}
+        </span>
+      )}
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 7 }}>
+        {Icon && <Icon size={kind === "root" ? 17 : 14} color="var(--accent)" />}
+        <span style={{ color: kind === "root" ? "var(--accentSoft)" : "var(--text)" }}>{title}</span>
+        {onClick && (open ? <ChevronDown size={13} color="var(--muted)" /> : <ChevronRight size={13} color="var(--muted)" />)}
+      </div>
+      {subtitle && <div style={{ fontSize: 11, color: "var(--muted)", marginTop: 2, fontFamily: "'EB Garamond', serif", fontStyle: "italic" }}>{subtitle}</div>}
+    </button>
+  );
+}
+
+// Simple connector: a vertical stem down from parent, horizontal rail across children, vertical drops into each child
+function Branches({ children }) {
+  const count = React.Children.count(children);
+  if (count === 0) return null;
+  return (
+    <div style={{ position: "relative", width: "100%" }}>
+      <div className="branch-stem" />
+      {count > 1 && (
+        <div
+          style={{
+            height: 1.5,
+            background: "var(--accent)",
+            opacity: 0.5,
+            margin: "0 auto",
+            maxWidth: `${Math.min(94, count * 15)}%`,
+          }}
+        />
+      )}
+      <div
+        style={{
+          display: "flex",
+          justifyContent: "center",
+          gap: 28,
+          flexWrap: "wrap",
+          paddingTop: 14,
+        }}
+      >
+        {children}
+      </div>
+    </div>
+  );
+}
+
+function Twig({ children }) {
+  return (
+    <div style={{ display: "flex", flexDirection: "column", alignItems: "center", position: "relative" }}>
+      <div style={{ width: 1.5, height: 14, background: "var(--accent)", opacity: 0.6 }} />
+      {children}
+    </div>
+  );
+}
+
+function TreeView({ tree, onToggleFavorite, onOpenBook }) {
+  const [expandedAuthors, setExpandedAuthors] = useState(new Set());
+  const [expandedSeries, setExpandedSeries] = useState(new Set());
+  const [focusedBooks, setFocusedBooks] = useState(null); // { title, books }
+
+  const toggleAuthor = (name) =>
+    setExpandedAuthors((s) => {
+      const n = new Set(s);
+      n.has(name) ? n.delete(name) : n.add(name);
+      return n;
+    });
+  const toggleSeries = (key) =>
+    setExpandedSeries((s) => {
+      const n = new Set(s);
+      n.has(key) ? n.delete(key) : n.add(key);
+      return n;
+    });
+
+  if (tree.length === 0) {
+    return (
+      <div style={{ textAlign: "center", padding: "60px 20px", color: "var(--muted)" }}>
+        <Trees size={40} color="var(--accent)" style={{ marginBottom: 10 }} />
+        <div style={{ fontFamily: "'Berkshire Swash', cursive", fontSize: 22, color: "var(--accentSoft)" }}>
+          Your tree awaits its first leaf
+        </div>
+        <div style={{ marginTop: 6, fontFamily: "'EB Garamond', serif", fontStyle: "italic" }}>
+          Add a book to begin growing your library.
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div style={{ overflowX: "auto", paddingBottom: 10 }}>
+      <div style={{ display: "flex", flexDirection: "column", alignItems: "center", minWidth: 640 }}>
+        {/* Root */}
+        <TreeNode title="My Library" icon={Trees} kind="root" />
+
+        {/* Authors */}
+        <Branches>
+          {tree.map((author) => {
+            const authorOpen = expandedAuthors.has(author.name);
+            const seriesList = Object.values(author.seriesMap);
+            const totalBooks = author.standalone.length + seriesList.reduce((n, s) => n + s.books.length, 0);
+            return (
+              <Twig key={author.name}>
+                <TreeNode
+                  title={author.name}
+                  icon={Feather}
+                  kind="author"
+                  open={authorOpen}
+                  badge={totalBooks}
+                  onClick={() => toggleAuthor(author.name)}
+                />
+
+                {authorOpen && (
+                  <Branches>
+                    {seriesList.map((s) => {
+                      const key = author.name + "::" + s.name;
+                      const seriesOpen = expandedSeries.has(key);
+                      return (
+                        <Twig key={key}>
+                          <TreeNode
+                            title={s.name}
+                            icon={BookOpen}
+                            kind="series"
+                            open={seriesOpen}
+                            badge={s.books.length}
+                            onClick={() => toggleSeries(key)}
+                          />
+                          {seriesOpen && (
+                            <Branches>
+                              {s.books.map((b) => (
+                                <Twig key={b.id}>
+                                  <div onClick={() => onOpenBook(b)} style={{ cursor: "pointer" }}>
+                                    <Cover book={b} width={58} />
+                                    <div
+                                      style={{
+                                        marginTop: 4,
+                                        maxWidth: 76,
+                                        fontSize: 11,
+                                        textAlign: "center",
+                                        color: "var(--muted)",
+                                        fontFamily: "'Cormorant Garamond', serif",
+                                      }}
                                     >
-
-                                    <div>
-
-                                        <div class="book-title">
-                                            {number_text}
-                                            ·
-                                            {title}
-                                        </div>
-
-                                        <div class="book-meta">
-                                            {status}
-                                        </div>
-
+                                      Vol. {b.seriesNumber || "–"}
                                     </div>
-
-                                </div>
-
-                            </div>
-                            """,
-                            unsafe_allow_html=True
-                        )
-
-                    else:
-
-                        st.markdown(
-                            f"""
-                            <div class="book-info">
-
-                                <div class="book-title">
-                                    {number_text}
-                                    ·
-                                    {title}
-                                </div>
-
-                                <div class="book-meta">
-                                    {status}
-                                </div>
-
-                            </div>
-                            """,
-                            unsafe_allow_html=True
-                        )
-
-# ============================================================
-# BOOKS
-# ============================================================
-
-with books_tab:
-
-    if library.empty:
-
-        st.info(
-            "No books yet."
-        )
-
-    else:
-
-        choice = st.radio(
-            "Show",
-            [
-                "All",
-                "Favorites",
-                "Read",
-                "Currently Reading",
-                "Want to Read",
-            ],
-            horizontal=True,
-        )
-
-        books = library.copy()
-
-        if choice == "Favorites":
-
-            books = books[
-                books["Favorite"] == True
-            ]
-
-        elif choice != "All":
-
-            books = books[
-                books["Status"] == choice
-            ]
-
-        for index, book in books.iterrows():
-
-            col1, col2, col3 = st.columns(
-                [1, 6, 1]
-            )
-
-            with col1:
-
-                if book.get("Cover"):
-
-                    st.image(
-                        book["Cover"],
-                        width=70
-                    )
-
-            with col2:
-
-                st.markdown(
-                    f"""
-                    <div class="book-title">
-                        {html.escape(
-                            str(book["Title"])
-                        )}
-                    </div>
-
-                    <div class="book-meta">
-                        {html.escape(
-                            str(book["Author"])
-                        )}
-                        <br>
-                        {html.escape(
-                            str(book["Series"])
-                        )}
-                    </div>
-                    """,
-                    unsafe_allow_html=True
-                )
-
-            with col3:
-
-                favorite = st.checkbox(
-                    "♥",
-                    value=bool(
-                        book.get(
-                            "Favorite",
-                            False
-                        )
-                    ),
-                    key=f"fav_{index}",
-                )
-
-                if favorite != bool(
-                    book.get(
-                        "Favorite",
-                        False
-                    )
-                ):
-
-                    st.session_state.library.loc[
-                        index,
-                        "Favorite"
-                    ] = favorite
-
-                    st.rerun()
-
-# ============================================================
-# ADD BOOK
-# ============================================================
-
-with add_tab:
-
-    st.header(
-        "Add a Book"
-    )
-
-    with st.form(
-        "add_book"
-    ):
-
-        title = st.text_input(
-            "Title"
-        )
-
-        author = st.text_input(
-            "Author"
-        )
-
-        series = st.text_input(
-            "Series",
-            placeholder="Leave blank for standalone"
-        )
-
-        number = st.number_input(
-            "Series number",
-            min_value=0.0,
-            value=0.0,
-            step=0.5
-        )
-
-        isbn = st.text_input(
-            "ISBN"
-        )
-
-        status = st.selectbox(
-            "Status",
-            [
-                "Want to Read",
-                "Currently Reading",
-                "Read",
-            ]
-        )
-
-        rating = st.slider(
-            "Rating",
-            0,
-            5,
-            0
-        )
-
-        favorite = st.checkbox(
-            "Favorite"
-        )
-
-        submit = st.form_submit_button(
-            "Add to My Tree"
-        )
-
-        if submit:
-
-            if not title.strip():
-
-                st.error(
-                    "Please enter a title."
-                )
-
-            elif not author.strip():
-
-                st.error(
-                    "Please enter an author."
-                )
-
-            else:
-
-                actual_series = (
-                    series.strip()
-                    if series.strip()
-                    else "Standalone"
-                )
-
-                cover = get_cover(
-                    title,
-                    author,
-                    isbn
-                )
-
-                new_book = {
-                    "Title": title.strip(),
-                    "Author": author.strip(),
-                    "Series": actual_series,
-                    "Series Number":
-                        number if number else None,
-                    "ISBN": re.sub(
-                        r"\D",
-                        "",
-                        isbn
-                    ),
-                    "My Rating":
-                        rating if rating else None,
-                    "Status": status,
-                    "Favorite": favorite,
-                    "Cover": cover,
-                    "Description": "",
-                    "Publisher": "",
-                    "Pages": "",
-                    "Date Read": "",
-                }
-
-                st.session_state.library = pd.concat(
-                    [
-                        st.session_state.library,
-                        pd.DataFrame(
-                            [new_book]
-                        ),
-                    ],
-                    ignore_index=True
-                )
-
-                st.success(
-                    f'"{title}" was added to your tree!'
-                )
-
-                st.rerun()
-
-# ============================================================
-# IMPORT
-# ============================================================
-
-with import_tab:
-
-    st.header(
-        "Import Your Library"
-    )
-
-    st.write(
-        "Upload a Goodreads CSV, StoryGraph export, "
-        "or another compatible book-list CSV."
-    )
-
-    uploaded = st.file_uploader(
-        "Choose your CSV",
-        type=["csv"]
-    )
-
-    if uploaded:
-
-        if st.button(
-            "Build My Book Tree"
-        ):
-
-            with st.spinner(
-                "Finding your books and covers..."
-            ):
-
-                success = import_books(
-                    uploaded
-                )
-
-            if success:
-
-                st.success(
-                    "Your book tree is ready!"
-                )
-
-                st.rerun()
-```
+                                  </div>
+                                </Twig>
+                              ))}
+                            </Branches>
+                          )}
+                        </Twig>
+                      );
+                    })}
+                    {author.standalone.map((b) => (
+                      <Twig key={b.id}>
+                        <div onClick={() => onOpenBook(b)} style={{ cursor: "pointer" }}>
+                          <Cover book={b} width={58} />
+                        </div>
+                      </Twig>
+                    ))}
+                  </Branches>
+                )}
+              </Twig>
+            );
+          })}
+        </Branches>
+      </div>
+    </div>
+  );
+}
+
+/* ------------------------------------------------------------------ */
+/*  IMPORT PANEL                                                       */
+/* ------------------------------------------------------------------ */
+
+function ImportPanel({ onImport }) {
+  const [status, setStatus] = useState("");
+  const [progress, setProgress] = useState(null);
+  const fileRef = useRef(null);
+
+  const handleFile = (file) => {
+    if (!file) return;
+    setStatus("Reading file…");
+    Papa.parse(file, {
+      header: true,
+      skipEmptyLines: true,
+      complete: async (results) => {
+        const rows = results.data;
+        setStatus(`Parsed ${rows.length} rows. Fetching covers…`);
+        const newBooks = [];
+        for (let i = 0; i < rows.length; i++) {
+          const row = rows[i];
+          const rawTitle = row["Title"] || row["title"] || "";
+          if (!rawTitle.trim()) continue;
+          const { title, series, seriesNumber } = parseSeriesFromTitle(rawTitle);
+          const isbn = (row["ISBN13"] || row["ISBN"] || row["isbn"] || "").replace(/[="]/g, "");
+          const book = emptyBook({
+            title,
+            author: row["Author"] || row["author"] || "",
+            series,
+            seriesNumber,
+            genre: row["Genre"] || row["Bookshelves"] || "",
+            isbn,
+            rating: parseInt(row["My Rating"] || row["Rating"] || "0", 10) || 0,
+            status: mapGoodreadsShelf(row["Exclusive Shelf"] || row["Shelf"] || row["shelf"]),
+            publisher: row["Publisher"] || "",
+            pages: row["Number of Pages"] || row["Pages"] || "",
+            dateRead: row["Date Read"] || "",
+          });
+          setProgress({ current: i + 1, total: rows.length });
+          const cover = await fetchCoverByISBN(book.isbn);
+          book.cover = cover || "";
+          newBooks.push(book);
+        }
+        setProgress(null);
+        setStatus(`Woven ${newBooks.length} books into your tree.`);
+        onImport(newBooks);
+      },
+      error: () => setStatus("Something went wrong reading that file."),
+    });
+  };
+
+  return (
+    <OrnateFrame style={{ background: "linear-gradient(180deg, var(--surface), var(--surface2))", padding: 34, textAlign: "center" }}>
+      <Upload size={28} color="var(--accent)" style={{ marginBottom: 8 }} />
+      <SectionTitle>Import Your Library</SectionTitle>
+      <p style={{ color: "var(--muted)", maxWidth: 460, margin: "0 auto 20px", fontFamily: "'EB Garamond', serif", fontSize: 16, lineHeight: 1.6, fontStyle: "italic" }}>
+        Bring in a CSV export from Goodreads or any compatible library file. Series, series numbers,
+        and covers will be discovered automatically.
+      </p>
+      <input ref={fileRef} type="file" accept=".csv" style={{ display: "none" }} onChange={(e) => handleFile(e.target.files[0])} />
+      <button onClick={() => fileRef.current && fileRef.current.click()} className="btn-gold">
+        Choose CSV File
+      </button>
+      {status && (
+        <div style={{ marginTop: 18, color: "var(--accentSoft)", fontFamily: "'EB Garamond', serif" }}>
+          {status}
+          {progress && (
+            <div style={{ marginTop: 10, fontSize: 13, color: "var(--muted)" }}>
+              <div style={{ width: 220, height: 4, background: "var(--surface2)", borderRadius: 4, margin: "0 auto", overflow: "hidden" }}>
+                <div style={{ width: `${(progress.current / progress.total) * 100}%`, height: "100%", background: "var(--accent)", transition: "width 0.2s" }} />
+              </div>
+              <div style={{ marginTop: 6 }}>{progress.current} / {progress.total}</div>
+            </div>
+          )}
+        </div>
+      )}
+    </OrnateFrame>
+  );
+}
+
+/* ------------------------------------------------------------------ */
+/*  MAIN APP                                                           */
+/* ------------------------------------------------------------------ */
+
+export default function MyBookTree() {
+  const [themeKey, setThemeKey] = useState("emerald");
+  const [books, setBooks] = useState([]);
+  const [view, setView] = useState("tree");
+  const [search, setSearch] = useState("");
+  const [filter, setFilter] = useState("All");
+  const [editingBook, setEditingBook] = useState(null);
+  const [loaded, setLoaded] = useState(false);
+
+  const theme = THEMES[themeKey];
+
+  useEffect(() => {
+    (async () => {
+      try {
+        const b = await window.storage.get("books", false);
+        if (b && b.value) setBooks(JSON.parse(b.value));
+      } catch (e) {}
+      try {
+        const t = await window.storage.get("theme", false);
+        if (t && t.value) setThemeKey(t.value);
+      } catch (e) {}
+      setLoaded(true);
+    })();
+  }, []);
+
+  useEffect(() => {
+    if (!loaded) return;
+    window.storage.set("books", JSON.stringify(books), false).catch(() => {});
+  }, [books, loaded]);
+
+  useEffect(() => {
+    if (!loaded) return;
+    window.storage.set("theme", themeKey, false).catch(() => {});
+  }, [themeKey, loaded]);
+
+  const stats = useMemo(() => {
+    const authors = new Set(books.map((b) => b.author || "Unknown Author"));
+    const series = new Set(books.filter((b) => b.series).map((b) => b.author + "::" + b.series));
+    return {
+      books: books.length,
+      authors: authors.size,
+      series: series.size,
+      read: books.filter((b) => b.status === "Read").length,
+      favorites: books.filter((b) => b.favorite).length,
+    };
+  }, [books]);
+
+  const filteredBooks = useMemo(() => {
+    let list = books;
+    if (filter === "Favorites") list = list.filter((b) => b.favorite);
+    else if (filter !== "All") list = list.filter((b) => b.status === filter);
+    if (search.trim()) {
+      const q = search.toLowerCase();
+      list = list.filter(
+        (b) =>
+          (b.title || "").toLowerCase().includes(q) ||
+          (b.author || "").toLowerCase().includes(q) ||
+          (b.series || "").toLowerCase().includes(q) ||
+          (b.genre || "").toLowerCase().includes(q)
+      );
+    }
+    return list;
+  }, [books, filter, search]);
+
+  const tree = useMemo(() => buildTree(filteredBooks), [filteredBooks]);
+
+  const toggleFavorite = useCallback((id) => {
+    setBooks((bs) => bs.map((b) => (b.id === id ? { ...b, favorite: !b.favorite } : b)));
+  }, []);
+
+  const saveBook = (book) => {
+    setBooks((bs) => {
+      const exists = bs.some((b) => b.id === book.id);
+      return exists ? bs.map((b) => (b.id === book.id ? book : b)) : [...bs, book];
+    });
+    setEditingBook(null);
+    setView("tree");
+  };
+
+  const importBooks = (newBooks) => {
+    setBooks((bs) => [...bs, ...newBooks]);
+  };
+
+  const cssVars = {
+    "--bg": theme.bg,
+    "--bg2": theme.bg2,
+    "--surface": theme.surface,
+    "--surface2": theme.surface2,
+    "--primary": theme.primary,
+    "--primaryLight": theme.primaryLight,
+    "--accent": theme.accent,
+    "--accentSoft": theme.accentSoft,
+    "--text": theme.text,
+    "--muted": theme.muted,
+    "--border": theme.border,
+    "--trunk": theme.trunk,
+    "--leaf": theme.leaf,
+    "--leafDark": theme.leafDark,
+    "--flower": theme.flower,
+  };
+
+  const navBtn = (key, label, Icon) => (
+    <button
+      onClick={() => {
+        setEditingBook(null);
+        setView(key);
+      }}
+      className={`nav-pill ${view === key ? "active" : ""}`}
+    >
+      <Icon size={14} />
+      {label}
+    </button>
+  );
+
+  return (
+    <div
+      style={{
+        ...cssVars,
+        minHeight: "100vh",
+        background: `radial-gradient(ellipse 900px 500px at 50% 0%, var(--bg2), var(--bg) 65%), ${patternDataUri(theme.accent)}`,
+        backgroundBlendMode: "normal, overlay",
+        backgroundSize: "auto, 84px 84px",
+      }}
+      className="book-tree-app"
+    >
+      <style>{`
+        @import url('https://fonts.googleapis.com/css2?family=Berkshire+Swash&family=Cormorant+Garamond:ital,wght@0,400;0,600;0,700;1,500&family=EB+Garamond:ital,wght@0,400;0,600;1,400&display=swap');
+        .book-tree-app * { box-sizing: border-box; }
+        .book-tree-app { font-family: 'EB Garamond', serif; }
+        .book-row {
+          display: flex; gap: 13px; align-items: center;
+          padding: 10px 12px; border-radius: 10px; cursor: pointer;
+          transition: background 0.18s, transform 0.18s;
+          border: 1px solid transparent;
+        }
+        .book-row:hover { background: var(--surface2); border-color: var(--border); transform: translateX(2px); }
+        .tree-node {
+          border-radius: 12px;
+          cursor: pointer;
+          text-align: center;
+          transition: transform 0.18s, box-shadow 0.18s, border-color 0.18s;
+        }
+        .tree-node:hover { transform: translateY(-2px); border-color: var(--accentSoft); }
+        .branch-stem {
+          width: 1.5px;
+          height: 22px;
+          background: var(--accent);
+          opacity: 0.6;
+          margin: 0 auto;
+        }
+        .spin { animation: spin 1s linear infinite; }
+        @keyframes spin { from { transform: rotate(0deg);} to { transform: rotate(360deg);} }
+        ::selection { background: var(--accent); color: var(--ink); }
+        input:focus, select:focus, textarea:focus { border-color: var(--accent) !important; outline: none; }
+        input, select, textarea { font-family: 'EB Garamond', serif; }
+
+        .nav-pill {
+          display: flex; align-items: center; gap: 7px;
+          padding: 9px 18px; border-radius: 999px;
+          border: 1px solid var(--border);
+          background: rgba(0,0,0,0.15);
+          color: var(--muted);
+          cursor: pointer;
+          font-family: 'Cormorant Garamond', serif;
+          font-size: 15.5px; font-weight: 600; letter-spacing: 0.3px;
+          transition: all 0.2s;
+        }
+        .nav-pill:hover { border-color: var(--accent); color: var(--accentSoft); }
+        .nav-pill.active {
+          border-color: var(--accent);
+          background: linear-gradient(135deg, var(--surface2), var(--surface));
+          color: var(--accentSoft);
+          box-shadow: 0 3px 12px rgba(0,0,0,0.35), inset 0 0 0 1px rgba(212,175,55,0.15);
+        }
+
+        .btn-gold {
+          padding: 11px 30px; border-radius: 999px; border: 1px solid var(--accent);
+          background: linear-gradient(135deg, var(--primary), var(--primaryLight));
+          color: #fff; cursor: pointer; font-weight: 700;
+          font-family: 'Cormorant Garamond', serif; font-size: 16px; letter-spacing: 0.4px;
+          box-shadow: 0 6px 18px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.25);
+          transition: transform 0.15s, box-shadow 0.15s;
+        }
+        .btn-gold:hover { transform: translateY(-1px); box-shadow: 0 8px 22px rgba(0,0,0,0.45), inset 0 1px 0 rgba(255,255,255,0.3); }
+        .btn-ghost {
+          padding: 11px 24px; border-radius: 999px; border: 1px solid var(--border);
+          background: transparent; color: var(--muted); cursor: pointer;
+          font-family: 'Cormorant Garamond', serif; font-size: 16px;
+          transition: all 0.15s;
+        }
+        .btn-ghost:hover { color: var(--accentSoft); border-color: var(--accent); }
+
+        .theme-select {
+          appearance: none; -webkit-appearance: none; background-image: none;
+        }
+      `}</style>
+
+      <div style={{ maxWidth: 900, margin: "0 auto", padding: "36px 20px 90px" }}>
+        {/* Theme dropdown */}
+        <div style={{ display: "flex", justifyContent: "flex-end", marginBottom: 8 }}>
+          <select
+            className="theme-select"
+            value={themeKey}
+            onChange={(e) => setThemeKey(e.target.value)}
+            style={{
+              padding: "8px 18px",
+              borderRadius: 999,
+              border: "1px solid var(--accent)",
+              background: "linear-gradient(135deg, var(--surface2), var(--surface))",
+              color: "var(--accentSoft)",
+              fontFamily: "'Cormorant Garamond', serif",
+              fontSize: 14.5,
+              cursor: "pointer",
+              boxShadow: "0 4px 12px rgba(0,0,0,0.3)",
+            }}
+          >
+            {Object.entries(THEMES).map(([key, t]) => (
+              <option key={key} value={key} style={{ background: t.surface, color: t.text }}>
+                {t.label}
+              </option>
+            ))}
+          </select>
+        </div>
+
+        {/* Header */}
+        <div style={{ textAlign: "center" }}>
+          <h1
+            style={{
+              fontFamily: "'Berkshire Swash', cursive",
+              fontSize: "clamp(40px, 6.4vw, 62px)",
+              color: "var(--accentSoft)",
+              margin: 0,
+              textShadow: "0 3px 22px rgba(0,0,0,0.5), 0 0 40px rgba(212,175,55,0.15)",
+              letterSpacing: 0.6,
+            }}
+          >
+            My Book Tree
+          </h1>
+        </div>
+        <div style={{ height: 200, margin: "-8px 0 4px" }}>
+          <WillowTree />
+        </div>
+
+        {/* Stats ornaments */}
+        <div style={{ display: "flex", justifyContent: "center", gap: 16, flexWrap: "wrap", marginBottom: 34, marginTop: 4 }}>
+          <StatOrnament label="Books" value={stats.books} icon={BookOpen} />
+          <StatOrnament label="Authors" value={stats.authors} icon={Feather} />
+          <StatOrnament label="Series" value={stats.series} icon={Trees} />
+          <StatOrnament label="Read" value={stats.read} icon={Sparkles} />
+          <StatOrnament label="Favorites" value={stats.favorites} icon={Heart} />
+        </div>
+
+        {/* Nav */}
+        <div style={{ display: "flex", justifyContent: "center", gap: 10, flexWrap: "wrap", marginBottom: 26 }}>
+          {navBtn("tree", "Book Tree", Trees)}
+          {navBtn("books", "All Books", BookOpen)}
+          {navBtn("add", "Add Book", Plus)}
+          {navBtn("import", "Import Library", Upload)}
+        </div>
+
+        {/* Search + filter */}
+        {(view === "tree" || view === "books") && (
+          <div style={{ marginBottom: 22 }}>
+            <div
+              style={{
+                display: "flex",
+                alignItems: "center",
+                gap: 10,
+                background: "linear-gradient(135deg, var(--surface), var(--surface2))",
+                border: "1px solid var(--border)",
+                borderRadius: 999,
+                padding: "11px 20px",
+                marginBottom: 14,
+                boxShadow: "inset 0 2px 8px rgba(0,0,0,0.25)",
+              }}
+            >
+              <Search size={16} color="var(--accent)" />
+              <input
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                placeholder="Search title, author, series, or genre…"
+                style={{
+                  border: "none",
+                  outline: "none",
+                  background: "transparent",
+                  color: "var(--text)",
+                  fontSize: 15.5,
+                  flex: 1,
+                  fontStyle: "italic",
+                }}
+              />
+              {search && <X size={15} color="var(--muted)" style={{ cursor: "pointer" }} onClick={() => setSearch("")} />}
+            </div>
+            <div style={{ display: "flex", gap: 8, flexWrap: "wrap", justifyContent: "center" }}>
+              {FILTERS.map((f) => (
+                <button
+                  key={f}
+                  onClick={() => setFilter(f)}
+                  style={{
+                    padding: "6px 15px",
+                    borderRadius: 999,
+                    border: `1px solid ${filter === f ? "var(--accent)" : "var(--border)"}`,
+                    background: filter === f ? "var(--surface2)" : "transparent",
+                    color: filter === f ? "var(--accentSoft)" : "var(--muted)",
+                    fontSize: 13,
+                    cursor: "pointer",
+                    fontFamily: "'Cormorant Garamond', serif",
+                  }}
+                >
+                  {f}
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Content */}
+        {(view === "tree" || view === "books") && (
+          <OrnateFrame style={{ background: "linear-gradient(180deg, rgba(0,0,0,0.14), rgba(0,0,0,0.22))", padding: 24 }}>
+            {view === "tree" && <TreeView tree={tree} onToggleFavorite={toggleFavorite} onOpenBook={setEditingBook} />}
+            {view === "books" && (
+              <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+                {filteredBooks.length === 0 && (
+                  <div style={{ textAlign: "center", padding: 40, color: "var(--muted)", fontStyle: "italic" }}>
+                    No books match yet.
+                  </div>
+                )}
+                {filteredBooks.map((b) => (
+                  <BookRow key={b.id} book={b} onToggleFavorite={toggleFavorite} onClick={() => setEditingBook(b)} />
+                ))}
+              </div>
+            )}
+          </OrnateFrame>
+        )}
+
+        {view === "add" && !editingBook && <BookForm onSave={saveBook} onCancel={() => setView("tree")} />}
+        {view === "import" && <ImportPanel onImport={importBooks} />}
+
+        {editingBook && (
+          <div
+            style={{
+              position: "fixed",
+              inset: 0,
+              background: "rgba(0,0,0,0.65)",
+              backdropFilter: "blur(3px)",
+              display: "flex",
+              alignItems: "flex-start",
+              justifyContent: "center",
+              padding: "40px 16px",
+              overflowY: "auto",
+              zIndex: 50,
+            }}
+            onClick={(e) => e.target === e.currentTarget && setEditingBook(null)}
+          >
+            <div style={{ width: "100%", maxWidth: 720 }}>
+              <BookForm initial={editingBook} onSave={saveBook} onCancel={() => setEditingBook(null)} />
+            </div>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
