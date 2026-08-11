@@ -268,26 +268,72 @@ div[data-baseweb="input"] input {{
     border-color: var(--accent) !important;
 }}
 
-.stat-card {{
-    background: var(--surface);
-    border-bottom: 2px solid var(--line);
-    border-radius: 5px 18px 5px 18px;
-    padding: 15px;
-    text-align: center;
-}}
+py
+st.markdown(
+    """
+    <style>
+    @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700&family=Montserrat:wght@300;600&display=swap');
 
-.stat-number {{
-    font-family: "Berkshire Swash", Georgia, serif;
-    font-size: 36px;
-    color: var(--accent);
-}}
+    .stat-card {{
+        position: relative;
+        /* ADAPTIVE BACKGROUND: Uses your theme's surface color */
+        background: var(--surface2) !important;
+        border-radius: 20px;
+        padding: 30px 15px;
+        /* ADAPTIVE BORDER: Uses your theme's accent color */
+        border: 1px solid var(--accent) !important;
+        overflow: hidden;
+        text-align: center;
+        transition: all 0.5s cubic-bezier(0.23, 1, 0.32, 1);
+        box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+    }
 
-.stat-label {{
-    color: var(--muted);
-    font-family: "Libre Baskerville", Georgia, serif;
-    font-size: 10px;
-    text-transform: uppercase;
-    letter-spacing: .12em;
+    .stat-card::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 4px;
+        /* ADAPTIVE ACCENT LINE */
+        background: linear-gradient(90deg, transparent, var(--accent), transparent);
+        opacity: 0.8;
+    }
+
+    .stat-card:hover {
+        transform: translateY(-8px);
+        /* Lighter background on hover */
+        background: var(--card) !important;
+        border-color: var(--accent);
+    }
+
+    .stat-number {
+        font-family: 'Playfair Display', serif !important;
+        font-size: 52px !important;
+        /* ADAPTIVE GRADIENT: White-ish text to theme accent color */
+        background: linear-gradient(180deg, var(--text) 30%, var(--accent) 100%);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        font-weight: 700 !important;
+        margin: 0 !important;
+        line-height: 1.1 !important;
+    }
+
+    .stat-label {
+        font-family: 'Montserrat', sans-serif !important;
+        /* ADAPTIVE LABEL COLOR */
+        color: var(--muted) !important;
+        font-size: 10px !important;
+        text-transform: uppercase;
+        letter-spacing: 4px !important;
+        font-weight: 600 !important;
+        margin-top: 15px;
+    }}
+    </style>
 }}
 
 .tree-container {{
