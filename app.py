@@ -1657,8 +1657,15 @@ with tree_tab:
                             if genre:
                                 meta += f" · {genre}"
 
+                            label = f"📖 {title}"
+
+                            if meta:
+                                label += f" — {meta}"
+
                             # ----------------------------
-                            # BOOK
+                            # BOOK — same pill shape, font,
+                            # and size as the author/series
+                            # st.button boxes above.
                             # ----------------------------
 
                             if cover:
@@ -1667,63 +1674,46 @@ with tree_tab:
                                     f"""
                                     <div style="
                                         margin:6px 0;
-                                        padding:8px;
+                                        padding:0.5rem 1rem;
+                                        box-sizing:border-box;
                                         background:
                                             linear-gradient(
-                                                90deg,
-                                                var(--card),
-                                                transparent
+                                                135deg,
+                                                var(--surface),
+                                                var(--surface2)
                                             );
-                                        border-left:
-                                            2px solid var(--line);
+                                        border:
+                                            1px solid var(--accent);
                                         border-radius:
-                                            0 10px 0 0;
+                                            18px 5px 18px 5px;
+                                        box-shadow:
+                                            0 3px 10px
+                                            rgba(0,0,0,.18);
                                         display:flex;
                                         gap:10px;
                                         align-items:center;
+                                        font-family:
+                                            'Libre Baskerville',
+                                            Georgia,
+                                            serif;
+                                        font-size:1rem;
+                                        color:var(--text);
                                     ">
-
                                         <img
                                             src="{html.escape(cover)}"
                                             style="
-                                                width:50px;
-                                                height:72px;
+                                                width:36px;
+                                                height:52px;
                                                 object-fit:cover;
                                                 border-radius:
                                                     3px 8px 3px 8px;
                                                 border:
                                                     1px solid
                                                     var(--accent);
+                                                flex-shrink:0;
                                             "
                                         >
-
-                                        <div>
-
-                                            <div style="
-                                                font-family:
-                                                    'Berkshire Swash',
-                                                    Georgia,
-                                                    serif;
-                                                font-size:16px;
-                                                color:var(--text);
-                                            ">
-                                                📖 {title}
-                                            </div>
-
-                                            <div style="
-                                                color:var(--muted);
-                                                font-family:
-                                                    'Libre Baskerville',
-                                                    Georgia,
-                                                    serif;
-                                                font-size:9px;
-                                                margin-top:3px;
-                                            ">
-                                                {meta}
-                                            </div>
-
-                                        </div>
-
+                                        <span>{label}</span>
                                     </div>
                                     """
                                 )
@@ -1734,42 +1724,29 @@ with tree_tab:
                                     f"""
                                     <div style="
                                         margin:6px 0;
-                                        padding:8px;
+                                        padding:0.5rem 1rem;
+                                        box-sizing:border-box;
                                         background:
                                             linear-gradient(
-                                                90deg,
-                                                var(--card),
-                                                transparent
+                                                135deg,
+                                                var(--surface),
+                                                var(--surface2)
                                             );
-                                        border-left:
-                                            2px solid var(--line);
+                                        border:
+                                            1px solid var(--accent);
                                         border-radius:
-                                            0 10px 0 0;
+                                            18px 5px 18px 5px;
+                                        box-shadow:
+                                            0 3px 10px
+                                            rgba(0,0,0,.18);
+                                        font-family:
+                                            'Libre Baskerville',
+                                            Georgia,
+                                            serif;
+                                        font-size:1rem;
+                                        color:var(--text);
                                     ">
-
-                                        <div style="
-                                            font-family:
-                                                'Berkshire Swash',
-                                                Georgia,
-                                                serif;
-                                            font-size:16px;
-                                            color:var(--text);
-                                        ">
-                                            📖 {title}
-                                        </div>
-
-                                        <div style="
-                                            color:var(--muted);
-                                            font-family:
-                                                'Libre Baskerville',
-                                                Georgia,
-                                                serif;
-                                            font-size:9px;
-                                            margin-top:3px;
-                                        ">
-                                            {meta}
-                                        </div>
-
+                                        {label}
                                     </div>
                                     """
                                 )
