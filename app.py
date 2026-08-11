@@ -194,7 +194,7 @@ st.html(
 <style>
 
 @import url(
-    'https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;500;600;700&family=Libre+Baskerville:wght@400;700&display=swap'
+    'https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;500;600;700&family=Libre+Baskerville:wght@400;700&family=Parisienne&display=swap'
 );
 
 /* =========================================================
@@ -221,17 +221,18 @@ body,
 
 .stApp {{
     color: var(--text) !important;
+
     background:
         radial-gradient(
-            ellipse at 50% -10%,
+            ellipse at 50% 0%,
             var(--surface2) 0%,
-            var(--page) 52%
+            var(--page) 48%
         ) !important;
 }}
 
 .block-container {{
     max-width: 1450px;
-    padding-top: 1rem !important;
+    padding-top: 0.5rem !important;
     padding-bottom: 4rem !important;
 }}
 
@@ -249,118 +250,218 @@ span {{
     color: var(--text);
 }}
 
+
 /* =========================================================
-   HEADER
+   MAIN HEADER / WEEPING WILLOW
 ========================================================= */
 
 .willow-header {{
     position: relative;
-    text-align: center;
-    padding: 35px 0 20px;
-    min-height: 180px;
+    height: 340px;
+    margin: 0 auto 8px;
     overflow: hidden;
+    text-align: center;
 }}
 
-.willow-header::before {{
-    content: "";
+/* Elegant willow trunk */
+
+.willow-trunk {{
     position: absolute;
     left: 50%;
-    top: 0;
-    width: 4px;
-    height: 170px;
+    bottom: 0;
+    width: 24px;
+    height: 250px;
     transform: translateX(-50%);
     background:
         linear-gradient(
-            to bottom,
-            transparent,
-            var(--line) 15%,
-            var(--line) 100%
+            90deg,
+            transparent 0%,
+            var(--line) 22%,
+            var(--accent2) 48%,
+            var(--line) 75%,
+            transparent 100%
         );
-    opacity: .65;
+    border-radius: 60% 40% 20% 20%;
+    opacity: .72;
 }}
 
-.willow-header::after {{
-    content: "";
+/* Main sweeping branches */
+
+.willow-branch {{
     position: absolute;
+    height: 2px;
+    background: var(--accent2);
+    transform-origin: left center;
+    opacity: .62;
+    border-radius: 100%;
+}}
+
+.branch-left-1 {{
+    width: 310px;
     left: 50%;
-    top: 0;
-    width: 650px;
-    height: 145px;
-    transform: translateX(-50%);
-    border-radius: 50%;
-    border-top: 2px solid var(--accent2);
-    opacity: .28;
-    box-shadow:
-        -210px 20px 0 -48px var(--accent2),
-        210px 20px 0 -48px var(--accent2),
-        -280px 55px 0 -55px var(--accent2),
-        280px 55px 0 -55px var(--accent2);
+    top: 115px;
+    transform: rotate(158deg);
 }}
 
-.header-leaves {{
+.branch-left-2 {{
+    width: 380px;
+    left: 50%;
+    top: 135px;
+    transform: rotate(171deg);
+}}
+
+.branch-left-3 {{
+    width: 290px;
+    left: 50%;
+    top: 165px;
+    transform: rotate(195deg);
+}}
+
+.branch-right-1 {{
+    width: 310px;
+    left: 50%;
+    top: 115px;
+    transform: rotate(22deg);
+}}
+
+.branch-right-2 {{
+    width: 380px;
+    left: 50%;
+    top: 135px;
+    transform: rotate(9deg);
+}}
+
+.branch-right-3 {{
+    width: 290px;
+    left: 50%;
+    top: 165px;
+    transform: rotate(-15deg);
+}}
+
+
+/* Long hanging willow curtains */
+
+.willow-curtain {{
     position: absolute;
-    width: 100%;
-    height: 100%;
-    left: 0;
-    top: 0;
+    top: 55px;
+    width: 2px;
+    background:
+        linear-gradient(
+            to bottom,
+            var(--accent2),
+            rgba(111,179,154,.18),
+            transparent
+        );
+    border-radius: 50%;
+    opacity: .48;
+}}
+
+.curtain-1 {{
+    left: 17%;
+    height: 155px;
+    transform: rotate(8deg);
+}}
+
+.curtain-2 {{
+    left: 24%;
+    height: 205px;
+    transform: rotate(4deg);
+}}
+
+.curtain-3 {{
+    left: 31%;
+    height: 175px;
+    transform: rotate(2deg);
+}}
+
+.curtain-4 {{
+    right: 17%;
+    height: 155px;
+    transform: rotate(-8deg);
+}}
+
+.curtain-5 {{
+    right: 24%;
+    height: 205px;
+    transform: rotate(-4deg);
+}}
+
+.curtain-6 {{
+    right: 31%;
+    height: 175px;
+    transform: rotate(-2deg);
+}}
+
+
+/* Small willow leaves */
+
+.willow-leaves {{
+    position: absolute;
+    inset: 0;
     pointer-events: none;
 }}
 
-.header-leaves::before,
-.header-leaves::after {{
-    content: "❧";
+.willow-leaves span {{
     position: absolute;
     color: var(--accent2);
-    font-size: 38px;
-    opacity: .45;
+    font-size: 18px;
+    opacity: .55;
 }}
 
-.header-leaves::before {{
-    left: 16%;
-    top: 42px;
-    transform: rotate(-25deg);
-}}
+.leaf-1 {{ left: 18%; top: 92px; transform: rotate(-30deg); }}
+.leaf-2 {{ left: 23%; top: 128px; transform: rotate(25deg); }}
+.leaf-3 {{ left: 29%; top: 98px; transform: rotate(-20deg); }}
+.leaf-4 {{ left: 34%; top: 145px; transform: rotate(30deg); }}
 
-.header-leaves::after {{
-    right: 16%;
-    top: 42px;
-    transform: scaleX(-1) rotate(-25deg);
-}}
+.leaf-5 {{ right: 18%; top: 92px; transform: scaleX(-1) rotate(-30deg); }}
+.leaf-6 {{ right: 23%; top: 128px; transform: scaleX(-1) rotate(25deg); }}
+.leaf-7 {{ right: 29%; top: 98px; transform: scaleX(-1) rotate(-20deg); }}
+.leaf-8 {{ right: 34%; top: 145px; transform: scaleX(-1) rotate(30deg); }}
 
-.book-title {{
+
+/* Header typography */
+
+.header-title {{
     position: relative;
-    z-index: 5;
+    z-index: 20;
+    padding-top: 105px;
+
     font-family:
         "Cormorant Garamond",
         Georgia,
         serif;
-    font-size: clamp(58px, 7vw, 88px);
-    line-height: .85;
+
+    font-size: clamp(64px, 8vw, 96px);
+    line-height: .8;
     font-weight: 600;
-    letter-spacing: .01em;
+    letter-spacing: .015em;
+
     color: var(--text);
+
     text-shadow:
-        0 3px 20px rgba(0,0,0,.35);
+        0 4px 25px rgba(0,0,0,.38);
 }}
 
-.book-title::before {{
+.header-title::before {{
     content: "❦";
     display: block;
-    font-size: 28px;
-    line-height: 1;
+    margin-bottom: 15px;
+
     color: var(--accent);
-    margin-bottom: 10px;
+    font-size: 27px;
 }}
 
-.book-title::after {{
-    content: "❦";
+.header-title::after {{
+    content: "❧";
     display: block;
-    font-size: 24px;
-    line-height: 1;
+
+    margin-top: 17px;
+
     color: var(--accent);
-    margin-top: 14px;
-    transform: rotate(180deg);
+    font-size: 25px;
+    transform: scaleX(-1);
 }}
+
 
 /* =========================================================
    THEME PICKER
@@ -368,7 +469,7 @@ span {{
 
 .theme-wrap {{
     max-width: 430px;
-    margin: 8px auto 26px;
+    margin: -5px auto 28px;
     text-align: center;
 }}
 
@@ -377,9 +478,11 @@ span {{
         "Cormorant Garamond",
         Georgia,
         serif;
+
     font-size: 22px;
     font-weight: 600;
     color: var(--text);
+
     margin-bottom: 8px;
 }}
 
@@ -388,12 +491,14 @@ div[data-baseweb="select"] > div {{
     border: 1px solid var(--accent) !important;
     border-radius: 30px !important;
     min-height: 46px !important;
+
     box-shadow:
-        0 4px 20px rgba(0,0,0,.18);
+        0 5px 25px rgba(0,0,0,.2);
 }}
 
 div[data-baseweb="select"] span {{
     color: var(--text) !important;
+
     font-family:
         "Libre Baskerville",
         Georgia,
@@ -408,16 +513,20 @@ div[role="listbox"] {{
     background: var(--surface) !important;
     border: 1px solid var(--accent) !important;
     border-radius: 14px !important;
+
     box-shadow:
         0 20px 50px rgba(0,0,0,.55) !important;
+
     overflow: hidden;
 }}
 
 div[role="option"] {{
     background: var(--surface) !important;
     color: var(--text) !important;
+
     padding: 12px 15px !important;
     border-radius: 8px !important;
+
     font-family:
         "Libre Baskerville",
         Georgia,
@@ -436,24 +545,29 @@ div[role="option"][aria-selected="true"] {{
     background: var(--card) !important;
 }}
 
+
 /* =========================================================
-   ORNAMENTAL STAT AREA
+   STAT GARDEN
 ========================================================= */
 
 .stats-garden {{
     position: relative;
-    margin: 15px auto 34px;
-    padding: 15px 10px 28px;
-    max-width: 1100px;
+
+    max-width: 1120px;
+    margin: 0 auto 35px;
+    padding: 8px 20px 28px;
 }}
 
 .stats-garden::before {{
     content: "";
+
     position: absolute;
-    left: 5%;
-    right: 5%;
+    left: 7%;
+    right: 7%;
     bottom: 0;
+
     height: 1px;
+
     background:
         linear-gradient(
             90deg,
@@ -463,54 +577,104 @@ div[role="option"][aria-selected="true"] {{
             var(--line),
             transparent
         );
+
+    opacity: .75;
 }}
 
 .stats-garden::after {{
     content: "❦";
+
     position: absolute;
     bottom: -15px;
     left: 50%;
+
     transform: translateX(-50%);
-    padding: 0 12px;
+
+    padding: 0 14px;
+
     background: var(--page);
+
     color: var(--accent);
-    font-size: 23px;
+
+    font-size: 22px;
 }}
+
+
+/* Individual stat cards */
 
 .stat-card {{
     position: relative;
+
+    min-height: 118px;
+
+    padding: 18px 10px 15px;
+
     text-align: center;
-    padding: 13px 10px 8px;
-    min-height: 100px;
+
     background:
         linear-gradient(
             145deg,
-            rgba(255,255,255,.035),
-            rgba(0,0,0,.10)
+            rgba(255,255,255,.065),
+            rgba(0,0,0,.12)
         );
-    border: none;
-    border-radius: 50% 50% 44% 44%;
+
+    border: 1px solid rgba(255,255,255,.10);
+
+    border-radius:
+        48% 52% 46% 54%
+        /
+        44% 48% 52% 56%;
+
+    box-shadow:
+        0 8px 25px rgba(0,0,0,.15);
+
+    transition:
+        transform .25s ease,
+        box-shadow .25s ease;
+}}
+
+.stat-card:hover {{
+    transform: translateY(-4px);
+
+    box-shadow:
+        0 12px 30px rgba(0,0,0,.25);
 }}
 
 .stat-card::before {{
-    content: "";
+    content: "❧";
+
     position: absolute;
+    top: -11px;
     left: 50%;
-    top: -7px;
-    width: 50px;
-    height: 1px;
-    transform: translateX(-50%);
-    background: var(--accent2);
+
+    transform:
+        translateX(-50%)
+        rotate(90deg);
+
+    color: var(--accent2);
+    font-size: 19px;
 }}
 
 .stat-card::after {{
-    content: "✦";
+    content: "";
+
     position: absolute;
-    top: -18px;
-    left: 50%;
-    transform: translateX(-50%);
-    color: var(--accent);
-    font-size: 14px;
+
+    left: 20%;
+    right: 20%;
+    bottom: 9px;
+
+    height: 1px;
+
+    background:
+        linear-gradient(
+            90deg,
+            transparent,
+            var(--accent2),
+            transparent
+        );
+
+    opacity: .45;
 }}
 
 .stat-number {{
@@ -518,25 +682,34 @@ div[role="option"][aria-selected="true"] {{
         "Cormorant Garamond",
         Georgia,
         serif;
-    font-size: 45px;
+
+    font-size: 47px;
     line-height: 1;
+
     font-weight: 600;
+
     color: var(--accent);
+
     text-shadow:
-        0 2px 12px rgba(0,0,0,.25);
+        0 3px 15px rgba(0,0,0,.3);
 }}
 
 .stat-label {{
-    margin-top: 8px;
+    margin-top: 9px;
+
     color: var(--muted);
+
     font-family:
         "Libre Baskerville",
         Georgia,
         serif;
+
     font-size: 9px;
+
     text-transform: uppercase;
     letter-spacing: .18em;
 }}
+
 
 /* =========================================================
    TABS
@@ -548,21 +721,31 @@ div[role="option"][aria-selected="true"] {{
 
 .stTabs [data-baseweb="tab-list"] {{
     justify-content: center;
-    gap: 8px;
+    gap: 10px;
+
     background: transparent !important;
-    border-bottom: 1px solid var(--line) !important;
+
+    border-bottom:
+        1px solid var(--line) !important;
 }}
 
 .stTabs [data-baseweb="tab"] {{
     background: transparent !important;
+
     color: var(--muted) !important;
-    border-radius: 25px 25px 0 0 !important;
-    padding: 10px 22px !important;
+
+    border-radius:
+        22px 22px 0 0 !important;
+
+    padding:
+        11px 24px !important;
+
     font-family:
         "Cormorant Garamond",
         Georgia,
         serif !important;
-    font-size: 19px !important;
+
+    font-size: 20px !important;
     font-weight: 600 !important;
 }}
 
@@ -573,10 +756,14 @@ div[role="option"][aria-selected="true"] {{
 
 .stTabs [aria-selected="true"] {{
     color: var(--text) !important;
-    background: var(--surface) !important;
+
+    background:
+        rgba(255,255,255,.035) !important;
+
     box-shadow:
         inset 0 -3px 0 var(--accent);
 }}
+
 
 /* =========================================================
    SEARCH
@@ -584,7 +771,10 @@ div[role="option"][aria-selected="true"] {{
 
 div[data-baseweb="input"] > div {{
     background: var(--surface) !important;
-    border: 1px solid var(--line) !important;
+
+    border:
+        1px solid var(--line) !important;
+
     border-radius: 25px !important;
 }}
 
@@ -597,127 +787,136 @@ div[data-baseweb="input"] input::placeholder {{
     opacity: .75;
 }}
 
+
 /* =========================================================
-   WILLOW TREE
+   TREE
 ========================================================= */
 
 .tree-area {{
     position: relative;
-    margin: 28px auto 20px;
-    padding: 45px 28px 55px;
-    min-height: 250px;
+
+    margin: 30px auto 25px;
+
+    padding:
+        48px 28px 55px;
+
+    min-height: 230px;
+
     overflow: hidden;
+
     background:
         radial-gradient(
             ellipse at 50% 0%,
-            var(--surface2),
+            var(--surface2) 0%,
             var(--surface) 65%
         );
-    border: 1px solid rgba(255,255,255,.05);
-    border-radius: 45% 45% 20px 20px / 30px 30px 20px 20px;
+
+    border:
+        1px solid rgba(255,255,255,.07);
+
+    border-radius:
+        48% 48% 20px 20px
+        /
+        45px 45px 20px 20px;
+
     box-shadow:
-        inset 0 20px 60px rgba(0,0,0,.12),
-        0 18px 45px rgba(0,0,0,.16);
+        inset 0 20px 65px rgba(0,0,0,.12),
+        0 15px 40px rgba(0,0,0,.16);
 }}
 
-.tree-area::before {{
-    content: "";
-    position: absolute;
-    left: 50%;
-    top: 0;
-    width: 14px;
-    height: 100%;
-    transform: translateX(-50%);
-    background:
-        linear-gradient(
-            90deg,
-            transparent,
-            var(--line),
-            var(--accent2),
-            var(--line),
-            transparent
-        );
-    opacity: .16;
-    border-radius: 50%;
-}}
 
-.tree-area::after {{
-    content: "";
-    position: absolute;
-    left: 50%;
-    top: 15px;
-    width: 80%;
-    height: 100px;
-    transform: translateX(-50%);
-    border-top: 1px solid var(--accent2);
-    border-radius: 50%;
-    opacity: .22;
-}}
-
-/* =========================================================
-   ROOT
-========================================================= */
+/* Root */
 
 .root-node {{
     position: relative;
-    z-index: 2;
-    width: min(350px, 85%);
-    margin: 0 auto 50px;
-    padding: 22px 28px 19px;
+    z-index: 5;
+
+    width: min(360px, 88%);
+
+    margin: 0 auto 42px;
+
+    padding:
+        20px 28px 18px;
+
     text-align: center;
+
     background:
         linear-gradient(
-            135deg,
+            145deg,
             var(--accent),
             var(--line)
         );
+
     color: var(--page);
-    border-radius: 60% 40% 55% 45% / 55% 45% 55% 45%;
+
+    border-radius:
+        50% 50% 45% 55%
+        /
+        52% 48% 52% 48%;
+
     box-shadow:
         0 10px 35px rgba(0,0,0,.28);
-    transform: rotate(-1deg);
+
+    transform: rotate(-.7deg);
 }}
 
 .root-node::before {{
-    content: "❦";
+    content: "❧";
+
     position: absolute;
-    left: -28px;
-    top: 20px;
+    left: -32px;
+    top: 15px;
+
     color: var(--accent2);
+
     font-size: 30px;
-    transform: rotate(-25deg);
+
+    transform:
+        rotate(-25deg);
 }}
 
 .root-node::after {{
-    content: "❦";
+    content: "❧";
+
     position: absolute;
-    right: -28px;
-    bottom: 18px;
+    right: -32px;
+    bottom: 15px;
+
     color: var(--accent2);
+
     font-size: 30px;
-    transform: scaleX(-1) rotate(-25deg);
+
+    transform:
+        scaleX(-1)
+        rotate(-25deg);
 }}
 
 .root-node-title {{
     color: var(--page) !important;
+
     font-family:
         "Cormorant Garamond",
         Georgia,
         serif;
-    font-size: 36px;
+
+    font-size: 37px;
     font-weight: 700;
 }}
 
 .root-node-small {{
     color: var(--page) !important;
+
     font-family:
         "Libre Baskerville",
         Georgia,
         serif;
+
     font-size: 10px;
     letter-spacing: .06em;
+
     opacity: .82;
 }}
+
 
 /* =========================================================
    AUTHOR BRANCHES
@@ -725,29 +924,45 @@ div[data-baseweb="input"] input::placeholder {{
 
 .author-info {{
     position: relative;
+
     margin: 18px 2% 8px;
-    padding: 13px 22px;
+
+    padding:
+        13px 22px;
+
     background:
         linear-gradient(
             90deg,
             var(--surface2),
-            rgba(0,0,0,0)
+            transparent
         );
-    border: none;
-    border-left: 2px solid var(--accent2);
-    border-radius: 0 35px 35px 0;
+
+    border-left:
+        2px solid var(--accent2);
+
+    border-radius:
+        0 35px 35px 0;
 }}
 
 .author-info::before {{
     content: "";
+
     position: absolute;
+
     left: -2px;
-    top: -13px;
-    width: 55px;
-    height: 25px;
-    border-left: 2px solid var(--accent2);
-    border-top: 1px solid var(--accent2);
-    border-radius: 50%;
+    top: -12px;
+
+    width: 60px;
+    height: 27px;
+
+    border-left:
+        2px solid var(--accent2);
+
+    border-top:
+        1px solid var(--accent2);
+
+    border-radius: 60% 0 0 0;
+
     opacity: .55;
 }}
 
@@ -756,20 +971,26 @@ div[data-baseweb="input"] input::placeholder {{
         "Cormorant Garamond",
         Georgia,
         serif;
-    font-size: 29px;
+
+    font-size: 30px;
     font-weight: 600;
+
     color: var(--text);
 }}
 
 .author-count {{
     color: var(--muted);
+
     font-family:
         "Libre Baskerville",
         Georgia,
         serif;
+
     font-size: 10px;
+
     margin-top: 1px;
 }}
+
 
 /* =========================================================
    SERIES
@@ -777,19 +998,32 @@ div[data-baseweb="input"] input::placeholder {{
 
 .series-info {{
     position: relative;
+
     margin: 10px 6% 8px;
-    padding: 10px 17px;
-    background: rgba(0,0,0,.09);
-    border-left: 1px solid var(--accent2);
-    border-radius: 0 22px 22px 0;
+
+    padding:
+        10px 17px;
+
+    background:
+        rgba(0,0,0,.09);
+
+    border-left:
+        1px solid var(--accent2);
+
+    border-radius:
+        0 22px 22px 0;
 }}
 
 .series-info::before {{
     content: "❧";
+
     position: absolute;
+
     left: -28px;
     top: 2px;
+
     color: var(--accent2);
+
     font-size: 20px;
 }}
 
@@ -798,15 +1032,19 @@ div[data-baseweb="input"] input::placeholder {{
         "Cormorant Garamond",
         Georgia,
         serif;
+
     font-size: 24px;
     font-weight: 600;
+
     color: var(--text);
 }}
 
 .series-count {{
     color: var(--muted);
+
     font-size: 10px;
 }}
+
 
 /* =========================================================
    BOOKS
@@ -814,29 +1052,44 @@ div[data-baseweb="input"] input::placeholder {{
 
 .book-info {{
     position: relative;
+
     margin: 8px 11% 10px;
-    padding: 11px 15px;
+
+    padding:
+        11px 15px;
+
     background:
         linear-gradient(
             90deg,
             var(--card),
             rgba(0,0,0,.08)
         );
-    border-left: 1px solid var(--line);
-    border-radius: 0 16px 16px 0;
+
+    border-left:
+        1px solid var(--line);
+
+    border-radius:
+        0 16px 16px 0;
+
     box-shadow:
         0 4px 15px rgba(0,0,0,.10);
 }}
 
 .book-info::before {{
     content: "";
+
     position: absolute;
+
     left: -1px;
     top: 50%;
+
     width: 28px;
     height: 1px;
+
     background: var(--line);
-    transform: translateX(-100%);
+
+    transform:
+        translateX(-100%);
 }}
 
 .book-title {{
@@ -844,31 +1097,43 @@ div[data-baseweb="input"] input::placeholder {{
         "Cormorant Garamond",
         Georgia,
         serif;
+
     font-size: 22px;
     line-height: 1.05;
+
     font-weight: 600;
+
     color: var(--text);
 }}
 
 .book-meta {{
     color: var(--muted);
+
     font-family:
         "Libre Baskerville",
         Georgia,
         serif;
+
     font-size: 10px;
+
     margin-top: 5px;
 }}
 
 .book-cover {{
     width: 55px;
     height: 80px;
+
     object-fit: cover;
+
     border-radius: 5px;
-    border: 1px solid var(--accent);
+
+    border:
+        1px solid var(--accent);
+
     box-shadow:
         0 5px 12px rgba(0,0,0,.3);
 }}
+
 
 /* =========================================================
    BUTTONS
@@ -876,30 +1141,47 @@ div[data-baseweb="input"] input::placeholder {{
 
 .stButton > button {{
     background: transparent !important;
+
     color: var(--text) !important;
-    border: 1px solid transparent !important;
+
+    border:
+        1px solid transparent !important;
+
     border-radius: 30px !important;
+
     font-family:
         "Cormorant Garamond",
         Georgia,
         serif !important;
+
     font-size: 18px !important;
+
     font-weight: 600 !important;
+
     text-align: left !important;
-    transition: all .2s ease;
+
+    transition:
+        all .2s ease;
 }}
 
 .stButton > button:hover {{
-    background: var(--surface2) !important;
-    border-color: var(--line) !important;
+    background:
+        var(--surface2) !important;
+
+    border-color:
+        var(--line) !important;
+
     color: var(--text) !important;
-    transform: translateX(3px);
+
+    transform:
+        translateX(3px);
 }}
 
 .stButton > button:focus {{
     box-shadow:
         0 0 0 1px var(--accent) !important;
 }}
+
 
 /* =========================================================
    FORM ELEMENTS
@@ -937,8 +1219,9 @@ div[data-baseweb="textarea"] > div {{
     color: var(--text) !important;
 }}
 
+
 /* =========================================================
-   HEADINGS INSIDE TABS
+   TAB HEADINGS
 ========================================================= */
 
 .tab-heading {{
@@ -946,28 +1229,40 @@ div[data-baseweb="textarea"] > div {{
         "Cormorant Garamond",
         Georgia,
         serif;
+
     color: var(--text);
-    font-size: 34px;
+
+    font-size: 36px;
     font-weight: 600;
+
     text-align: center;
+
     margin: 15px 0 20px;
 }}
 
 .tab-heading::after {{
-    content: "  ❦  ";
+    content: "❦";
+
     display: block;
+
     color: var(--accent);
-    font-size: 19px;
-    margin-top: 3px;
+
+    font-size: 20px;
+
+    margin-top: 4px;
 }}
 
+
 /* =========================================================
-   INFO / SUCCESS
+   ALERTS
 ========================================================= */
 
 div[data-testid="stAlert"] {{
     background: var(--surface) !important;
-    border: 1px solid var(--line) !important;
+
+    border:
+        1px solid var(--line) !important;
+
     border-radius: 15px !important;
 }}
 
@@ -975,19 +1270,24 @@ div[data-testid="stAlert"] * {{
     color: var(--text) !important;
 }}
 
+
 /* =========================================================
    FILE UPLOADER
 ========================================================= */
 
 section[data-testid="stFileUploaderDropzone"] {{
     background: var(--surface) !important;
-    border: 1px dashed var(--line) !important;
+
+    border:
+        1px dashed var(--line) !important;
+
     border-radius: 18px !important;
 }}
 
 section[data-testid="stFileUploaderDropzone"] * {{
     color: var(--text) !important;
 }}
+
 
 /* =========================================================
    PROGRESS
@@ -997,14 +1297,43 @@ div[data-testid="stProgressBar"] > div > div {{
     background: var(--accent) !important;
 }}
 
+
 /* =========================================================
    MOBILE
 ========================================================= */
 
 @media (max-width: 700px) {{
 
-    .book-title {{
-        font-size: 55px;
+    .willow-header {{
+        height: 280px;
+    }}
+
+    .header-title {{
+        font-size: 58px;
+        padding-top: 105px;
+    }}
+
+    .willow-trunk {{
+        height: 220px;
+    }}
+
+    .branch-left-1,
+    .branch-right-1 {{
+        width: 230px;
+    }}
+
+    .branch-left-2,
+    .branch-right-2 {{
+        width: 270px;
+    }}
+
+    .branch-left-3,
+    .branch-right-3 {{
+        width: 220px;
+    }}
+
+    .stat-number {{
+        font-size: 38px;
     }}
 
     .tree-area {{
@@ -1026,7 +1355,9 @@ div[data-testid="stProgressBar"] > div > div {{
     }}
 
     .stTabs [data-baseweb="tab"] {{
-        padding: 8px 10px !important;
+        padding:
+            8px 10px !important;
+
         font-size: 16px !important;
     }}
 }}
@@ -1043,9 +1374,37 @@ st.html(
     """
     <div class="willow-header">
 
-        <div class="header-leaves"></div>
+        <div class="willow-trunk"></div>
 
-        <div class="book-title">
+        <div class="willow-branch branch-left-1"></div>
+        <div class="willow-branch branch-left-2"></div>
+        <div class="willow-branch branch-left-3"></div>
+
+        <div class="willow-branch branch-right-1"></div>
+        <div class="willow-branch branch-right-2"></div>
+        <div class="willow-branch branch-right-3"></div>
+
+        <div class="willow-curtain curtain-1"></div>
+        <div class="willow-curtain curtain-2"></div>
+        <div class="willow-curtain curtain-3"></div>
+
+        <div class="willow-curtain curtain-4"></div>
+        <div class="willow-curtain curtain-5"></div>
+        <div class="willow-curtain curtain-6"></div>
+
+        <div class="willow-leaves">
+            <span class="leaf-1">❧</span>
+            <span class="leaf-2">❦</span>
+            <span class="leaf-3">❧</span>
+            <span class="leaf-4">❦</span>
+
+            <span class="leaf-5">❧</span>
+            <span class="leaf-6">❦</span>
+            <span class="leaf-7">❧</span>
+            <span class="leaf-8">❦</span>
+        </div>
+
+        <div class="header-title">
             My Book Tree
         </div>
 
@@ -1094,10 +1453,6 @@ def get_cover(title, author="", isbn=""):
         str(isbn)
     )
 
-    # --------------------------------------------------------
-    # ISBN
-    # --------------------------------------------------------
-
     if isbn:
 
         url = (
@@ -1120,10 +1475,6 @@ def get_cover(title, author="", isbn=""):
 
         except Exception:
             pass
-
-    # --------------------------------------------------------
-    # OPEN LIBRARY
-    # --------------------------------------------------------
 
     try:
 
@@ -1159,10 +1510,6 @@ def get_cover(title, author="", isbn=""):
 
     except Exception:
         pass
-
-    # --------------------------------------------------------
-    # GOOGLE BOOKS
-    # --------------------------------------------------------
 
     try:
 
@@ -1212,11 +1559,11 @@ def detect_series(title):
 
     patterns = [
 
-        r"\(([^()]*?)#\s*\d+(?:\.\d+)?[^()]*\)",
-        r"\[([^\[\]]*?)#\s*\d+(?:\.\d+)?[^\[\]]*\]",
+        r"\(([^()]*)#\s*\d+(?:\.\d+)?[^()]*\)",
+        r"\[([^\[\]]*)#\s*\d+(?:\.\d+)?[^\[\]]*\]",
 
-        r"\(([^()]*?)\bBook\s+\d+(?:\.\d+)?[^()]*\)",
-        r"\[([^\[\]]*?)\bBook\s+\d+(?:\.\d+)?[^\[\]]*\]",
+        r"\(([^()]*)\bBook\s+\d+(?:\.\d+)?[^()]*\)",
+        r"\[([^\[\]]*)\bBook\s+\d+(?:\.\d+)?[^\[\]]*\]",
     ]
 
     for pattern in patterns:
@@ -1542,6 +1889,7 @@ favorites = (
     else 0
 )
 
+
 # ============================================================
 # STATS
 # ============================================================
@@ -1586,6 +1934,7 @@ for col, (number, label) in zip(
             """
         )
 
+
 # ============================================================
 # TABS
 # ============================================================
@@ -1598,6 +1947,7 @@ tree_tab, books_tab, add_tab, import_tab = st.tabs(
         "❧ Import",
     ]
 )
+
 
 # ============================================================
 # TREE
@@ -1746,10 +2096,6 @@ with tree_tab:
 
             for series in series_list:
 
-                # ------------------------------------------------
-                # STANDALONE
-                # ------------------------------------------------
-
                 if series == "Standalone":
 
                     standalone_books = author_books[
@@ -1857,10 +2203,6 @@ with tree_tab:
                             )
 
                     continue
-
-                # ------------------------------------------------
-                # SERIES
-                # ------------------------------------------------
 
                 series_id = (
                     author_id
@@ -2053,6 +2395,7 @@ with tree_tab:
                             """
                         )
 
+
 # ============================================================
 # BOOKS
 # ============================================================
@@ -2170,6 +2513,7 @@ with books_tab:
                     ] = favorite
 
                     st.rerun()
+
 
 # ============================================================
 # ADD BOOK
@@ -2304,6 +2648,7 @@ with add_tab:
                 )
 
                 st.rerun()
+
 
 # ============================================================
 # IMPORT
