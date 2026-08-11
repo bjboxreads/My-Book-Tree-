@@ -34,7 +34,7 @@ st.markdown("""
 }
 
 .book-title-main {
-    font-family: "Caslon 540 Roman", Garamond, Baskerville, "Goudy Old Style", serif;
+    font-family: "Caslon 540 Roman", "Caslon 540", "Big Caslon", Garamond, serif;
     font-size: 88px;
     font-weight: 600;
     letter-spacing: 2px;
@@ -46,7 +46,7 @@ st.markdown("""
 }
 
 .book-title-subtitle {
-    font-family: "Caslon 540 ROman", Garamond, Baskerbille, "Goudy Old Style", serif;
+    font-family: font-family: "Caslon 540 Roman", "Caslon 540", "Big Caslon", Garamond, serif;
     font-size: 20px;
     font-style: italic;
     letter-spacing: 5px;
