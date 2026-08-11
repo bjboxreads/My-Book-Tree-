@@ -31,7 +31,7 @@ def display_ancestry_tree(df):
             parts.append(
                 f'<details class="atree-series">'
                 f'<summary>'
-                f'<span class="atree-pill atree-pill-sm">📂 '
+                f'<span class="atree-pill">📂 '
                 f'{html.escape(str(series))} '
                 f'({len(series_books)})</span>'
                 f'</summary>'
@@ -41,32 +41,14 @@ def display_ancestry_tree(df):
                 title = html.escape(str(book.get('Title', '')))
                 status = html.escape(str(book.get('Status', '') or ''))
                 genre = html.escape(str(book.get('Genre', '') or ''))
-                cover = str(book.get('Cover', '') or '')
-                meta = status
+                label = f'📖 {title}'
+                if status:
+                    label += f' — {status}'
                 if genre:
-                    meta += f' · {genre}' if meta else genre
-                meta_html = (
-                    f'<div class="atree-book-meta">{meta}</div>'
-                    if meta else ''
+                    label += f' · {genre}'
+                parts.append(
+                    f'<div class="atree-pill atree-pill-book">{label}</div>'
                 )
-                if cover:
-                    parts.append(
-                        f'<div class="atree-book atree-book-cover">'
-                        f'<img class="atree-book-img" '
-                        f'src="{html.escape(cover)}">'
-                        f'<div>'
-                        f'<div class="atree-book-title">📖 {title}</div>'
-                        f'{meta_html}'
-                        f'</div>'
-                        f'</div>'
-                    )
-                else:
-                    parts.append(
-                        f'<div class="atree-book">'
-                        f'<div class="atree-book-title">📖 {title}</div>'
-                        f'{meta_html}'
-                        f'</div>'
-                    )
             parts.append('</div></details>')
 
         parts.append('</div></details>')
@@ -76,9 +58,8 @@ def display_ancestry_tree(df):
     st.html(
         f"""
         <style>
-        /* Match these boxes to the app's real visual identity:
-           the .stButton>button pill for author/series toggles,
-           and the inline book-card style used elsewhere for books. */
+        /* All three tree levels (author / series / book) share one
+           identical pill style: same size, same font, same shape. */
 
         .book-ancestry-tree summary {{
             cursor: pointer;
@@ -96,7 +77,7 @@ def display_ancestry_tree(df):
         }}
 
         .atree-pill {{
-            display: inline-block;
+            display: block;
             width: 100%;
             box-sizing: border-box;
             background: linear-gradient(
@@ -106,6 +87,7 @@ def display_ancestry_tree(df):
             border: 1px solid var(--accent);
             border-radius: 18px 5px 18px 5px;
             font-family: "Libre Baskerville", Georgia, serif;
+            font-size: 1rem;
             box-shadow: 0 3px 10px rgba(0,0,0,.18);
             padding: 0.5rem 1rem;
             transition: all .15s ease;
@@ -116,8 +98,11 @@ def display_ancestry_tree(df):
             );
             box-shadow: 0 4px 14px rgba(0,0,0,.25);
         }}
-        .atree-pill-sm {{
-            font-size: 0.9em;
+        summary .atree-pill {{
+            cursor: pointer;
+        }}
+        .atree-pill-book {{
+            margin: 6px 0;
         }}
 
         .atree-series-row {{
@@ -133,37 +118,6 @@ def display_ancestry_tree(df):
 
         .atree-books {{
             margin-top: 8px;
-        }}
-        .atree-book {{
-            margin: 6px 0;
-            padding: 8px;
-            background: linear-gradient(90deg, var(--card), transparent);
-            border-left: 2px solid var(--line);
-            border-radius: 0 10px 0 0;
-        }}
-        .atree-book-cover {{
-            display: flex;
-            gap: 10px;
-            align-items: center;
-        }}
-        .atree-book-img {{
-            width: 50px;
-            height: 72px;
-            object-fit: cover;
-            border-radius: 3px 8px 3px 8px;
-            border: 1px solid var(--accent);
-            flex-shrink: 0;
-        }}
-        .atree-book-title {{
-            font-family: "Berkshire Swash", Georgia, serif;
-            font-size: 16px;
-            color: var(--text);
-        }}
-        .atree-book-meta {{
-            color: var(--muted);
-            font-family: "Libre Baskerville", Georgia, serif;
-            font-size: 9px;
-            margin-top: 3px;
         }}
         </style>
         {''.join(parts)}
