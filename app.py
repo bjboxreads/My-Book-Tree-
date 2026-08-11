@@ -1565,232 +1565,40 @@ with tree_tab:
                 # SERIES
 
                 series_id = (
-                    author_id
-                    + "::"
-                    + safe_id(series)
-                )
-
-                series_open = (
-                    series_id
-                    in st.session_state.open_series
-                )
-
-                arrow = (
-                    "▼"
-                    if series_open
-                    else "▶"
-                )
-
-                series_books = author_books[
-                    author_books["Series"]
-                    .fillna(
-                        "Standalone"
-                    )
-                    .astype(str)
-                    == series
-                ].copy()
-
-                st.html(
-                    f"""
-                    <div class="series-branch">
-
-                        <div class="series-card">
-
-                            <div class="series-name">
-                                {html.escape(series)}
-                            </div>
-
-                            <div class="series-count">
-                                {len(series_books)}
-                                {
-                                    "book"
-                                    if len(series_books) == 1
-                                    else "books"
-                                }
-                            </div>
-
-                        </div>
-
-                    </div>
-                    """
-                )
-
-                if st.button(
-                    f"{arrow} {series}",
-                    key=(
-                        f"series_{series_id}"
-                    ),
-                    use_container_width=True,
-                ):
-
-                    if series_open:
-
-                        st.session_state.open_series.discard(
-                            series_id
-                        )
-
-                    else:
-
-                        st.session_state.open_series.add(
-                            series_id
-                        )
-
-                    st.rerun()
-
-                if not series_open:
-                    continue
-
-                # BOOKS IN SERIES
-
-                series_books = (
-                    series_books.sort_values(
-                        by=[
-                            "Series Number",
-                            "Title",
-                        ],
-                        na_position="last",
-                    )
-                )
-
-                for position, (
-                    _,
-                    book,
-                ) in enumerate(
-                    series_books.iterrows(),
-                    1,
-                ):
-
-                    number = book.get(
-                        "Series Number"
-                    )
-
-                    if pd.notna(number):
-
-                        try:
-
-                            if float(
-                                number
-                            ).is_integer():
-
-                                number_text = (
-                                    f"Book {int(number)}"
-                                )
-
-                            else:
-
-                                number_text = (
-                                    f"Book {number}"
-                                )
-
-                        except Exception:
-
-                            number_text = (
-                                f"Book {position}"
-                            )
-
-                    else:
-
-                        number_text = (
-                            f"Book {position}"
-                        )
-
-                    title = html.escape(
-                        str(
-                            book.get(
-                                "Title",
-                                "",
-                            )
-                        )
-                    )
-
-                    status = html.escape(
-                        str(
-                            book.get(
-                                "Status",
-                                "",
-                            )
-                        )
-                    )
-
-                    genre = html.escape(
-                        str(
-                            book.get(
-                                "Genre",
-                                "",
-                            )
-                            or ""
-                        )
-                    )
-
-                    cover = str(
-                        book.get(
-                            "Cover",
-                            "",
-                        )
-                        or ""
-                    )
-
-                    meta = status
-
-                    if genre:
-                        meta += (
-                            f" · {genre}"
-                        )
-
-                    if cover:
-
-                        st.html(
-                            f"""
-                            <div class="book-branch">
-
-                                <div style="
-                                    display:flex;
-                                    gap:14px;
-                                    align-items:center;
-                                ">
-
-                                    <img
-                                        class="book-cover"
-                                        src="{html.escape(cover)}"
-                                    >
-
-                                    <div>
-
-                                        <div class="book-title">
-                                            {number_text} · {title}
-                                        </div>
-
-                                        <div class="book-meta">
-                                            {meta}
-                                        </div>
-
-                                    </div>
-
-                                </div>
-
-                            </div>
-                            """
-                        )
-
-                    else:
-
-                        st.html(
-                            f"""
-                            <div class="book-branch">
-
-                                <div class="book-title">
-                                    {number_text} · {title}
-                                </div>
-
-                                <div class="book-meta">
-                                    {meta}
-                                </div>
-
-                            </div>
-                            """
-                        )
-
-
+                           # ============================================================
+        # ANCESTRY TREE VIEW
+        # ============================================================
+        
+        # 1. Clean data: Fill empty Series with 'Standalone'
+        filtered['Series'] = filtered['Series'].fillna('Standalone').replace(['', 'nan', 'None'], 'Standalone')
+        
+        # 2. Iterate through each Author (The Trunk)
+        author_list = sorted(filtered["Author"].unique(), key=lambda x: str(x).lower())
+        
+        for author in author_list:
+            author_df = filtered[filtered["Author"] == author]
+            
+            # Creating the main trunk expander (Closed by default)
+            with st.expander(f"🌳 {author} ({len(author_df)} books)", expanded=False):
+                
+                # 3. Get all Series for this specific author
+                series_list = sorted(author_df['Series'].unique(), key=lambda x: str(x).lower())
+                
+                # 4. Create Columns so Series appear side-by-side (Siblings)
+                cols = st.columns(len(series_list))
+                
+                for i, series in enumerate(series_list):
+                    with cols[i]:
+                        # 5. Create a branch for each Series (Closed by default)
+                        with st.expander(f"📂 {series}", expanded=False):
+                            
+                            # 6. List the Books vertically underneath (The Kids)
+                            series_books = author_df[author_df['Series'] == series]
+                            for _, book in series_books.iterrows():
+                                # Display book title and cover if it exists
+                                if book['Cover']:
+                                    st.image(book['Cover'], width=60)
+                                st.write(f"📖 {book['Title']}")
 # ============================================================
 # BOOKS TAB
 # ============================================================
