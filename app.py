@@ -699,7 +699,7 @@ def import_books(uploaded_file):
                 low_memory=False,
             )
 
-    except Exception 
+    except Exception: 
 
     try:
 
