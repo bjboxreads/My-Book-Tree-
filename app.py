@@ -158,7 +158,7 @@ theme = THEMES[st.session_state.theme]
 # CSS
 # ============================================================
 
-st.html(f""")
+st.html(f"""
 <style>
 
 @import url('https://fonts.googleapis.com/css2?family=Berkshire+Swash&family=Libre+Baskerville:wght@400;700&display=swap');
@@ -268,63 +268,26 @@ div[data-baseweb="input"] input {{
     border-color: var(--accent) !important;
 }}
 
-py
-st.markdown(
-   st.markdown(
-    """st.markdown(
-    """
-    <style>
-    /* Fancy adaptive stat cards */
-    .stat-card {
-        position: relative;
-        background: var(--surface2) !important;
-        border-radius: 20px !important;
-        padding: 30px 15px !important;
-        border: 1px solid var(--accent) !important;
-        overflow: hidden;
-        text-align: center;
-        transition: all 0.5s ease;
-        box-shadow: 0 10px 30px rgba(0,0,0,0.3);
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        justify-content: center;
-    }
+.stat-card {{
+    background: var(--surface);
+    border-bottom: 2px solid var(--line);
+    border-radius: 5px 18px 5px 18px;
+    padding: 15px;
+    text-align: center;
+}}
 
-    .stat-card:hover {
-        transform: translateY(-8px);
-        background: var(--card) !important;
-        border-color: var(--accent) !important;
-    }
+.stat-number {{
+    font-family: "Berkshire Swash", Georgia, serif;
+    font-size: 36px;
+    color: var(--accent);
+}}
 
-    .stat-number {
-        font-family: serif !important;
-        font-size: 52px !important;
-        background: linear-gradient(180deg, var(--text) 30%, var(--accent) 100%);
-        -webkit-background-clip: text;
-        -webkit-text-fill-color: transparent;
-        font-weight: 700 !important;
-        margin: 0 !important;
-        line-height: 1.1 !important;
-    }
-
-    .stat-label {
-        color: var(--muted) !important;
-        font-size: 10px !important;
-        text-transform: uppercase;
-        letter-spacing: 4px !important;
-        font-weight: 600 !important;
-        margin-top: 15px;
-    }
-    </style>
-    """, 
-    unsafe_allow_html=True
-
-    }}
-    </style>
-    """, 
-    unsafe_allow_html=True
-)
+.stat-label {{
+    color: var(--muted);
+    font-family: "Libre Baskerville", Georgia, serif;
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: .12em;
 }}
 
 .tree-container {{
