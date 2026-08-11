@@ -282,7 +282,7 @@ div[data-baseweb="input"] input {{
     box-shadow: 0 10px 25px rgba(0,0,0,0.5), inset 0 0 10px rgba(0,0,0,0.5);
     border-radius: 30% 70% 30% 70% / 70% 30% 70% 30% !important;
     min-height: 140px;
-}
+}}
 
 /* Floral Filigree Ornament at the Top */
 .stat-card::before {{
@@ -296,7 +296,7 @@ div[data-baseweb="input"] input {{
     background: var(--surface);
     padding: 0 10px;
     z-index: 3;
-}
+}}
 
 /* Elegant Inner "Double Frame" Line */
 .stat-card::after {{
@@ -307,13 +307,13 @@ div[data-baseweb="input"] input {{
     border-radius: inherit;
     opacity: 0.3;
     pointer-events: none;
-}
+}}
 
 .stat-card:hover {{
     transform: scale(1.05);
     border-color: var(--text) !important;
     box-shadow: 0 15px 35px rgba(0,0,0,0.6), inset 0 0 15px var(--accent);
-}
+ }}
 
 .stat-number {{
     font-family: "Berkshire Swash", serif !important;
@@ -321,14 +321,14 @@ div[data-baseweb="input"] input {{
     color: var(--accent) !important;
     margin: 0 !important;
     line-height: 1 !important;
-}
+   }}
 
 .stat-label {{
     font-family: "Berkshire Swash", serif !important;
     color: var(--text) !important;
     font-size: 14px !important; 
     margin-top: 5px;
-}
+
     }}
 
 .tree-container {{
