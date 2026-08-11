@@ -1223,8 +1223,9 @@ tree_tab, books_tab, add_tab, import_tab = st.tabs(
 # BOOK TREE
 # ============================================================
 
+```python
 # ============================================================
-# BOOK TREE
+# BOOK TREE — AUTHOR GRID → HORIZONTAL ANCESTRY TREE
 # ============================================================
 
 with tree_tab:
@@ -1241,11 +1242,11 @@ with tree_tab:
         "Searches authors, titles, series, genres, and ISBNs."
     )
 
-    # --------------------------------------------------------
-    # FILTER BOOKS
-    # --------------------------------------------------------
-
     filtered = library.copy()
+
+    # --------------------------------------------------------
+    # SEARCH
+    # --------------------------------------------------------
 
     if search.strip():
 
@@ -1272,7 +1273,7 @@ with tree_tab:
         ]
 
     # --------------------------------------------------------
-    # EMPTY TREE
+    # EMPTY RESULTS
     # --------------------------------------------------------
 
     if filtered.empty:
@@ -1280,8 +1281,8 @@ with tree_tab:
         if library.empty:
 
             st.info(
-                "Your tree is empty. "
-                "Import your library or add your first book."
+                "Your tree is empty. Import your library "
+                "or add your first book."
             )
 
         else:
@@ -1293,317 +1294,344 @@ with tree_tab:
     else:
 
         # ----------------------------------------------------
-        # TREE TITLE
+        # CLEAN DATA
+        # ----------------------------------------------------
+
+        filtered = filtered.copy()
+
+        filtered["Author"] = (
+            filtered["Author"]
+            .fillna("Unknown Author")
+            .astype(str)
+            .replace(
+                ["", "nan", "None"],
+                "Unknown Author",
+            )
+        )
+
+        filtered["Series"] = (
+            filtered["Series"]
+            .fillna("Standalone")
+            .astype(str)
+            .replace(
+                ["", "nan", "None"],
+                "Standalone",
+            )
+        )
+
+        # ----------------------------------------------------
+        # MY LIBRARY ROOT
         # ----------------------------------------------------
 
         st.html(
             """
             <div style="
                 text-align:center;
-                margin:20px 0 30px 0;
+                margin:20px auto 25px auto;
             ">
                 <div style="
+                    display:inline-block;
+                    padding:10px 30px;
+                    background:var(--accent);
+                    color:var(--page);
+                    border-radius:5px 20px 5px 20px;
                     font-family:'Berkshire Swash', Georgia, serif;
-                    font-size:34px;
-                    color:var(--accent);
+                    font-size:24px;
+                    box-shadow:0 4px 12px rgba(0,0,0,.18);
                 ">
-                    🌳 My Library
+                    🌳 MY LIBRARY
                 </div>
             </div>
             """
         )
 
         # ----------------------------------------------------
-        # AUTHORS
-        # ONLY AUTHOR NAMES ARE VISIBLE HERE
+        # AUTHOR GRID — EXACTLY 4 COLUMNS
         # ----------------------------------------------------
 
         author_list = sorted(
-            filtered["Author"]
-            .fillna("Unknown Author")
-            .astype(str)
-            .unique(),
-            key=lambda x: x.lower(),
+            filtered["Author"].unique(),
+            key=lambda x: str(x).lower(),
         )
 
-        for author in author_list:
+        author_cols = st.columns(4)
 
-            author_id = safe_id(author)
+        for author_index, author in enumerate(author_list):
 
-            author_books = filtered[
-                filtered["Author"]
-                .fillna("Unknown Author")
-                .astype(str)
-                == author
-            ].copy()
+            col = author_cols[
+                author_index % 4
+            ]
 
-            # -----------------------------------------------
-            # AUTHOR DROPDOWN
-            # -----------------------------------------------
+            with col:
 
-            with st.expander(
-                f"🌿 {author}",
-                expanded=False,
-            ):
+                author_id = safe_id(author)
 
-                # -------------------------------------------
-                # SERIES FOR THIS AUTHOR
-                # -------------------------------------------
+                author_books = filtered[
+                    filtered["Author"] == author
+                ].copy()
 
-                author_books["Series"] = (
-                    author_books["Series"]
-                    .fillna("Standalone")
-                    .replace(
-                        ["", "nan", "None"],
-                        "Standalone",
-                    )
+                author_open = (
+                    author_id
+                    in st.session_state.open_authors
                 )
 
-                series_list = sorted(
-                    author_books["Series"]
-                    .astype(str)
-                    .unique(),
-                    key=lambda x: x.lower(),
+                arrow = (
+                    "▼"
+                    if author_open
+                    else "▶"
                 )
 
-                for series in series_list:
+                # --------------------------------------------
+                # AUTHOR BUTTON
+                # --------------------------------------------
 
-                    series_books = author_books[
-                        author_books["Series"].astype(str)
-                        == series
-                    ].copy()
+                if st.button(
+                    f"{arrow} {author} ({len(author_books)})",
+                    key=f"tree_author_{author_id}",
+                    use_container_width=True,
+                ):
 
-                    # ---------------------------------------
-                    # SERIES DROPDOWN
-                    # ---------------------------------------
+                    if author_open:
 
-                    if series == "Standalone":
-
-                        series_label = "📖 Standalone Books"
+                        st.session_state.open_authors.discard(
+                            author_id
+                        )
 
                     else:
 
-                        series_label = f"📚 {series}"
+                        st.session_state.open_authors.add(
+                            author_id
+                        )
 
-                    with st.expander(
-                        series_label,
-                        expanded=False,
+                    st.rerun()
+
+            # ------------------------------------------------
+            # OPEN AUTHOR TREE
+            # ------------------------------------------------
+
+            if not author_open:
+                continue
+
+            st.html(
+                f"""
+                <div style="
+                    margin:18px 0 8px 0;
+                    text-align:center;
+                    font-family:'Berkshire Swash', Georgia, serif;
+                    font-size:22px;
+                    color:var(--accent);
+                ">
+                    {html.escape(author)}
+                </div>
+                """
+            )
+
+            # ------------------------------------------------
+            # AUTHOR → SERIES CONNECTOR
+            # ------------------------------------------------
+
+            st.html(
+                """
+                <div style="
+                    width:2px;
+                    height:20px;
+                    background:var(--accent);
+                    margin:auto;
+                "></div>
+                """
+            )
+
+            # ------------------------------------------------
+            # SERIES LIST
+            # ------------------------------------------------
+
+            series_list = sorted(
+                author_books["Series"].unique(),
+                key=lambda x: str(x).lower(),
+            )
+
+            # -----------------------------------------------
+            # SERIES HORIZONTAL ROW
+            # -----------------------------------------------
+
+            series_cols = st.columns(
+                max(1, len(series_list))
+            )
+
+            for series_index, series in enumerate(
+                series_list
+            ):
+
+                with series_cols[series_index]:
+
+                    series_id = safe_id(
+                        f"{author}_{series}"
+                    )
+
+                    series_books = author_books[
+                        author_books["Series"] == series
+                    ].copy()
+
+                    series_open = (
+                        series_id
+                        in st.session_state.open_series
+                    )
+
+                    series_arrow = (
+                        "▼"
+                        if series_open
+                        else "▶"
+                    )
+
+                    display_series = (
+                        "STANDALONE"
+                        if series == "Standalone"
+                        else str(series)
+                    )
+
+                    # ----------------------------------------
+                    # SERIES BUTTON
+                    # ----------------------------------------
+
+                    if st.button(
+                        f"{series_arrow} {display_series} "
+                        f"({len(series_books)})",
+                        key=f"tree_series_{series_id}",
+                        use_container_width=True,
                     ):
 
-                        # -----------------------------------
-                        # SORT BOOKS BY SERIES NUMBER
-                        # -----------------------------------
+                        if series_open:
 
-                        if "Series Number" in series_books.columns:
-
-                            series_books["_sort"] = pd.to_numeric(
-                                series_books["Series Number"],
-                                errors="coerce",
+                            st.session_state.open_series.discard(
+                                series_id
                             )
 
-                            series_books = (
-                                series_books
-                                .sort_values(
-                                    "_sort",
-                                    na_position="last",
-                                )
+                        else:
+
+                            st.session_state.open_series.add(
+                                series_id
                             )
 
-                        # -----------------------------------
-                        # BOOKS
-                        # -----------------------------------
+                        st.rerun()
 
-                        for _, book in series_books.iterrows():
+                    # ----------------------------------------
+                    # SERIES → BOOKS
+                    # ----------------------------------------
 
-                            title = str(
+                    if not series_open:
+                        continue
+
+                    st.html(
+                        """
+                        <div style="
+                            width:2px;
+                            height:15px;
+                            background:var(--line);
+                            margin:auto;
+                        "></div>
+                        """
+                    )
+
+                    # ----------------------------------------
+                    # BOOKS
+                    # ----------------------------------------
+
+                    for _, book in series_books.iterrows():
+
+                        title = html.escape(
+                            str(
                                 book.get(
                                     "Title",
                                     "",
                                 )
                             )
+                        )
 
-                            cover = str(
-                                book.get(
-                                    "Cover",
-                                    "",
-                                )
-                                or ""
+                        cover = str(
+                            book.get(
+                                "Cover",
+                                "",
                             )
+                            or ""
+                        )
 
-                            status = str(
+                        status = html.escape(
+                            str(
                                 book.get(
                                     "Status",
                                     "",
                                 )
-                                or ""
                             )
+                        )
 
-                            genre = str(
+                        genre = html.escape(
+                            str(
                                 book.get(
                                     "Genre",
                                     "",
                                 )
                                 or ""
                             )
+                        )
 
-                            series_number = book.get(
-                                "Series Number",
-                                None,
+                        meta = status
+
+                        if genre:
+
+                            meta += (
+                                f" · {genre}"
                             )
 
-                            # -------------------------------
-                            # BOOK NUMBER
-                            # -------------------------------
+                        # ------------------------------------
+                        # BOOK WITH COVER
+                        # ------------------------------------
 
-                            number_text = ""
+                        if cover:
 
-                            if pd.notna(series_number):
+                            st.html(
+                                f"""
+                                <div style="
+                                    margin:6px 0;
+                                    padding:8px;
+                                    background:
+                                        linear-gradient(
+                                            90deg,
+                                            var(--card),
+                                            transparent
+                                        );
+                                    border-left:
+                                        2px solid var(--line);
+                                    border-radius:
+                                        0 10px 0 0;
+                                    display:flex;
+                                    gap:10px;
+                                    align-items:center;
+                                ">
 
-                                try:
+                                    <img
+                                        src="{html.escape(cover)}"
+                                        style="
+                                            width:50px;
+                                            height:72px;
+                                            object-fit:cover;
+                                            border-radius:
+                                                3px 8px 3px 8px;
+                                            border:
+                                                1px solid var(--accent);
+                                        "
+                                    >
 
-                                    number = float(
-                                        series_number
-                                    )
-
-                                    if number.is_integer():
-
-                                        number_text = (
-                                            f"Book {int(number)}"
-                                        )
-
-                                    else:
-
-                                        number_text = (
-                                            f"Book {number:g}"
-                                        )
-
-                                except Exception:
-
-                                    number_text = ""
-
-                            # -------------------------------
-                            # BOOK META
-                            # -------------------------------
-
-                            meta_parts = []
-
-                            if number_text:
-                                meta_parts.append(
-                                    number_text
-                                )
-
-                            if status:
-                                meta_parts.append(
-                                    status
-                                )
-
-                            if genre:
-                                meta_parts.append(
-                                    genre
-                                )
-
-                            meta = " · ".join(
-                                meta_parts
-                            )
-
-                            # -------------------------------
-                            # DISPLAY BOOK
-                            # -------------------------------
-
-                            if cover:
-
-                                st.html(
-                                    f"""
-                                    <div style="
-                                        margin:8px 0 8px 25px;
-                                        padding:10px 14px;
-                                        background:
-                                            linear-gradient(
-                                                90deg,
-                                                var(--card),
-                                                transparent
-                                            );
-                                        border-left:
-                                            2px solid var(--line);
-                                        border-radius:
-                                            0 12px 0 0;
-                                        display:flex;
-                                        gap:14px;
-                                        align-items:center;
-                                    ">
-
-                                        <img
-                                            src="{html.escape(cover)}"
-                                            style="
-                                                width:55px;
-                                                height:80px;
-                                                object-fit:cover;
-                                                border-radius:
-                                                    3px 10px 3px 10px;
-                                                border:
-                                                    1px solid var(--accent);
-                                            "
-                                        >
-
-                                        <div>
-
-                                            <div style="
-                                                font-family:
-                                                    'Berkshire Swash',
-                                                    Georgia,
-                                                    serif;
-                                                font-size:20px;
-                                                color:var(--text);
-                                            ">
-                                                📖 {html.escape(title)}
-                                            </div>
-
-                                            <div style="
-                                                color:var(--muted);
-                                                font-family:
-                                                    'Libre Baskerville',
-                                                    Georgia,
-                                                    serif;
-                                                font-size:10px;
-                                                margin-top:4px;
-                                            ">
-                                                {html.escape(meta)}
-                                            </div>
-
-                                        </div>
-
-                                    </div>
-                                    """
-                                )
-
-                            else:
-
-                                st.html(
-                                    f"""
-                                    <div style="
-                                        margin:8px 0 8px 25px;
-                                        padding:10px 14px;
-                                        background:
-                                            linear-gradient(
-                                                90deg,
-                                                var(--card),
-                                                transparent
-                                            );
-                                        border-left:
-                                            2px solid var(--line);
-                                        border-radius:
-                                            0 12px 0 0;
-                                    ">
+                                    <div>
 
                                         <div style="
                                             font-family:
                                                 'Berkshire Swash',
                                                 Georgia,
                                                 serif;
-                                            font-size:20px;
+                                            font-size:16px;
                                             color:var(--text);
                                         ">
-                                            📖 {html.escape(title)}
+                                            📖 {title}
                                         </div>
 
                                         <div style="
@@ -1612,15 +1640,69 @@ with tree_tab:
                                                 'Libre Baskerville',
                                                 Georgia,
                                                 serif;
-                                            font-size:10px;
-                                            margin-top:4px;
+                                            font-size:9px;
+                                            margin-top:3px;
                                         ">
-                                            {html.escape(meta)}
+                                            {meta}
                                         </div>
 
                                     </div>
-                                    """
-                                )
+
+                                </div>
+                                """
+                            )
+
+                        # ------------------------------------
+                        # BOOK WITHOUT COVER
+                        # ------------------------------------
+
+                        else:
+
+                            st.html(
+                                f"""
+                                <div style="
+                                    margin:6px 0;
+                                    padding:8px;
+                                    background:
+                                        linear-gradient(
+                                            90deg,
+                                            var(--card),
+                                            transparent
+                                        );
+                                    border-left:
+                                        2px solid var(--line);
+                                    border-radius:
+                                        0 10px 0 0;
+                                ">
+
+                                    <div style="
+                                        font-family:
+                                            'Berkshire Swash',
+                                            Georgia,
+                                            serif;
+                                        font-size:16px;
+                                        color:var(--text);
+                                    ">
+                                        📖 {title}
+                                    </div>
+
+                                    <div style="
+                                        color:var(--muted);
+                                        font-family:
+                                            'Libre Baskerville',
+                                            Georgia,
+                                            serif;
+                                        font-size:9px;
+                                        margin-top:3px;
+                                    ">
+                                        {meta}
+                                    </div>
+
+                                </div>
+                                """
+                            )
+```
+
 
 # ============================================================
 # BOOKS TAB
