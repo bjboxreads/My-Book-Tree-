@@ -250,16 +250,11 @@ st.html(
             var(--surface),
             var(--surface2)
         ) !important;
-
         color: var(--text) !important;
         border: 1px solid var(--accent) !important;
         border-radius: 18px 5px 18px 5px !important;
-
         font-family: "Libre Baskerville", Georgia, serif !important;
-
-        box-shadow:
-            0 3px 10px rgba(0,0,0,.18) !important;
-
+        box-shadow: 0 3px 10px rgba(0,0,0,.18) !important;
         transition: all .15s ease !important;
     }}
 
@@ -269,11 +264,8 @@ st.html(
             var(--surface2),
             var(--card)
         ) !important;
-
         border-color: var(--accent) !important;
-
-        box-shadow:
-            0 4px 14px rgba(0,0,0,.25) !important;
+        box-shadow: 0 4px 14px rgba(0,0,0,.25) !important;
     }}
 
     .stat-card {{
@@ -348,11 +340,7 @@ st.html(
     }}
 
     .author-card {{
-        background: linear-gradient(
-            90deg,
-            var(--surface),
-            transparent
-        );
+        background: linear-gradient(90deg, var(--surface), transparent);
         border-radius: 0 18px 0 0;
         padding: 13px 18px;
     }}
@@ -375,11 +363,7 @@ st.html(
     }}
 
     .series-card {{
-        background: linear-gradient(
-            90deg,
-            var(--surface2),
-            transparent
-        );
+        background: linear-gradient(90deg, var(--surface2), transparent);
         border-radius: 0 15px 0 0;
         padding: 11px 15px;
     }}
@@ -398,11 +382,7 @@ st.html(
     .book-branch {{
         margin: 8px 0 8px 35px;
         padding: 10px 14px;
-        background: linear-gradient(
-            90deg,
-            var(--card),
-            transparent
-        );
+        background: linear-gradient(90deg, var(--card), transparent);
         border-left: 2px solid var(--line);
         border-radius: 0 12px 0 0;
     }}
@@ -432,35 +412,6 @@ st.html(
         color: var(--text) !important;
     }}
 
-    .victorian-frame {{
-        position: relative;
-        border: 1px solid var(--accent);
-        border-radius: 18px 5px 18px 5px;
-        box-shadow:
-            inset 0 0 0 1px var(--line),
-            0 4px 14px rgba(0,0,0,.10);
-    }}
-
-    .victorian-frame::before,
-    .victorian-frame::after {{
-        content: "❧";
-        position: absolute;
-        color: var(--accent);
-        font-size: 16px;
-        line-height: 1;
-    }}
-
-    .victorian-frame::before {{
-        left: 7px;
-        top: 5px;
-    }}
-
-    .victorian-frame::after {{
-        right: 7px;
-        bottom: 5px;
-        transform: rotate(180deg);
-    }}
-
     </style>
     """
 )
@@ -488,7 +439,9 @@ st.html(
 theme_choice = st.selectbox(
     "Bookish theme",
     list(THEMES.keys()),
-    index=list(THEMES.keys()).index(st.session_state.theme),
+    index=list(THEMES.keys()).index(
+        st.session_state.theme
+    ),
     key="theme_selector",
     label_visibility="collapsed",
 )
@@ -506,10 +459,7 @@ def get_cover(title, author="", isbn=""):
 
     isbn = re.sub(r"\D", "", str(isbn))
 
-    # --------------------------------------------------------
-    # ISBN SEARCH
-    # --------------------------------------------------------
-
+    # Try ISBN first
     if isbn:
 
         url = (
@@ -518,25 +468,24 @@ def get_cover(title, author="", isbn=""):
         )
 
         try:
-
-            r = requests.get(
+            response = requests.get(
                 url,
                 timeout=8,
             )
 
-            if r.status_code == 200 and len(r.content) > 1000:
+            if (
+                response.status_code == 200
+                and len(response.content) > 1000
+            ):
                 return url
 
         except Exception:
             pass
 
-    # --------------------------------------------------------
-    # OPEN LIBRARY SEARCH
-    # --------------------------------------------------------
-
+    # Open Library search
     try:
 
-        r = requests.get(
+        response = requests.get(
             "https://openlibrary.org/search.json",
             params={
                 "title": title,
@@ -546,31 +495,33 @@ def get_cover(title, author="", isbn=""):
             timeout=10,
         )
 
-        if r.status_code == 200:
+        if response.status_code == 200:
 
-            docs = r.json().get("docs", [])
+            docs = response.json().get(
+                "docs",
+                [],
+            )
 
             if docs:
 
-                cover_id = docs[0].get("cover_i")
+                cover_id = docs[0].get(
+                    "cover_i"
+                )
 
                 if cover_id:
 
                     return (
-                        f"https://covers.openlibrary.org/"
+                        "https://covers.openlibrary.org/"
                         f"b/id/{cover_id}-L.jpg"
                     )
 
     except Exception:
         pass
 
-    # --------------------------------------------------------
-    # GOOGLE BOOKS SEARCH
-    # --------------------------------------------------------
-
+    # Google Books fallback
     try:
 
-        r = requests.get(
+        response = requests.get(
             "https://www.googleapis.com/books/v1/volumes",
             params={
                 "q": f"{title} {author}",
@@ -579,9 +530,12 @@ def get_cover(title, author="", isbn=""):
             timeout=10,
         )
 
-        if r.status_code == 200:
+        if response.status_code == 200:
 
-            items = r.json().get("items", [])
+            items = response.json().get(
+                "items",
+                [],
+            )
 
             if items:
 
@@ -625,7 +579,7 @@ def detect_series(title):
         match = re.search(
             pattern,
             text,
-            re.I,
+            re.IGNORECASE,
         )
 
         if match:
@@ -636,14 +590,14 @@ def detect_series(title):
                 r",?\s*#\s*\d+(?:\.\d+)?",
                 "",
                 series,
-                flags=re.I,
+                flags=re.IGNORECASE,
             )
 
             series = re.sub(
                 r"\bBook\s+\d+(?:\.\d+)?",
                 "",
                 series,
-                flags=re.I,
+                flags=re.IGNORECASE,
             )
 
             series = re.sub(
@@ -671,13 +625,15 @@ def detect_series_number(title):
         match = re.search(
             pattern,
             str(title),
-            re.I,
+            re.IGNORECASE,
         )
 
         if match:
 
             try:
-                return float(match.group(1))
+                return float(
+                    match.group(1)
+                )
             except Exception:
                 pass
 
@@ -694,69 +650,51 @@ def safe_id(text):
 
 
 # ============================================================
-# IMPORT
-# ============================================================
-# ============================================================
-# IMPORT TAB
+# IMPORT BOOKS
 # ============================================================
 
-with import_tab:
-
-    st.header("Import Your Library")
-
-    st.write(
-        "Upload a Goodreads CSV, StoryGraph export, "
-        "or another compatible book-list CSV."
-    )
-
-    uploaded = st.file_uploader(
-        "Choose your CSV",
-        type=["csv"],
-        key="book_library_uploader",
-    )
-
-    if uploaded is not None:
-
-        st.success(
-            f"✓ {uploaded.name} uploaded successfully"
-        )
-
-        # Show file information so we know Streamlit received it
-        st.caption(
-            f"File size: {uploaded.size:,} bytes"
-        )
-
-        if st.button(
-            "🌳 Build My Book Tree",
-            use_container_width=True,
-            type="primary",
-        ):
-
-            with st.spinner(
-                "Reading your book list..."
-            ):
-
-                success = import_books(uploaded)
-
-            if success:
-
-                st.success(
-                    f"✓ Successfully imported "
-                    f"{len(st.session_state.library)} books!"
-                )
-
-                st.session_state.open_authors = set()
-                st.session_state.open_series = set()
-
-                st.rerun()
+def import_books(uploaded_file):
 
     # --------------------------------------------------------
-    # NORMALIZE COLUMN NAMES
+    # READ CSV
+    # --------------------------------------------------------
+
+    try:
+
+        uploaded_file.seek(0)
+
+        df = pd.read_csv(
+            uploaded_file,
+            low_memory=False,
+        )
+
+    except Exception:
+
+        try:
+
+            uploaded_file.seek(0)
+
+            df = pd.read_csv(
+                uploaded_file,
+                encoding="latin-1",
+                low_memory=False,
+            )
+
+        except Exception as error:
+
+            st.error(
+                f"Could not read this CSV file: {error}"
+            )
+
+            return False
+
+    # --------------------------------------------------------
+    # FIND COLUMNS
     # --------------------------------------------------------
 
     columns = {
-        str(c).strip().lower(): c
-        for c in df.columns
+        str(column).strip().lower(): column
+        for column in df.columns
     }
 
     def find_column(names):
@@ -830,7 +768,7 @@ with import_tab:
     )
 
     # --------------------------------------------------------
-    # TITLE REQUIRED
+    # TITLE IS REQUIRED
     # --------------------------------------------------------
 
     if not title_col:
@@ -839,41 +777,57 @@ with import_tab:
             "I couldn't find a Title column in this CSV."
         )
 
+        st.write(
+            "Columns found in your file:"
+        )
+
+        st.write(
+            list(df.columns)
+        )
+
         return False
 
-    books = []
+    # --------------------------------------------------------
+    # BUILD BOOK LIST
+    # --------------------------------------------------------
 
-    # --------------------------------------------------------
-    # READ BOOKS
-    # --------------------------------------------------------
+    books = []
 
     for _, row in df.iterrows():
 
         title = str(
-            row.get(title_col, "")
+            row.get(
+                title_col,
+                "",
+            )
         ).strip()
 
-        if not title or title.lower() == "nan":
+        if (
+            not title
+            or title.lower() == "nan"
+        ):
             continue
 
-        # ----------------------------------------------------
         # AUTHOR
-        # ----------------------------------------------------
 
         author = "Unknown Author"
 
         if author_col:
 
             author = str(
-                row.get(author_col, "")
+                row.get(
+                    author_col,
+                    "",
+                )
             ).strip()
 
-        if not author or author.lower() == "nan":
+        if (
+            not author
+            or author.lower() == "nan"
+        ):
             author = "Unknown Author"
 
-        # ----------------------------------------------------
         # ISBN
-        # ----------------------------------------------------
 
         isbn = ""
 
@@ -882,50 +836,59 @@ with import_tab:
             isbn = re.sub(
                 r"\D",
                 "",
-                str(row.get(isbn_col, "")),
+                str(
+                    row.get(
+                        isbn_col,
+                        "",
+                    )
+                ),
             )
 
-        # ----------------------------------------------------
         # GENRE
-        # ----------------------------------------------------
 
         genre = ""
 
         if genre_col:
 
             genre = str(
-                row.get(genre_col, "")
+                row.get(
+                    genre_col,
+                    "",
+                )
             ).strip()
 
             if genre.lower() == "nan":
                 genre = ""
 
-        # ----------------------------------------------------
         # SERIES
-        # ----------------------------------------------------
 
         if series_col:
 
             series = str(
-                row.get(series_col, "")
+                row.get(
+                    series_col,
+                    "",
+                )
             ).strip()
 
             if (
                 not series
                 or series.lower() == "nan"
             ):
-                series = detect_series(title)
+                series = detect_series(
+                    title
+                )
 
         else:
 
-            series = detect_series(title)
+            series = detect_series(
+                title
+            )
 
         if not series:
             series = "Standalone"
 
-        # ----------------------------------------------------
         # SERIES NUMBER
-        # ----------------------------------------------------
 
         series_number = None
 
@@ -938,20 +901,23 @@ with import_tab:
                 )
 
                 if pd.notna(value):
-                    series_number = float(value)
+
+                    series_number = float(
+                        value
+                    )
 
             except Exception:
                 pass
 
         if series_number is None:
 
-            series_number = detect_series_number(
-                title
+            series_number = (
+                detect_series_number(
+                    title
+                )
             )
 
-        # ----------------------------------------------------
         # RATING
-        # ----------------------------------------------------
 
         rating = None
 
@@ -964,14 +930,15 @@ with import_tab:
                 )
 
                 if pd.notna(value):
-                    rating = float(value)
+
+                    rating = float(
+                        value
+                    )
 
             except Exception:
                 pass
 
-        # ----------------------------------------------------
         # STATUS
-        # ----------------------------------------------------
 
         status = "Want to Read"
 
@@ -1010,10 +977,6 @@ with import_tab:
 
                 status = "Want to Read"
 
-        # ----------------------------------------------------
-        # ADD BOOK
-        # ----------------------------------------------------
-
         books.append(
             {
                 "Title": title,
@@ -1034,10 +997,12 @@ with import_tab:
         )
 
     # --------------------------------------------------------
-    # CHECK RESULTS
+    # MAKE DATAFRAME
     # --------------------------------------------------------
 
-    new_library = pd.DataFrame(books)
+    new_library = pd.DataFrame(
+        books
+    )
 
     if new_library.empty:
 
@@ -1048,35 +1013,75 @@ with import_tab:
         return False
 
     # --------------------------------------------------------
+    # SAVE BOOKS BEFORE COVER SEARCH
+    # --------------------------------------------------------
+
+    st.session_state.library = (
+        new_library
+    )
+
+    st.session_state.open_authors = set()
+    st.session_state.open_series = set()
+
+    # --------------------------------------------------------
     # FIND COVERS
     # --------------------------------------------------------
 
-    progress = st.progress(0)
+    total_books = len(
+        new_library
+    )
 
-    total_books = len(new_library)
+    progress = st.progress(
+        0
+    )
 
-    for i in range(total_books):
+    for i in range(
+        total_books
+    ):
 
-        new_library.loc[i, "Cover"] = get_cover(
-            new_library.loc[i, "Title"],
-            new_library.loc[i, "Author"],
-            new_library.loc[i, "ISBN"],
-        )
+        try:
+
+            cover = get_cover(
+                new_library.loc[
+                    i,
+                    "Title",
+                ],
+                new_library.loc[
+                    i,
+                    "Author",
+                ],
+                new_library.loc[
+                    i,
+                    "ISBN",
+                ],
+            )
+
+            new_library.loc[
+                i,
+                "Cover",
+            ] = cover
+
+        except Exception:
+
+            new_library.loc[
+                i,
+                "Cover",
+            ] = ""
 
         progress.progress(
-            (i + 1) / total_books
+            (i + 1)
+            / total_books
         )
 
     progress.empty()
 
     # --------------------------------------------------------
-    # SAVE LIBRARY
+    # SAVE FINAL LIBRARY
     # --------------------------------------------------------
 
-    st.session_state.library = new_library
-
-    st.session_state.open_authors = set()
-    st.session_state.open_series = set()
+    st.session_state.library = (
+        new_library
+    )
 
     return True
 
@@ -1087,7 +1092,9 @@ with import_tab:
 
 library = st.session_state.library
 
-total = len(library)
+total = len(
+    library
+)
 
 authors = (
     library["Author"].nunique()
@@ -1097,7 +1104,8 @@ authors = (
 
 series_count = (
     library[
-        library["Series"] != "Standalone"
+        library["Series"]
+        != "Standalone"
     ]["Series"].nunique()
     if total
     else 0
@@ -1106,7 +1114,8 @@ series_count = (
 read_count = (
     len(
         library[
-            library["Status"] == "Read"
+            library["Status"]
+            == "Read"
         ]
     )
     if total
@@ -1116,7 +1125,8 @@ read_count = (
 favorites = (
     len(
         library[
-            library["Favorite"] == True
+            library["Favorite"]
+            == True
         ]
     )
     if total
@@ -1127,7 +1137,9 @@ favorites = (
 # STATS
 # ============================================================
 
-columns = st.columns(5)
+columns = st.columns(
+    5
+)
 
 stats = [
     (total, "Books"),
@@ -1137,7 +1149,10 @@ stats = [
     (favorites, "Favorites"),
 ]
 
-for col, (number, label) in zip(
+for col, (
+    number,
+    label,
+) in zip(
     columns,
     stats,
 ):
@@ -1147,6 +1162,7 @@ for col, (number, label) in zip(
         st.html(
             f"""
             <div class="stat-card">
+
                 <div class="stat-number">
                     {number}
                 </div>
@@ -1154,6 +1170,7 @@ for col, (number, label) in zip(
                 <div class="stat-label">
                     {label}
                 </div>
+
             </div>
             """
         )
@@ -1230,10 +1247,6 @@ with tree_tab:
             )
         ]
 
-    # --------------------------------------------------------
-    # EMPTY
-    # --------------------------------------------------------
-
     if filtered.empty:
 
         if library.empty:
@@ -1251,9 +1264,7 @@ with tree_tab:
 
     else:
 
-        # ----------------------------------------------------
         # ROOT
-        # ----------------------------------------------------
 
         st.html(
             f"""
@@ -1276,13 +1287,13 @@ with tree_tab:
             """
         )
 
-        # ----------------------------------------------------
         # AUTHORS
-        # ----------------------------------------------------
 
         author_list = sorted(
             filtered["Author"]
-            .fillna("Unknown Author")
+            .fillna(
+                "Unknown Author"
+            )
             .astype(str)
             .unique(),
             key=lambda x: x.lower(),
@@ -1290,11 +1301,15 @@ with tree_tab:
 
         for author in author_list:
 
-            author_id = safe_id(author)
+            author_id = safe_id(
+                author
+            )
 
             author_books = filtered[
                 filtered["Author"]
-                .fillna("Unknown Author")
+                .fillna(
+                    "Unknown Author"
+                )
                 .astype(str)
                 == author
             ].copy()
@@ -1304,11 +1319,11 @@ with tree_tab:
                 in st.session_state.open_authors
             )
 
-            arrow = "▼" if opened else "▶"
-
-            # ------------------------------------------------
-            # AUTHOR DECORATIVE CARD
-            # ------------------------------------------------
+            arrow = (
+                "▼"
+                if opened
+                else "▶"
+            )
 
             st.html(
                 f"""
@@ -1335,13 +1350,11 @@ with tree_tab:
                 """
             )
 
-            # ------------------------------------------------
-            # AUTHOR BUTTON
-            # ------------------------------------------------
-
             if st.button(
                 f"{arrow} {author}",
-                key=f"author_{author_id}",
+                key=(
+                    f"author_{author_id}"
+                ),
                 use_container_width=True,
             ):
 
@@ -1362,13 +1375,13 @@ with tree_tab:
             if not opened:
                 continue
 
-            # ------------------------------------------------
             # SERIES
-            # ------------------------------------------------
 
             series_list = sorted(
                 author_books["Series"]
-                .fillna("Standalone")
+                .fillna(
+                    "Standalone"
+                )
                 .astype(str)
                 .unique(),
                 key=lambda x: x.lower(),
@@ -1376,18 +1389,20 @@ with tree_tab:
 
             for series in series_list:
 
-                # --------------------------------------------
-                # STANDALONES
-                # --------------------------------------------
+                # STANDALONE BOOKS
 
                 if series == "Standalone":
 
-                    standalone_books = author_books[
-                        author_books["Series"]
-                        .fillna("Standalone")
-                        .astype(str)
-                        == "Standalone"
-                    ].copy()
+                    standalone_books = (
+                        author_books[
+                            author_books["Series"]
+                            .fillna(
+                                "Standalone"
+                            )
+                            .astype(str)
+                            == "Standalone"
+                        ].copy()
+                    )
 
                     st.html(
                         f"""
@@ -1414,7 +1429,9 @@ with tree_tab:
                         """
                     )
 
-                    for _, book in standalone_books.iterrows():
+                    for _, book in (
+                        standalone_books.iterrows()
+                    ):
 
                         cover = str(
                             book.get(
@@ -1455,7 +1472,9 @@ with tree_tab:
                         meta = status
 
                         if genre:
-                            meta += f" · {genre}"
+                            meta += (
+                                f" · {genre}"
+                            )
 
                         if cover:
 
@@ -1512,9 +1531,7 @@ with tree_tab:
 
                     continue
 
-                # --------------------------------------------
-                # SERIES BRANCH
-                # --------------------------------------------
+                # SERIES
 
                 series_id = (
                     author_id
@@ -1535,7 +1552,9 @@ with tree_tab:
 
                 series_books = author_books[
                     author_books["Series"]
-                    .fillna("Standalone")
+                    .fillna(
+                        "Standalone"
+                    )
                     .astype(str)
                     == series
                 ].copy()
@@ -1567,7 +1586,9 @@ with tree_tab:
 
                 if st.button(
                     f"{arrow} {series}",
-                    key=f"series_{series_id}",
+                    key=(
+                        f"series_{series_id}"
+                    ),
                     use_container_width=True,
                 ):
 
@@ -1588,19 +1609,22 @@ with tree_tab:
                 if not series_open:
                     continue
 
-                # --------------------------------------------
                 # BOOKS IN SERIES
-                # --------------------------------------------
 
-                series_books = series_books.sort_values(
-                    by=[
-                        "Series Number",
-                        "Title",
-                    ],
-                    na_position="last",
+                series_books = (
+                    series_books.sort_values(
+                        by=[
+                            "Series Number",
+                            "Title",
+                        ],
+                        na_position="last",
+                    )
                 )
 
-                for position, (_, book) in enumerate(
+                for position, (
+                    _,
+                    book,
+                ) in enumerate(
                     series_books.iterrows(),
                     1,
                 ):
@@ -1613,7 +1637,9 @@ with tree_tab:
 
                         try:
 
-                            if float(number).is_integer():
+                            if float(
+                                number
+                            ).is_integer():
 
                                 number_text = (
                                     f"Book {int(number)}"
@@ -1676,7 +1702,9 @@ with tree_tab:
                     meta = status
 
                     if genre:
-                        meta += f" · {genre}"
+                        meta += (
+                            f" · {genre}"
+                        )
 
                     if cover:
 
@@ -1740,7 +1768,9 @@ with books_tab:
 
     if library.empty:
 
-        st.info("No books yet.")
+        st.info(
+            "No books yet."
+        )
 
     else:
 
@@ -1761,24 +1791,32 @@ with books_tab:
         if choice == "Favorites":
 
             books = books[
-                books["Favorite"] == True
+                books["Favorite"]
+                == True
             ]
 
         elif choice != "All":
 
             books = books[
-                books["Status"] == choice
+                books["Status"]
+                == choice
             ]
 
-        for index, book in books.iterrows():
+        for index, book in (
+            books.iterrows()
+        ):
 
-            col1, col2, col3 = st.columns(
-                [1, 6, 1]
+            col1, col2, col3 = (
+                st.columns(
+                    [1, 6, 1]
+                )
             )
 
             with col1:
 
-                if book.get("Cover"):
+                if book.get(
+                    "Cover"
+                ):
 
                     st.image(
                         book["Cover"],
@@ -1791,17 +1829,23 @@ with books_tab:
                     f"""
                     <div class="book-title">
                         {html.escape(
-                            str(book["Title"])
+                            str(
+                                book["Title"]
+                            )
                         )}
                     </div>
 
                     <div class="book-meta">
                         {html.escape(
-                            str(book["Author"])
+                            str(
+                                book["Author"]
+                            )
                         )}
                         <br>
                         {html.escape(
-                            str(book["Series"])
+                            str(
+                                book["Series"]
+                            )
                         )}
                         <br>
                         {html.escape(
@@ -1831,7 +1875,10 @@ with books_tab:
                     key=f"fav_{index}",
                 )
 
-                if favorite != current_favorite:
+                if (
+                    favorite
+                    != current_favorite
+                ):
 
                     st.session_state.library.loc[
                         index,
@@ -1847,9 +1894,13 @@ with books_tab:
 
 with add_tab:
 
-    st.header("Add a Book")
+    st.header(
+        "Add a Book"
+    )
 
-    with st.form("add_book"):
+    with st.form(
+        "add_book"
+    ):
 
         title = st.text_input(
             "Title"
@@ -1861,7 +1912,9 @@ with add_tab:
 
         series = st.text_input(
             "Series",
-            placeholder="Leave blank for standalone",
+            placeholder=(
+                "Leave blank for standalone"
+            ),
         )
 
         number = st.number_input(
@@ -1963,14 +2016,16 @@ with add_tab:
                     "Date Read": "",
                 }
 
-                st.session_state.library = pd.concat(
-                    [
-                        st.session_state.library,
-                        pd.DataFrame(
-                            [new_book]
-                        ),
-                    ],
-                    ignore_index=True,
+                st.session_state.library = (
+                    pd.concat(
+                        [
+                            st.session_state.library,
+                            pd.DataFrame(
+                                [new_book]
+                            ),
+                        ],
+                        ignore_index=True,
+                    )
                 )
 
                 st.success(
@@ -1986,7 +2041,9 @@ with add_tab:
 
 with import_tab:
 
-    st.header("Import Your Library")
+    st.header(
+        "Import Your Library"
+    )
 
     st.write(
         "Upload a Goodreads CSV, StoryGraph export, "
@@ -1999,19 +2056,24 @@ with import_tab:
         key="book_library_uploader",
     )
 
-    if uploaded:
+    if uploaded is not None:
 
         st.success(
-            f"File loaded: {uploaded.name}"
+            f"✓ {uploaded.name} uploaded successfully"
+        )
+
+        st.caption(
+            f"File size: {uploaded.size:,} bytes"
         )
 
         if st.button(
-            "Build My Book Tree",
+            "🌳 Build My Book Tree",
             use_container_width=True,
+            type="primary",
         ):
 
             with st.spinner(
-                "Finding your books and covers..."
+                "Reading your book list..."
             ):
 
                 success = import_books(
@@ -2021,7 +2083,8 @@ with import_tab:
             if success:
 
                 st.success(
-                    "Your book tree is ready!"
+                    f"✓ Successfully imported "
+                    f"{len(st.session_state.library)} books!"
                 )
 
                 st.rerun()
