@@ -327,8 +327,10 @@ st.markdown(f"""
         margin-top: 20px !important; 
         text-align: center !important;
         width: 100% !important;
-    }}
-    </style>
+        </style>
+    """, 
+    unsafe_allow_html=True
+)
     
     <div class="stat-card">
         <div class="stat-number">{your_python_variable}</div>
