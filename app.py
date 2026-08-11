@@ -1645,8 +1645,8 @@ with books_tab:
         st.info("No books yet.")
     else:
         # Keep your radio buttons if you want to filter the tree!
-        choice = st.radio("Show", ["All", "Favorites", "Read", "Currently Reading", "Want to Read"], horizontal=True)
-        
+       choice = st.radio("Show", ["All", "Favorites", "Read", "Currently Reading", "Want to Read"], horizontal=True, key="unique_books_radio")
+       
         books = library.copy()
         if choice == "Favorites":
             books = books[books["Favorite"] == True]
