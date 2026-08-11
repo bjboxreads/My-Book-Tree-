@@ -284,7 +284,6 @@ div[data-baseweb="input"] input {{
     /* The Wavy Scalloped Shape */
     border-radius: 30% 70% 30% 70% / 70% 30% 70% 30% !important;
     min-height: 140px;
-    margin: 10px;
 }
 
 /* Floral Filigree Ornament at the Top */
@@ -292,6 +291,8 @@ div[data-baseweb="input"] input {{
     content: '❦'; 
     position: absolute;
     top: -15px;
+    left: 50%;
+    transform: translateX(-50%);
     color: var(--accent);
     font-size: 24px;
     background: var(--surface);
@@ -316,24 +317,22 @@ div[data-baseweb="input"] input {{
 }
 
 .stat-number {{
-    font-family: "Berkshire Swash", Georgia, serif !important;
+    font-family: "Berkshire Swash", serif !important;
     font-size: 42px !important;
     color: var(--accent) !important;
     margin: 0 !important;
     line-height: 1 !important;
 }
 
-    .stat-label {{
-        font-family: "Berkshire Swash", serif !important;
-        color: var(--text) !important;
-        font-size: 11px !important;
-        text-transform: uppercase;
-        letter-spacing: 2px !important;
-        margin-right: -2px !important; 
-        margin-top: 10px;
-        font-style: italic;
-        width: 100%;
-        text-align: center;
+.stat-label {{
+    font-family: "Berkshire Swash", serif !important; /* Matches the number font */
+    color: var(--text) !important;
+    font-size: 14px !important; 
+    letter-spacing: 1px !important;
+    margin-top: 5px;
+    width: 100%;
+    text-align: center;
+}
     }}
 
 .tree-container {{
