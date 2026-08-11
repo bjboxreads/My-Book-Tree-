@@ -202,7 +202,7 @@ p, label {{
 
 .book-header {{
     text-align: center;
-    margin-top: 60px !important; /* Force it to apply */
+    margin-top: 72px !important;
 }}
 
 .book-header-title {{
@@ -266,77 +266,59 @@ div[data-baseweb="input"] input {{
 .stButton > button:hover {{
     background: var(--surface2) !important;
     border-color: var(--accent) !important;
-py
-st.markdown
-    """
-py
-st.markdown(
-    """
-    <style>
-    /* Aggressive Victorian Styles */
-    .stat-card {{
-        background: var(--card) !important;
-        border: 2px solid var(--accent) !important;
-        border-radius: 30% 70% 30% 70% / 70% 30% 70% 30% !important;
-        padding: 30px 20px !important;
-        text-align: center !important;
-        position: relative !important;
-        box-shadow: 0 10px 25px rgba(0,0,0,0.5) !important;
-        display: flex !important;
-        flex-direction: column !important;
-        align-items: center !important;
-        justify-content: center !important;
-        min-height: 140px !important;
-    }}
+    background: var(--surface2) !important;
+    border-color: var(--accent) !important;
+}}
 
-    .stat-card::before {{
-        content: '❦' !important;
-        position: absolute !important;
-        top: -15px !important;
-        left: 50% !important;
-        transform: translateX(-50%) !important;
-        color: var(--accent) !important;
-        background: var(--card) !important;
-        padding: 0 10px !important;
-    }}
+/* Victorian-inspired buttons: decorative, not pill-shaped */
+.stButton > button {{
+    background: linear-gradient(135deg, var(--surface), var(--surface2)) !important;
+    color: var(--text) !important;
+    border: 1px solid var(--accent) !important;
+    border-radius: 18px 5px 18px 5px !important;
+    font-family: "Libre Baskerville", Georgia, serif !important;
+    box-shadow: 0 3px 10px rgba(0,0,0,.18) !important;
+    transition: all .15s ease !important;
+}}
 
-    .stat-number {{
-        font-family: "Berkshire Swash", serif !important;
-        font-size: 42px !important;
-        color: var(--accent) !important;
-    }}
+.stButton > button:hover {{
+    background: linear-gradient(135deg, var(--surface2), var(--card)) !important;
+    border-color: var(--accent) !important;
+    box-shadow: 0 4px 14px rgba(0,0,0,.25) !important;
+}}
 
-    .stat-label {{
-        font-family: "Berkshire Swash", serif !important;
-        color: var(--text) !important;
-        font-size: 14px !important; 
-        text-align: center !important;
-        width: 100% !important;
-    }}
-    </style>
-    """, 
-    unsafe_allow_html=True
-))
+/* Decorative stat cards */
+.stat-card {{
+    background: var(--card);
+    border: 1px solid var(--accent);
+    border-radius: 24px 7px 24px 7px;
+    padding: 18px 10px;
+    text-align: center;
+    position: relative;
+    box-shadow: 0 6px 18px rgba(0,0,0,.18);
+}}
 
-st.markdown(f"""
-    <style>
-    .stat-label {{
-        font-family: "Berkshire Swash", serif !important;
-        color: var(--text) !important;
-        font-size: 14px !important; 
-        margin-top: 20px !important; 
-        text-align: center !important;
-        width: 100% !important;
-        </style>
-    """, 
-    unsafe_allow_html=True
-)
-    
-    <div class="stat-card">
-        <div class="stat-number">{your_python_variable}</div>
-        <div class="stat-label">Favorites</div>
-    </div>
-""", unsafe_allow_html=True)
+.stat-card::before {{
+    content: "❦";
+    display: block;
+    color: var(--accent);
+    font-size: 18px;
+    line-height: 1;
+    margin-bottom: 4px;
+}}
+
+.stat-number {{
+    font-family: "Berkshire Swash", Georgia, serif;
+    font-size: 38px;
+    color: var(--accent);
+}}
+
+.stat-label {{
+    font-family: "Libre Baskerville", Georgia, serif;
+    color: var(--text);
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: .08em;
 }}
 
 .tree-root {{
