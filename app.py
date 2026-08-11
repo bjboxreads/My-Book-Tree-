@@ -696,35 +696,59 @@ def safe_id(text):
 # ============================================================
 # IMPORT
 # ============================================================
+# ============================================================
+# IMPORT TAB
+# ============================================================
 
-def import_books(uploaded):
+with import_tab:
 
-    try:
+    st.header("Import Your Library")
 
-        df = pd.read_csv(
-            uploaded,
-            low_memory=False,
+    st.write(
+        "Upload a Goodreads CSV, StoryGraph export, "
+        "or another compatible book-list CSV."
+    )
+
+    uploaded = st.file_uploader(
+        "Choose your CSV",
+        type=["csv"],
+        key="book_library_uploader",
+    )
+
+    if uploaded is not None:
+
+        st.success(
+            f"✓ {uploaded.name} uploaded successfully"
         )
 
-    except Exception:
+        # Show file information so we know Streamlit received it
+        st.caption(
+            f"File size: {uploaded.size:,} bytes"
+        )
 
-        uploaded.seek(0)
+        if st.button(
+            "🌳 Build My Book Tree",
+            use_container_width=True,
+            type="primary",
+        ):
 
-        try:
+            with st.spinner(
+                "Reading your book list..."
+            ):
 
-            df = pd.read_csv(
-                uploaded,
-                encoding="latin-1",
-                low_memory=False,
-            )
+                success = import_books(uploaded)
 
-        except Exception as e:
+            if success:
 
-            st.error(
-                f"I couldn't read that CSV file: {e}"
-            )
+                st.success(
+                    f"✓ Successfully imported "
+                    f"{len(st.session_state.library)} books!"
+                )
 
-            return False
+                st.session_state.open_authors = set()
+                st.session_state.open_series = set()
+
+                st.rerun()
 
     # --------------------------------------------------------
     # NORMALIZE COLUMN NAMES
