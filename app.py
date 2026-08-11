@@ -268,7 +268,7 @@ div[data-baseweb="input"] input {{
     border-color: var(--accent) !important;
 }}
 
-.stat-card {
+.stat-card {{
     position: relative;
     background: var(--surface2) !important;
     border-radius: 20px !important;
@@ -284,7 +284,7 @@ div[data-baseweb="input"] input {{
     justify-content: center;
 }}
 
-.stat-card::before {
+.stat-card::before {{
     content: '';
     position: absolute;
     top: 0;
@@ -295,12 +295,12 @@ div[data-baseweb="input"] input {{
     opacity: 0.8;
 }}
 
-.stat-card:hover {
+.stat-card:hover {{
     transform: translateY(-8px) scale(1.02);
     border-color: var(--accent);
 }}
 
-.stat-number {
+.stat-number {{
     font-family: "Berkshire Swash", serif !important;
     font-size: 56px !important;
     background: linear-gradient(180deg, var(--text) 30%, var(--accent) 100%);
@@ -311,15 +311,17 @@ div[data-baseweb="input"] input {{
     line-height: 1 !important;
 }}
 
-.stat-label {
-    font-family: "Libre Baskerville", serif !important;
+.stat-label {{
+    font-family: "Berkshire Swash", serif !important;
     color: var(--text) !important;
-    font-size: 10px !important;
+    font-size: 11px !important;
     text-transform: uppercase;
-    letter-spacing: 5px !important;
-    font-weight: 600 !important;
-    margin-top: 20px;
-    opacity: 0.6;
+    letter-spacing: 2px !important;
+    margin-right: -2px !important; /* Fixes off-center appearance */
+    margin-top: 10px;
+    font-style: italic;
+    width: 100%;
+    text-align: center;
 }}
 }}
 
