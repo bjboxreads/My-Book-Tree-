@@ -216,6 +216,18 @@ p, label {{
     text-shadow: 0 3px 12px rgba(0,0,0,0.35);
 }}
 
+.willow-logo {{
+    width: 100%;
+    max-width: 1000px;
+    height: 300px;
+    margin: 0 auto 5px;
+}}
+
+.willow-logo svg {{
+    width: 100%;
+    height: 100%;
+}}
+
 .theme-heading {{
     font-family: "Berkshire Swash", Georgia, serif;
     font-size: 25px;
@@ -256,48 +268,12 @@ div[data-baseweb="input"] input {{
     border-color: var(--accent) !important;
 }}
 
-.import streamlit as st
-
-# Injecting CSS for the stat cards
-st.markdown("""
-<style>
-    /* The main card container */
-    .stat-card {
-      # Wrap everything in st.markdown and use triple quotes """
-st.markdown(
-    """
-    <style>
-    .stat-card {
-        background: linear-gradient(135deg, #0e2924 0%, #1a4d42 100%);
-        border: 1px solid rgba(216, 169, 58, 0.3);
-        border-radius: 12px;
-        padding: 20px;
-        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
-        text-align: center;
-        margin-bottom: 10px;
-    }
-
-    .stat-number {
-        font-size: 42px !important;
-        font-weight: 800 !important;
-        color: #d8a93a !important;
-        margin: 0;
-        /* Prevent overflow if the number is too long */
-        word-break: break-all;
-    }
-
-    .stat-label {
-        font-size: 14px !important;
-        text-transform: uppercase;
-        letter-spacing: 1.5px;
-        color: #c7d8cf !important;
-        margin-top: 8px;
-    }
-    </style>
-    """, 
-    unsafe_allow_html=True
-)
-""", unsafe_allow_html=True)
+.stat-card {{
+    background: var(--surface);
+    border-bottom: 2px solid var(--line);
+    border-radius: 5px 18px 5px 18px;
+    padding: 15px;
+    text-align: center;
 }}
 
 .stat-number {{
