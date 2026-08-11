@@ -280,8 +280,6 @@ div[data-baseweb="input"] input {{
     align-items: center;
     justify-content: center;
     box-shadow: 0 10px 25px rgba(0,0,0,0.5), inset 0 0 10px rgba(0,0,0,0.5);
-    
-    /* The Wavy Scalloped Shape */
     border-radius: 30% 70% 30% 70% / 70% 30% 70% 30% !important;
     min-height: 140px;
 }
@@ -297,6 +295,7 @@ div[data-baseweb="input"] input {{
     font-size: 24px;
     background: var(--surface);
     padding: 0 10px;
+    z-index: 3;
 }
 
 /* Elegant Inner "Double Frame" Line */
@@ -325,13 +324,10 @@ div[data-baseweb="input"] input {{
 }
 
 .stat-label {{
-    font-family: "Berkshire Swash", serif !important; /* Matches the number font */
+    font-family: "Berkshire Swash", serif !important;
     color: var(--text) !important;
     font-size: 14px !important; 
-    letter-spacing: 1px !important;
     margin-top: 5px;
-    width: 100%;
-    text-align: center;
 }
     }}
 
