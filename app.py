@@ -4,170 +4,149 @@ import requests
 import re
 import html
 
-
 # ============================================================
 # PAGE
 # ============================================================
 
 st.set_page_config(
     page_title="My Book Tree",
-    page_icon="📚",
+    page_icon="🌿",
     layout="wide",
     initial_sidebar_state="collapsed",
 )
 
-
 # ============================================================
-# BOOKISH THEMES
+# THEMES
 # ============================================================
 
 THEMES = {
 
-    "Emerald Study": {
-        "page": "#061814",
-        "surface": "#0D2921",
-        "surface2": "#164438",
-        "card": "#205A4A",
-        "text": "#FFF7DF",
-        "muted": "#C5D8CE",
+    "Emerald Library": {
+        "page": "#071B18",
+        "surface": "#0E2924",
+        "surface2": "#164239",
+        "card": "#1C5146",
+        "text": "#FFF7DE",
+        "muted": "#C7D8CF",
         "accent": "#D8A93A",
-        "accent2": "#75B89D",
-        "line": "#B9842C",
-        "button": "#143A30",
-        "button_text": "#FFF7DF",
-        "select_bg": "#102E26",
-        "select_hover": "#245546",
+        "accent2": "#6FB39A",
+        "line": "#B9822C",
+        "button": "#163D35",
+        "button_text": "#FFF7DE",
     },
 
-    "Gilded Midnight": {
-        "page": "#070E1D",
-        "surface": "#0D1B32",
-        "surface2": "#152C4D",
-        "card": "#1D3D67",
-        "text": "#FFF7DF",
-        "muted": "#C5D1E2",
-        "accent": "#E4B94F",
-        "accent2": "#6EA8D1",
+    "Sapphire & Gold": {
+        "page": "#071426",
+        "surface": "#0D2340",
+        "surface2": "#15365D",
+        "card": "#1C4774",
+        "text": "#FFF7E1",
+        "muted": "#C7D5E5",
+        "accent": "#E5B94D",
+        "accent2": "#75B5D4",
         "line": "#B8862F",
-        "button": "#112742",
-        "button_text": "#FFF7DF",
-        "select_bg": "#10233D",
-        "select_hover": "#23466B",
+        "button": "#16365A",
+        "button_text": "#FFF7E1",
     },
 
-    "Velvet Rose": {
-        "page": "#160A13",
-        "surface": "#29101F",
-        "surface2": "#41172E",
-        "card": "#5A2140",
-        "text": "#FFF3F5",
-        "muted": "#DCC5CF",
-        "accent": "#E58A9D",
-        "accent2": "#C69BCF",
-        "line": "#A94D6C",
-        "button": "#351629",
-        "button_text": "#FFF3F5",
-        "select_bg": "#2A1020",
-        "select_hover": "#562642",
+    "Gothic Rose": {
+        "page": "#180B16",
+        "surface": "#2A1024",
+        "surface2": "#421735",
+        "card": "#592044",
+        "text": "#FFF4F5",
+        "muted": "#DEC8D0",
+        "accent": "#E36A83",
+        "accent2": "#C79AD7",
+        "line": "#A83F5C",
+        "button": "#3A1730",
+        "button_text": "#FFF4F5",
     },
 
-    "Autumn Hearth": {
-        "page": "#211209",
-        "surface": "#37200F",
-        "surface2": "#563017",
-        "card": "#70401F",
-        "text": "#FFF0D5",
-        "muted": "#DCC3A0",
-        "accent": "#E3A33E",
-        "accent2": "#C96A3C",
-        "line": "#A9502D",
-        "button": "#4A2813",
-        "button_text": "#FFF0D5",
-        "select_bg": "#3B2110",
-        "select_hover": "#68401F",
+    "Autumn Library": {
+        "page": "#24130A",
+        "surface": "#38200F",
+        "surface2": "#5A3015",
+        "card": "#70401D",
+        "text": "#FFF1D5",
+        "muted": "#DCC4A1",
+        "accent": "#E2A33D",
+        "accent2": "#C9663C",
+        "line": "#A84F2B",
+        "button": "#4B2914",
+        "button_text": "#FFF1D5",
     },
 
-    "Moonlit Fantasy": {
-        "page": "#0A081A",
-        "surface": "#14112D",
-        "surface2": "#211B4A",
-        "card": "#302766",
-        "text": "#FFF8E8",
-        "muted": "#D0C9E5",
-        "accent": "#E6C34D",
-        "accent2": "#9276D5",
+    "Midnight Fantasy": {
+        "page": "#0C0A20",
+        "surface": "#151235",
+        "surface2": "#211C51",
+        "card": "#30276A",
+        "text": "#FFF8E7",
+        "muted": "#D1CAE7",
+        "accent": "#E8C34D",
+        "accent2": "#8B73D1",
         "line": "#6851A8",
-        "button": "#1C1740",
-        "button_text": "#FFF8E8",
-        "select_bg": "#171332",
-        "select_hover": "#30256A",
+        "button": "#211C4C",
+        "button_text": "#FFF8E7",
     },
 
-    "Enchanted Teal": {
-        "page": "#062126",
-        "surface": "#0C3840",
-        "surface2": "#14545B",
-        "card": "#1C6A70",
+    "Teal & Coral Bookshop": {
+        "page": "#08252A",
+        "surface": "#0E3B42",
+        "surface2": "#14565D",
+        "card": "#1C6B70",
         "text": "#FFF6DF",
-        "muted": "#C7D9D4",
+        "muted": "#C9D9D4",
         "accent": "#F0BD4D",
-        "accent2": "#F27B65",
-        "line": "#D45D4D",
-        "button": "#104A52",
+        "accent2": "#F27A63",
+        "line": "#D65D4B",
+        "button": "#14515A",
         "button_text": "#FFF6DF",
-        "select_bg": "#0D3B43",
-        "select_hover": "#1E6267",
     },
 
-    "Old World": {
-        "page": "#141D1A",
-        "surface": "#24332F",
-        "surface2": "#354C44",
-        "card": "#49635A",
-        "text": "#FFF0D2",
-        "muted": "#D0D2C2",
-        "accent": "#D6A84B",
-        "accent2": "#A8B56E",
-        "line": "#B37B32",
-        "button": "#2C423B",
-        "button_text": "#FFF0D2",
-        "select_bg": "#273934",
-        "select_hover": "#456057",
+    "Vintage Reader": {
+        "page": "#172322",
+        "surface": "#243633",
+        "surface2": "#36504A",
+        "card": "#49665D",
+        "text": "#FFF3D8",
+        "muted": "#D2D5C6",
+        "accent": "#D8A84A",
+        "accent2": "#A9B86B",
+        "line": "#B47B31",
+        "button": "#304943",
+        "button_text": "#FFF3D8",
     },
 
-    "Electric Violet": {
-        "page": "#0E0D20",
-        "surface": "#171735",
-        "surface2": "#242553",
-        "card": "#343671",
+    "Electric Bookstore": {
+        "page": "#111225",
+        "surface": "#1B1E3A",
+        "surface2": "#292E59",
+        "card": "#353B76",
         "text": "#FFFFFF",
-        "muted": "#D0D2EA",
-        "accent": "#F3C94D",
-        "accent2": "#65D9D3",
+        "muted": "#D0D3E9",
+        "accent": "#F4C84D",
+        "accent2": "#6AD6D0",
         "line": "#A66CDB",
-        "button": "#202348",
+        "button": "#24284D",
         "button_text": "#FFFFFF",
-        "select_bg": "#1B1D3C",
-        "select_hover": "#34366D",
     },
 
-    "Crimson Velvet": {
-        "page": "#1E090B",
-        "surface": "#341113",
-        "surface2": "#52191D",
-        "card": "#6A2529",
-        "text": "#FFF3DE",
-        "muted": "#DCC7B5",
-        "accent": "#E4B44B",
-        "accent2": "#D2775D",
-        "line": "#A83E39",
-        "button": "#451519",
-        "button_text": "#FFF3DE",
-        "select_bg": "#391316",
-        "select_hover": "#64272A",
+    "Classic Crimson": {
+        "page": "#210D0D",
+        "surface": "#351313",
+        "surface2": "#531B1B",
+        "card": "#6A2524",
+        "text": "#FFF4DF",
+        "muted": "#DCC8B4",
+        "accent": "#E3B34B",
+        "accent2": "#D57958",
+        "line": "#A83E32",
+        "button": "#461717",
+        "button_text": "#FFF4DF",
     },
 }
-
 
 # ============================================================
 # SESSION STATE
@@ -177,11 +156,9 @@ if (
     "theme" not in st.session_state
     or st.session_state.theme not in THEMES
 ):
-    st.session_state.theme = "Emerald Study"
-
+    st.session_state.theme = "Emerald Library"
 
 if "library" not in st.session_state:
-
     st.session_state.library = pd.DataFrame(
         columns=[
             "Title",
@@ -200,17 +177,13 @@ if "library" not in st.session_state:
         ]
     )
 
-
 if "open_authors" not in st.session_state:
     st.session_state.open_authors = set()
-
 
 if "open_series" not in st.session_state:
     st.session_state.open_series = set()
 
-
 theme = THEMES[st.session_state.theme]
-
 
 # ============================================================
 # CSS
@@ -221,13 +194,12 @@ st.html(
 <style>
 
 @import url(
-    'https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@500;600;700&family=Libre+Baskerville:wght@400;700'
+    'https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;500;600;700&family=Libre+Baskerville:wght@400;700&display=swap'
 );
 
-
-/* ============================================================
-   THEME VARIABLES
-   ============================================================ */
+/* =========================================================
+   ROOT
+========================================================= */
 
 :root {{
     --page: {theme["page"]};
@@ -239,714 +211,829 @@ st.html(
     --accent: {theme["accent"]};
     --accent2: {theme["accent2"]};
     --line: {theme["line"]};
-    --button: {theme["button"]};
-    --button-text: {theme["button_text"]};
-    --select-bg: {theme["select_bg"]};
-    --select-hover: {theme["select_hover"]};
 }}
 
-
-/* ============================================================
-   PAGE
-   ============================================================ */
+html,
+body,
+.stApp {{
+    background: var(--page) !important;
+}}
 
 .stApp {{
+    color: var(--text) !important;
     background:
         radial-gradient(
-            circle at 10% 0%,
+            ellipse at 50% -10%,
             var(--surface2) 0%,
-            var(--page) 48%,
-            var(--page) 100%
+            var(--page) 52%
         ) !important;
-
-    color: var(--text) !important;
 }}
-
-
-.main {{
-    background: transparent !important;
-}}
-
 
 .block-container {{
-    max-width: 1400px;
-    padding-top: 1rem;
-    padding-bottom: 4rem;
+    max-width: 1450px;
+    padding-top: 1rem !important;
+    padding-bottom: 4rem !important;
 }}
 
-
-/* ============================================================
-   TYPOGRAPHY
-   ============================================================ */
-
-h1, h2, h3, h4 {{
+h1, h2, h3, h4, h5 {{
     font-family:
         "Cormorant Garamond",
         Georgia,
         serif !important;
-
     color: var(--text) !important;
 }}
 
-
-p, label {{
-    color: var(--text) !important;
+p,
+label,
+span {{
+    color: var(--text);
 }}
 
-
-/* ============================================================
+/* =========================================================
    HEADER
-   ============================================================ */
+========================================================= */
 
-.book-header {{
+.willow-header {{
+    position: relative;
     text-align: center;
-    padding: 25px 0 30px;
+    padding: 35px 0 20px;
+    min-height: 180px;
+    overflow: hidden;
 }}
 
+.willow-header::before {{
+    content: "";
+    position: absolute;
+    left: 50%;
+    top: 0;
+    width: 4px;
+    height: 170px;
+    transform: translateX(-50%);
+    background:
+        linear-gradient(
+            to bottom,
+            transparent,
+            var(--line) 15%,
+            var(--line) 100%
+        );
+    opacity: .65;
+}}
 
-.book-header-title {{
+.willow-header::after {{
+    content: "";
+    position: absolute;
+    left: 50%;
+    top: 0;
+    width: 650px;
+    height: 145px;
+    transform: translateX(-50%);
+    border-radius: 50%;
+    border-top: 2px solid var(--accent2);
+    opacity: .28;
+    box-shadow:
+        -210px 20px 0 -48px var(--accent2),
+        210px 20px 0 -48px var(--accent2),
+        -280px 55px 0 -55px var(--accent2),
+        280px 55px 0 -55px var(--accent2);
+}}
+
+.header-leaves {{
+    position: absolute;
+    width: 100%;
+    height: 100%;
+    left: 0;
+    top: 0;
+    pointer-events: none;
+}}
+
+.header-leaves::before,
+.header-leaves::after {{
+    content: "❧";
+    position: absolute;
+    color: var(--accent2);
+    font-size: 38px;
+    opacity: .45;
+}}
+
+.header-leaves::before {{
+    left: 16%;
+    top: 42px;
+    transform: rotate(-25deg);
+}}
+
+.header-leaves::after {{
+    right: 16%;
+    top: 42px;
+    transform: scaleX(-1) rotate(-25deg);
+}}
+
+.book-title {{
+    position: relative;
+    z-index: 5;
     font-family:
         "Cormorant Garamond",
         Georgia,
         serif;
-
-    font-size: 68px;
-    line-height: .95;
-    font-weight: 700;
-
+    font-size: clamp(58px, 7vw, 88px);
+    line-height: .85;
+    font-weight: 600;
+    letter-spacing: .01em;
     color: var(--text);
+    text-shadow:
+        0 3px 20px rgba(0,0,0,.35);
 }}
 
+.book-title::before {{
+    content: "❦";
+    display: block;
+    font-size: 28px;
+    line-height: 1;
+    color: var(--accent);
+    margin-bottom: 10px;
+}}
 
-.book-header-subtitle {{
-    font-family:
-        "Libre Baskerville",
-        Georgia,
-        serif;
-
-    color: var(--muted);
-
+.book-title::after {{
+    content: "❦";
+    display: block;
+    font-size: 24px;
+    line-height: 1;
+    color: var(--accent);
     margin-top: 14px;
-
-    font-size: 14px;
-    letter-spacing: .04em;
+    transform: rotate(180deg);
 }}
 
+/* =========================================================
+   THEME PICKER
+========================================================= */
 
-/* ============================================================
-   THEME HEADING
-   ============================================================ */
+.theme-wrap {{
+    max-width: 430px;
+    margin: 8px auto 26px;
+    text-align: center;
+}}
 
 .theme-heading {{
     font-family:
         "Cormorant Garamond",
         Georgia,
         serif;
-
-    font-size: 23px;
-    font-weight: 700;
-
+    font-size: 22px;
+    font-weight: 600;
     color: var(--text);
-
-    margin-bottom: 5px;
+    margin-bottom: 8px;
 }}
-
-
-/* ============================================================
-   THEME SELECTOR
-   ============================================================ */
-
-/* Closed selector */
 
 div[data-baseweb="select"] > div {{
-    background: var(--select-bg) !important;
-
-    border: 2px solid var(--accent) !important;
-
-    border-radius: 10px !important;
-
-    min-height: 48px !important;
-
+    background: var(--surface) !important;
+    border: 1px solid var(--accent) !important;
+    border-radius: 30px !important;
+    min-height: 46px !important;
     box-shadow:
-        0 4px 15px rgba(0,0,0,.25) !important;
+        0 4px 20px rgba(0,0,0,.18);
 }}
-
 
 div[data-baseweb="select"] span {{
     color: var(--text) !important;
-    font-weight: 600 !important;
+    font-family:
+        "Libre Baskerville",
+        Georgia,
+        serif !important;
 }}
-
 
 div[data-baseweb="select"] input {{
     color: var(--text) !important;
 }}
 
-
-div[data-baseweb="select"] svg {{
-    fill: var(--accent) !important;
-}}
-
-
-/* Open selector */
-
 div[role="listbox"] {{
-    background: {theme["select_bg"]} !important;
-
-    border: 2px solid {theme["accent"]} !important;
-
-    border-radius: 10px !important;
-
-    padding: 5px !important;
-
+    background: var(--surface) !important;
+    border: 1px solid var(--accent) !important;
+    border-radius: 14px !important;
     box-shadow:
-        0 15px 40px rgba(0,0,0,.65) !important;
+        0 20px 50px rgba(0,0,0,.55) !important;
+    overflow: hidden;
 }}
-
 
 div[role="option"] {{
-    background: {theme["select_bg"]} !important;
-
-    color: {theme["text"]} !important;
-
-    padding: 12px 14px !important;
-
-    border-radius: 7px !important;
-
+    background: var(--surface) !important;
+    color: var(--text) !important;
+    padding: 12px 15px !important;
+    border-radius: 8px !important;
     font-family:
         "Libre Baskerville",
         Georgia,
         serif !important;
-
-    font-size: 14px !important;
 }}
 
-
-div[role="option"] *,
-div[role="option"] span {{
-    color: {theme["text"]} !important;
+div[role="option"] * {{
+    color: var(--text) !important;
 }}
-
 
 div[role="option"]:hover {{
-    background: {theme["select_hover"]} !important;
+    background: var(--surface2) !important;
 }}
-
 
 div[role="option"][aria-selected="true"] {{
-    background: {theme["accent"]} !important;
+    background: var(--card) !important;
 }}
 
+/* =========================================================
+   ORNAMENTAL STAT AREA
+========================================================= */
 
-div[role="option"][aria-selected="true"] *,
-div[role="option"][aria-selected="true"] span {{
-    color: {theme["page"]} !important;
+.stats-garden {{
+    position: relative;
+    margin: 15px auto 34px;
+    padding: 15px 10px 28px;
+    max-width: 1100px;
 }}
 
+.stats-garden::before {{
+    content: "";
+    position: absolute;
+    left: 5%;
+    right: 5%;
+    bottom: 0;
+    height: 1px;
+    background:
+        linear-gradient(
+            90deg,
+            transparent,
+            var(--line),
+            var(--accent),
+            var(--line),
+            transparent
+        );
+}}
 
-/* ============================================================
-   STATS
-   ============================================================ */
+.stats-garden::after {{
+    content: "❦";
+    position: absolute;
+    bottom: -15px;
+    left: 50%;
+    transform: translateX(-50%);
+    padding: 0 12px;
+    background: var(--page);
+    color: var(--accent);
+    font-size: 23px;
+}}
 
 .stat-card {{
+    position: relative;
+    text-align: center;
+    padding: 13px 10px 8px;
+    min-height: 100px;
     background:
         linear-gradient(
             145deg,
-            var(--surface2),
-            var(--surface)
+            rgba(255,255,255,.035),
+            rgba(0,0,0,.10)
         );
-
-    border: 1px solid var(--accent);
-
-    border-radius: 12px;
-
-    padding: 14px 8px;
-
-    text-align: center;
-
-    box-shadow:
-        0 5px 18px rgba(0,0,0,.18);
+    border: none;
+    border-radius: 50% 50% 44% 44%;
 }}
 
+.stat-card::before {{
+    content: "";
+    position: absolute;
+    left: 50%;
+    top: -7px;
+    width: 50px;
+    height: 1px;
+    transform: translateX(-50%);
+    background: var(--accent2);
+}}
+
+.stat-card::after {{
+    content: "✦";
+    position: absolute;
+    top: -18px;
+    left: 50%;
+    transform: translateX(-50%);
+    color: var(--accent);
+    font-size: 14px;
+}}
 
 .stat-number {{
     font-family:
         "Cormorant Garamond",
         Georgia,
         serif;
-
-    font-size: 34px;
-
-    font-weight: 700;
-
+    font-size: 45px;
+    line-height: 1;
+    font-weight: 600;
     color: var(--accent);
+    text-shadow:
+        0 2px 12px rgba(0,0,0,.25);
 }}
 
-
 .stat-label {{
+    margin-top: 8px;
     color: var(--muted);
-
     font-family:
         "Libre Baskerville",
         Georgia,
         serif;
-
-    font-size: 10px;
-
+    font-size: 9px;
     text-transform: uppercase;
-
-    letter-spacing: .12em;
+    letter-spacing: .18em;
 }}
 
+/* =========================================================
+   TABS
+========================================================= */
 
-/* ============================================================
-   TREE
-   ============================================================ */
+.stTabs {{
+    margin-top: 8px;
+}}
+
+.stTabs [data-baseweb="tab-list"] {{
+    justify-content: center;
+    gap: 8px;
+    background: transparent !important;
+    border-bottom: 1px solid var(--line) !important;
+}}
+
+.stTabs [data-baseweb="tab"] {{
+    background: transparent !important;
+    color: var(--muted) !important;
+    border-radius: 25px 25px 0 0 !important;
+    padding: 10px 22px !important;
+    font-family:
+        "Cormorant Garamond",
+        Georgia,
+        serif !important;
+    font-size: 19px !important;
+    font-weight: 600 !important;
+}}
+
+.stTabs [data-baseweb="tab"] p,
+.stTabs [data-baseweb="tab"] span {{
+    color: inherit !important;
+}}
+
+.stTabs [aria-selected="true"] {{
+    color: var(--text) !important;
+    background: var(--surface) !important;
+    box-shadow:
+        inset 0 -3px 0 var(--accent);
+}}
+
+/* =========================================================
+   SEARCH
+========================================================= */
+
+div[data-baseweb="input"] > div {{
+    background: var(--surface) !important;
+    border: 1px solid var(--line) !important;
+    border-radius: 25px !important;
+}}
+
+div[data-baseweb="input"] input {{
+    color: var(--text) !important;
+}}
+
+div[data-baseweb="input"] input::placeholder {{
+    color: var(--muted) !important;
+    opacity: .75;
+}}
+
+/* =========================================================
+   WILLOW TREE
+========================================================= */
 
 .tree-area {{
-    margin-top: 25px;
-
-    padding: 30px;
-
+    position: relative;
+    margin: 28px auto 20px;
+    padding: 45px 28px 55px;
+    min-height: 250px;
+    overflow: hidden;
     background:
-        linear-gradient(
-            145deg,
-            rgba(255,255,255,.025),
-            rgba(0,0,0,.18)
+        radial-gradient(
+            ellipse at 50% 0%,
+            var(--surface2),
+            var(--surface) 65%
         );
-
-    border: 1px solid var(--line);
-
-    border-radius: 18px;
+    border: 1px solid rgba(255,255,255,.05);
+    border-radius: 45% 45% 20px 20px / 30px 30px 20px 20px;
+    box-shadow:
+        inset 0 20px 60px rgba(0,0,0,.12),
+        0 18px 45px rgba(0,0,0,.16);
 }}
 
+.tree-area::before {{
+    content: "";
+    position: absolute;
+    left: 50%;
+    top: 0;
+    width: 14px;
+    height: 100%;
+    transform: translateX(-50%);
+    background:
+        linear-gradient(
+            90deg,
+            transparent,
+            var(--line),
+            var(--accent2),
+            var(--line),
+            transparent
+        );
+    opacity: .16;
+    border-radius: 50%;
+}}
 
-/* ============================================================
+.tree-area::after {{
+    content: "";
+    position: absolute;
+    left: 50%;
+    top: 15px;
+    width: 80%;
+    height: 100px;
+    transform: translateX(-50%);
+    border-top: 1px solid var(--accent2);
+    border-radius: 50%;
+    opacity: .22;
+}}
+
+/* =========================================================
    ROOT
-   ============================================================ */
+========================================================= */
 
 .root-node {{
-    width: 300px;
-
-    margin: 0 auto 38px;
-
-    padding: 18px 25px;
-
+    position: relative;
+    z-index: 2;
+    width: min(350px, 85%);
+    margin: 0 auto 50px;
+    padding: 22px 28px 19px;
+    text-align: center;
     background:
         linear-gradient(
             135deg,
             var(--accent),
-            var(--accent2)
+            var(--line)
         );
-
     color: var(--page);
-
-    border-radius: 50px;
-
-    text-align: center;
-
+    border-radius: 60% 40% 55% 45% / 55% 45% 55% 45%;
     box-shadow:
-        0 8px 25px rgba(0,0,0,.35);
+        0 10px 35px rgba(0,0,0,.28);
+    transform: rotate(-1deg);
 }}
 
+.root-node::before {{
+    content: "❦";
+    position: absolute;
+    left: -28px;
+    top: 20px;
+    color: var(--accent2);
+    font-size: 30px;
+    transform: rotate(-25deg);
+}}
+
+.root-node::after {{
+    content: "❦";
+    position: absolute;
+    right: -28px;
+    bottom: 18px;
+    color: var(--accent2);
+    font-size: 30px;
+    transform: scaleX(-1) rotate(-25deg);
+}}
 
 .root-node-title {{
-    color: var(--page);
-
+    color: var(--page) !important;
     font-family:
         "Cormorant Garamond",
         Georgia,
         serif;
-
-    font-size: 32px;
-
+    font-size: 36px;
     font-weight: 700;
 }}
-
 
 .root-node-small {{
-    color: var(--page);
-
-    font-size: 11px;
-
-    font-weight: 700;
-
-    opacity: .85;
+    color: var(--page) !important;
+    font-family:
+        "Libre Baskerville",
+        Georgia,
+        serif;
+    font-size: 10px;
+    letter-spacing: .06em;
+    opacity: .82;
 }}
 
-
-/* ============================================================
-   AUTHOR
-   ============================================================ */
+/* =========================================================
+   AUTHOR BRANCHES
+========================================================= */
 
 .author-info {{
-    padding: 10px 15px;
-
-    margin: 8px 0;
-
-    border-left:
-        4px solid var(--accent);
-
+    position: relative;
+    margin: 18px 2% 8px;
+    padding: 13px 22px;
     background:
         linear-gradient(
             90deg,
-            var(--surface),
-            rgba(0,0,0,.08)
+            var(--surface2),
+            rgba(0,0,0,0)
         );
-
-    border-radius: 0 12px 12px 0;
+    border: none;
+    border-left: 2px solid var(--accent2);
+    border-radius: 0 35px 35px 0;
 }}
 
+.author-info::before {{
+    content: "";
+    position: absolute;
+    left: -2px;
+    top: -13px;
+    width: 55px;
+    height: 25px;
+    border-left: 2px solid var(--accent2);
+    border-top: 1px solid var(--accent2);
+    border-radius: 50%;
+    opacity: .55;
+}}
 
 .author-name {{
     font-family:
         "Cormorant Garamond",
         Georgia,
         serif;
-
-    font-size: 27px;
-
-    font-weight: 700;
-
+    font-size: 29px;
+    font-weight: 600;
     color: var(--text);
 }}
 
-
 .author-count {{
     color: var(--muted);
-
-    font-size: 11px;
+    font-family:
+        "Libre Baskerville",
+        Georgia,
+        serif;
+    font-size: 10px;
+    margin-top: 1px;
 }}
 
-
-/* ============================================================
+/* =========================================================
    SERIES
-   ============================================================ */
+========================================================= */
 
 .series-info {{
-    margin-left: 48px;
-
-    padding: 10px 15px;
-
-    border-left:
-        3px solid var(--accent2);
-
-    background: var(--surface2);
-
-    border-radius: 0 10px 10px 0;
+    position: relative;
+    margin: 10px 6% 8px;
+    padding: 10px 17px;
+    background: rgba(0,0,0,.09);
+    border-left: 1px solid var(--accent2);
+    border-radius: 0 22px 22px 0;
 }}
 
+.series-info::before {{
+    content: "❧";
+    position: absolute;
+    left: -28px;
+    top: 2px;
+    color: var(--accent2);
+    font-size: 20px;
+}}
 
 .series-name {{
     font-family:
         "Cormorant Garamond",
         Georgia,
         serif;
-
-    font-size: 23px;
-
-    font-weight: 700;
-
+    font-size: 24px;
+    font-weight: 600;
     color: var(--text);
 }}
 
-
 .series-count {{
     color: var(--muted);
-
-    font-size: 11px;
+    font-size: 10px;
 }}
 
-
-/* ============================================================
-   BOOK
-   ============================================================ */
+/* =========================================================
+   BOOKS
+========================================================= */
 
 .book-info {{
-    margin-left: 100px;
-
-    margin-top: 8px;
-
-    padding: 10px 14px;
-
+    position: relative;
+    margin: 8px 11% 10px;
+    padding: 11px 15px;
     background:
         linear-gradient(
-            135deg,
+            90deg,
             var(--card),
-            var(--surface2)
+            rgba(0,0,0,.08)
         );
-
-    border-left:
-        2px solid var(--line);
-
-    border-radius: 0 10px 10px 0;
+    border-left: 1px solid var(--line);
+    border-radius: 0 16px 16px 0;
+    box-shadow:
+        0 4px 15px rgba(0,0,0,.10);
 }}
 
+.book-info::before {{
+    content: "";
+    position: absolute;
+    left: -1px;
+    top: 50%;
+    width: 28px;
+    height: 1px;
+    background: var(--line);
+    transform: translateX(-100%);
+}}
 
 .book-title {{
     font-family:
         "Cormorant Garamond",
         Georgia,
         serif;
-
-    font-size: 21px;
-
-    font-weight: 700;
-
+    font-size: 22px;
+    line-height: 1.05;
+    font-weight: 600;
     color: var(--text);
 }}
 
-
 .book-meta {{
     color: var(--muted);
-
-    font-size: 11px;
-
-    margin-top: 3px;
+    font-family:
+        "Libre Baskerville",
+        Georgia,
+        serif;
+    font-size: 10px;
+    margin-top: 5px;
 }}
-
 
 .book-cover {{
     width: 55px;
     height: 80px;
-
     object-fit: cover;
-
-    border-radius: 4px;
-
-    border:
-        1px solid var(--accent);
-
+    border-radius: 5px;
+    border: 1px solid var(--accent);
     box-shadow:
-        0 4px 10px rgba(0,0,0,.3);
+        0 5px 12px rgba(0,0,0,.3);
 }}
 
-
-/* ============================================================
+/* =========================================================
    BUTTONS
-   ============================================================ */
+========================================================= */
 
 .stButton > button {{
-    background:
-        linear-gradient(
-            135deg,
-            var(--button),
-            var(--surface)
-        ) !important;
-
-    color: var(--button-text) !important;
-
-    border:
-        1px solid var(--line) !important;
-
-    border-radius:
-        9px !important;
-
-    font-weight:
-        600 !important;
-
-    transition:
-        all .15s ease !important;
-}}
-
-
-.stButton > button:hover {{
-    background:
-        linear-gradient(
-            135deg,
-            var(--surface2),
-            var(--card)
-        ) !important;
-
-    border-color:
-        var(--accent) !important;
-
-    color:
-        var(--text) !important;
-
-    transform:
-        translateY(-1px);
-}}
-
-
-/* ============================================================
-   INPUTS
-   ============================================================ */
-
-div[data-baseweb="input"] > div {{
-    background:
-        var(--surface) !important;
-
-    border:
-        1px solid var(--line) !important;
-
-    border-radius:
-        8px !important;
-}}
-
-
-div[data-baseweb="input"] input {{
-    color:
-        var(--text) !important;
-}}
-
-
-div[data-baseweb="input"] input::placeholder {{
-    color:
-        var(--muted) !important;
-
-    opacity:
-        .8 !important;
-}}
-
-
-textarea {{
-    background:
-        var(--surface) !important;
-
-    color:
-        var(--text) !important;
-
-    border-color:
-        var(--line) !important;
-}}
-
-
-/* ============================================================
-   RADIO BUTTONS
-   ============================================================ */
-
-div[role="radiogroup"] label {{
+    background: transparent !important;
     color: var(--text) !important;
-}}
-
-
-/* ============================================================
-   CHECKBOX
-   ============================================================ */
-
-div[data-testid="stCheckbox"] label {{
-    color: var(--text) !important;
-}}
-
-
-/* ============================================================
-   TABS
-   ============================================================ */
-
-button[data-baseweb="tab"] {{
-    color: var(--muted) !important;
-
+    border: 1px solid transparent !important;
+    border-radius: 30px !important;
     font-family:
-        "Libre Baskerville",
+        "Cormorant Garamond",
         Georgia,
         serif !important;
+    font-size: 18px !important;
+    font-weight: 600 !important;
+    text-align: left !important;
+    transition: all .2s ease;
 }}
 
+.stButton > button:hover {{
+    background: var(--surface2) !important;
+    border-color: var(--line) !important;
+    color: var(--text) !important;
+    transform: translateX(3px);
+}}
 
-button[data-baseweb="tab"][aria-selected="true"] {{
+.stButton > button:focus {{
+    box-shadow:
+        0 0 0 1px var(--accent) !important;
+}}
+
+/* =========================================================
+   FORM ELEMENTS
+========================================================= */
+
+textarea {{
+    background: var(--surface) !important;
+    color: var(--text) !important;
+    border-color: var(--line) !important;
+}}
+
+div[data-baseweb="textarea"] > div {{
+    background: var(--surface) !important;
+    border-color: var(--line) !important;
+    border-radius: 14px !important;
+}}
+
+.stSelectbox > div > div {{
+    background: var(--surface) !important;
+}}
+
+.stNumberInput > div > div {{
+    background: var(--surface) !important;
+}}
+
+.stSlider [data-baseweb="slider"] {{
     color: var(--accent) !important;
 }}
 
-
-/* ============================================================
-   DIVIDERS
-   ============================================================ */
-
-hr {{
-    border-color:
-        var(--line) !important;
-    opacity: .5;
+.stCheckbox label span {{
+    color: var(--text) !important;
 }}
 
-
-/* ============================================================
-   FILE UPLOADER
-   ============================================================ */
-
-[data-testid="stFileUploader"] section {{
-    background:
-        var(--surface) !important;
-
-    border:
-        1px dashed var(--line) !important;
-
-    border-radius:
-        10px !important;
+.stRadio label span {{
+    color: var(--text) !important;
 }}
 
+/* =========================================================
+   HEADINGS INSIDE TABS
+========================================================= */
 
-/* ============================================================
-   FORM
-   ============================================================ */
-
-[data-testid="stForm"] {{
-    background:
-        var(--surface) !important;
-
-    border:
-        1px solid var(--line) !important;
-
-    border-radius:
-        14px !important;
-
-    padding:
-        20px !important;
+.tab-heading {{
+    font-family:
+        "Cormorant Garamond",
+        Georgia,
+        serif;
+    color: var(--text);
+    font-size: 34px;
+    font-weight: 600;
+    text-align: center;
+    margin: 15px 0 20px;
 }}
 
-
-/* ============================================================
-   PROGRESS BAR
-   ============================================================ */
-
-div[data-testid="stProgressBar"] > div > div {{
-    background:
-        var(--accent) !important;
+.tab-heading::after {{
+    content: "  ❦  ";
+    display: block;
+    color: var(--accent);
+    font-size: 19px;
+    margin-top: 3px;
 }}
 
-
-/* ============================================================
-   ALERTS
-   ============================================================ */
+/* =========================================================
+   INFO / SUCCESS
+========================================================= */
 
 div[data-testid="stAlert"] {{
-    border-radius:
-        10px !important;
+    background: var(--surface) !important;
+    border: 1px solid var(--line) !important;
+    border-radius: 15px !important;
 }}
 
+div[data-testid="stAlert"] * {{
+    color: var(--text) !important;
+}}
 
-/* ============================================================
+/* =========================================================
+   FILE UPLOADER
+========================================================= */
+
+section[data-testid="stFileUploaderDropzone"] {{
+    background: var(--surface) !important;
+    border: 1px dashed var(--line) !important;
+    border-radius: 18px !important;
+}}
+
+section[data-testid="stFileUploaderDropzone"] * {{
+    color: var(--text) !important;
+}}
+
+/* =========================================================
+   PROGRESS
+========================================================= */
+
+div[data-testid="stProgressBar"] > div > div {{
+    background: var(--accent) !important;
+}}
+
+/* =========================================================
    MOBILE
-   ============================================================ */
+========================================================= */
 
 @media (max-width: 700px) {{
 
-    .book-header-title {{
-        font-size: 48px;
+    .book-title {{
+        font-size: 55px;
     }}
 
     .tree-area {{
-        padding: 15px;
+        padding-left: 12px;
+        padding-right: 12px;
     }}
 
-    .root-node {{
-        width: 90%;
-    }}
-
-    .book-info {{
-        margin-left: 45px;
+    .author-info {{
+        margin-left: 1%;
     }}
 
     .series-info {{
-        margin-left: 25px;
+        margin-left: 5%;
     }}
 
+    .book-info {{
+        margin-left: 9%;
+        margin-right: 3%;
+    }}
+
+    .stTabs [data-baseweb="tab"] {{
+        padding: 8px 10px !important;
+        font-size: 16px !important;
+    }}
 }}
 
 </style>
 """
 )
-
 
 # ============================================================
 # HEADER
@@ -954,29 +1041,31 @@ div[data-testid="stAlert"] {{
 
 st.html(
     """
-    <div class="book-header">
+    <div class="willow-header">
 
-        <div class="book-header-title">
+        <div class="header-leaves"></div>
+
+        <div class="book-title">
             My Book Tree
-        </div>
-
-        <div class="book-header-subtitle">
-            Your books, connected from author to series to story.
         </div>
 
     </div>
     """
 )
 
-
 # ============================================================
 # THEME PICKER
 # ============================================================
 
 st.html(
-    '<div class="theme-heading">Choose your bookish theme</div>'
+    """
+    <div class="theme-wrap">
+        <div class="theme-heading">
+            Choose your bookish world
+        </div>
+    </div>
+    """
 )
-
 
 theme_choice = st.selectbox(
     "Bookish theme",
@@ -988,13 +1077,9 @@ theme_choice = st.selectbox(
     label_visibility="collapsed",
 )
 
-
 if theme_choice != st.session_state.theme:
-
     st.session_state.theme = theme_choice
-
     st.rerun()
-
 
 # ============================================================
 # COVER SEARCH
@@ -1010,7 +1095,7 @@ def get_cover(title, author="", isbn=""):
     )
 
     # --------------------------------------------------------
-    # ISBN COVER
+    # ISBN
     # --------------------------------------------------------
 
     if isbn:
@@ -1022,28 +1107,27 @@ def get_cover(title, author="", isbn=""):
 
         try:
 
-            r = requests.get(
+            response = requests.get(
                 url,
                 timeout=8
             )
 
             if (
-                r.status_code == 200
-                and len(r.content) > 1000
+                response.status_code == 200
+                and len(response.content) > 1000
             ):
-
                 return url
 
         except Exception:
             pass
 
     # --------------------------------------------------------
-    # OPEN LIBRARY SEARCH
+    # OPEN LIBRARY
     # --------------------------------------------------------
 
     try:
 
-        r = requests.get(
+        response = requests.get(
             "https://openlibrary.org/search.json",
             params={
                 "title": title,
@@ -1053,9 +1137,9 @@ def get_cover(title, author="", isbn=""):
             timeout=10,
         )
 
-        if r.status_code == 200:
+        if response.status_code == 200:
 
-            docs = r.json().get(
+            docs = response.json().get(
                 "docs",
                 []
             )
@@ -1082,7 +1166,7 @@ def get_cover(title, author="", isbn=""):
 
     try:
 
-        r = requests.get(
+        response = requests.get(
             "https://www.googleapis.com/books/v1/volumes",
             params={
                 "q": f"{title} {author}",
@@ -1091,9 +1175,9 @@ def get_cover(title, author="", isbn=""):
             timeout=10,
         )
 
-        if r.status_code == 200:
+        if response.status_code == 200:
 
-            items = r.json().get(
+            items = response.json().get(
                 "items",
                 []
             )
@@ -1128,13 +1212,11 @@ def detect_series(title):
 
     patterns = [
 
-        r"\(([^()]*)#\s*\d+(?:\.\d+)?[^()]*\)",
+        r"\(([^()]*?)#\s*\d+(?:\.\d+)?[^()]*\)",
+        r"\[([^\[\]]*?)#\s*\d+(?:\.\d+)?[^\[\]]*\]",
 
-        r"\[([^\[\]]*)#\s*\d+(?:\.\d+)?[^\[\]]*\]",
-
-        r"\(([^()]*)\bBook\s+\d+(?:\.\d+)?[^()]*\)",
-
-        r"\[([^\[\]]*)\bBook\s+\d+(?:\.\d+)?[^\[\]]*\]",
+        r"\(([^()]*?)\bBook\s+\d+(?:\.\d+)?[^()]*\)",
+        r"\[([^\[\]]*?)\bBook\s+\d+(?:\.\d+)?[^\[\]]*\]",
     ]
 
     for pattern in patterns:
@@ -1178,11 +1260,8 @@ def detect_series(title):
 def detect_series_number(title):
 
     patterns = [
-
         r"#\s*(\d+(?:\.\d+)?)",
-
         r"\bBook\s+(\d+(?:\.\d+)?)",
-
         r"\bVol(?:ume)?\.?\s+(\d+(?:\.\d+)?)",
     ]
 
@@ -1294,12 +1373,8 @@ def import_books(uploaded):
             )
         ).strip()
 
-        if not title or title == "nan":
+        if not title or title.lower() == "nan":
             continue
-
-        # ----------------------------------------------------
-        # AUTHOR
-        # ----------------------------------------------------
 
         author = "Unknown Author"
 
@@ -1312,12 +1387,8 @@ def import_books(uploaded):
                 )
             ).strip()
 
-        if not author or author == "nan":
+        if not author or author.lower() == "nan":
             author = "Unknown Author"
-
-        # ----------------------------------------------------
-        # ISBN
-        # ----------------------------------------------------
 
         isbn = ""
 
@@ -1334,10 +1405,6 @@ def import_books(uploaded):
                 )
             )
 
-        # ----------------------------------------------------
-        # RATING
-        # ----------------------------------------------------
-
         rating = None
 
         if rating_col:
@@ -1352,10 +1419,6 @@ def import_books(uploaded):
 
             except Exception:
                 pass
-
-        # ----------------------------------------------------
-        # STATUS
-        # ----------------------------------------------------
 
         status = "Want to Read"
 
@@ -1378,10 +1441,6 @@ def import_books(uploaded):
             ):
 
                 status = "Read"
-
-        # ----------------------------------------------------
-        # BOOK
-        # ----------------------------------------------------
 
         books.append(
             {
@@ -1414,15 +1473,9 @@ def import_books(uploaded):
 
         return False
 
-    # --------------------------------------------------------
-    # FIND COVERS
-    # --------------------------------------------------------
-
     progress = st.progress(0)
 
-    for i in range(
-        len(new_library)
-    ):
+    for i in range(len(new_library)):
 
         new_library.loc[
             i,
@@ -1442,7 +1495,6 @@ def import_books(uploaded):
     st.session_state.library = new_library
 
     st.session_state.open_authors = set()
-
     st.session_state.open_series = set()
 
     return True
@@ -1456,13 +1508,11 @@ library = st.session_state.library
 
 total = len(library)
 
-
 authors = (
     library["Author"].nunique()
     if total
     else 0
 )
-
 
 series_count = (
     library[
@@ -1471,7 +1521,6 @@ series_count = (
     if total
     else 0
 )
-
 
 read_count = (
     len(
@@ -1483,7 +1532,6 @@ read_count = (
     else 0
 )
 
-
 favorites = (
     len(
         library[
@@ -1494,13 +1542,18 @@ favorites = (
     else 0
 )
 
-
 # ============================================================
 # STATS
 # ============================================================
 
-columns = st.columns(5)
+st.html(
+    """
+    <div class="stats-garden">
+    </div>
+    """
+)
 
+columns = st.columns(5)
 
 stats = [
     (total, "Books"),
@@ -1509,7 +1562,6 @@ stats = [
     (read_count, "Read"),
     (favorites, "Favorites"),
 ]
-
 
 for col, (number, label) in zip(
     columns,
@@ -1534,20 +1586,18 @@ for col, (number, label) in zip(
             """
         )
 
-
 # ============================================================
 # TABS
 # ============================================================
 
 tree_tab, books_tab, add_tab, import_tab = st.tabs(
     [
-        "🌳 Book Tree",
+        "🌿 Book Tree",
         "📚 Books",
-        "➕ Add Book",
-        "📥 Import",
+        "✦ Add Book",
+        "❧ Import",
     ]
 )
-
 
 # ============================================================
 # TREE
@@ -1568,7 +1618,8 @@ with tree_tab:
             "Search your tree",
             placeholder=(
                 "Search author, series, or book..."
-            )
+            ),
+            label_visibility="collapsed",
         )
 
         filtered = library.copy()
@@ -1582,33 +1633,20 @@ with tree_tab:
                 .fillna("")
                 .astype(str)
                 .str.lower()
-                .str.contains(
-                    q,
-                    na=False
-                )
+                .str.contains(q, na=False)
                 |
                 filtered["Author"]
                 .fillna("")
                 .astype(str)
                 .str.lower()
-                .str.contains(
-                    q,
-                    na=False
-                )
+                .str.contains(q, na=False)
                 |
                 filtered["Series"]
                 .fillna("")
                 .astype(str)
                 .str.lower()
-                .str.contains(
-                    q,
-                    na=False
-                )
+                .str.contains(q, na=False)
             ]
-
-        # ----------------------------------------------------
-        # ROOT
-        # ----------------------------------------------------
 
         st.html(
             f"""
@@ -1621,7 +1659,8 @@ with tree_tab:
                     </div>
 
                     <div class="root-node-small">
-                        {len(filtered)} books ·
+                        {len(filtered)} books
+                        ·
                         {filtered["Author"].nunique()} authors
                     </div>
 
@@ -1630,10 +1669,6 @@ with tree_tab:
             </div>
             """
         )
-
-        # ----------------------------------------------------
-        # AUTHORS
-        # ----------------------------------------------------
 
         author_list = sorted(
             filtered["Author"]
@@ -1645,9 +1680,7 @@ with tree_tab:
 
         for author in author_list:
 
-            author_id = safe_id(
-                author
-            )
+            author_id = safe_id(author)
 
             author_books = filtered[
                 filtered["Author"]
@@ -1661,7 +1694,7 @@ with tree_tab:
                 in st.session_state.open_authors
             )
 
-            arrow = "▼" if opened else "▶"
+            arrow = "⌄" if opened else "›"
 
             if st.button(
                 f"{arrow}  {author}",
@@ -1703,10 +1736,6 @@ with tree_tab:
             if not opened:
                 continue
 
-            # ------------------------------------------------
-            # SERIES
-            # ------------------------------------------------
-
             series_list = sorted(
                 author_books["Series"]
                 .fillna("Standalone")
@@ -1717,9 +1746,9 @@ with tree_tab:
 
             for series in series_list:
 
-                # --------------------------------------------
+                # ------------------------------------------------
                 # STANDALONE
-                # --------------------------------------------
+                # ------------------------------------------------
 
                 if series == "Standalone":
 
@@ -1829,9 +1858,9 @@ with tree_tab:
 
                     continue
 
-                # --------------------------------------------
-                # SERIES ID
-                # --------------------------------------------
+                # ------------------------------------------------
+                # SERIES
+                # ------------------------------------------------
 
                 series_id = (
                     author_id
@@ -1845,9 +1874,9 @@ with tree_tab:
                 )
 
                 arrow = (
-                    "▼"
+                    "⌄"
                     if series_open
-                    else "▶"
+                    else "›"
                 )
 
                 if st.button(
@@ -1897,10 +1926,6 @@ with tree_tab:
                 if not series_open:
                     continue
 
-                # --------------------------------------------
-                # SORT SERIES
-                # --------------------------------------------
-
                 series_books = series_books.sort_values(
                     by=[
                         "Series Number",
@@ -1908,10 +1933,6 @@ with tree_tab:
                     ],
                     na_position="last"
                 )
-
-                # --------------------------------------------
-                # BOOKS
-                # --------------------------------------------
 
                 for position, (_, book) in enumerate(
                     series_books.iterrows(),
@@ -2032,18 +2053,23 @@ with tree_tab:
                             """
                         )
 
-
 # ============================================================
 # BOOKS
 # ============================================================
 
 with books_tab:
 
+    st.html(
+        """
+        <div class="tab-heading">
+            My Books
+        </div>
+        """
+    )
+
     if library.empty:
 
-        st.info(
-            "No books yet."
-        )
+        st.info("No books yet.")
 
     else:
 
@@ -2057,6 +2083,7 @@ with books_tab:
                 "Want to Read",
             ],
             horizontal=True,
+            label_visibility="collapsed",
         )
 
         books = library.copy()
@@ -2106,9 +2133,7 @@ with books_tab:
                                 book["Author"]
                             )
                         )}
-
                         <br>
-
                         {html.escape(
                             str(
                                 book["Series"]
@@ -2129,6 +2154,7 @@ with books_tab:
                         )
                     ),
                     key=f"fav_{index}",
+                    label_visibility="collapsed",
                 )
 
                 if favorite != bool(
@@ -2145,20 +2171,21 @@ with books_tab:
 
                     st.rerun()
 
-
 # ============================================================
 # ADD BOOK
 # ============================================================
 
 with add_tab:
 
-    st.header(
-        "Add a Book"
+    st.html(
+        """
+        <div class="tab-heading">
+            Add a Book
+        </div>
+        """
     )
 
-    with st.form(
-        "add_book"
-    ):
+    with st.form("add_book"):
 
         title = st.text_input(
             "Title"
@@ -2177,7 +2204,7 @@ with add_tab:
             "Series number",
             min_value=0.0,
             value=0.0,
-            step=.5
+            step=0.5
         )
 
         isbn = st.text_input(
@@ -2278,15 +2305,18 @@ with add_tab:
 
                 st.rerun()
 
-
 # ============================================================
 # IMPORT
 # ============================================================
 
 with import_tab:
 
-    st.header(
-        "Import Your Library"
+    st.html(
+        """
+        <div class="tab-heading">
+            Import Your Library
+        </div>
+        """
     )
 
     st.write(
