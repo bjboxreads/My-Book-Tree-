@@ -216,18 +216,6 @@ p, label {{
     text-shadow: 0 3px 12px rgba(0,0,0,0.35);
 }}
 
-.willow-logo {{
-    width: 100%;
-    max-width: 1000px;
-    height: 300px;
-    margin: 0 auto 5px;
-}}
-
-.willow-logo svg {{
-    width: 100%;
-    height: 100%;
-}}
-
 .theme-heading {{
     font-family: "Berkshire Swash", Georgia, serif;
     font-size: 25px;
@@ -268,12 +256,50 @@ div[data-baseweb="input"] input {{
     border-color: var(--accent) !important;
 }}
 
-.stat-card {{
-    background: var(--surface);
-    border-bottom: 2px solid var(--line);
-    border-radius: 5px 18px 5px 18px;
-    padding: 15px;
-    text-align: center;
+.import streamlit as st
+
+# Injecting CSS for the stat cards
+st.markdown("""
+<style>
+    /* The main card container */
+    .stat-card {
+        background: linear-gradient(135deg, #0e2924 0%, #1a4d42 100%);
+        border: 1px solid rgba(216, 169, 58, 0.3);
+        border-radius: 12px;
+        padding: 20px;
+        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+        text-align: center;
+        transition: all 0.3s ease;
+        margin-bottom: 10px;
+    }
+
+    /* Hover effect */
+    .stat-card:hover {
+        transform: translateY(-3px);
+        box-shadow: 0 6px 20px rgba(0, 0, 0, 0.4);
+        border-color: rgba(216, 169, 58, 0.6);
+    }
+
+    /* The big number */
+    .stat-number {
+        font-size: 42px !important;
+        font-weight: 800 !important;
+        color: #d8a93a !important;
+        margin: 0;
+        line-height: 1;
+    }
+
+    /* The label text */
+    .stat-label {
+        font-size: 14px !important;
+        text-transform: uppercase;
+        letter-spacing: 1.5px;
+        color: #c7d8cf !important;
+        margin-top: 8px;
+        opacity: 0.9;
+    }}
+</style>
+""", unsafe_allow_html=True)
 }}
 
 .stat-number {{
