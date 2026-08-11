@@ -1223,7 +1223,6 @@ tree_tab, books_tab, add_tab, import_tab = st.tabs(
 # BOOK TREE
 # ============================================================
 
-python
 
 # ============================================================
 # BOOK TREE — AUTHOR GRID → HORIZONTAL ANCESTRY TREE
