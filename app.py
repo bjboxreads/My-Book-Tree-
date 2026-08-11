@@ -1,26 +1,5 @@
 import streamlit as st
 
-st.markdown("""
-    <style>
-        /* 1. Boost performance for large trees */
-        /* Targets the specific container holding your book tree */
-        .stVerticalBlock.st-emotion-cache-tn0cau.elzidro3 > div {
-            content-visibility: auto;
-            contain-intrinsic-size: 0 50px; /* Gives the browser an estimate of item height */
-        }
-
-        /* 2. Simplify the layout for text nodes to reduce recalculation lag */
-        .stMarkdown p {
-            contain: content;
-        }
-
-        /* 3. Ensure dropdowns stay on top and stay snappy */
-        .stSelectbox, .stMultiSelect {
-            z-index: 100;
-        }
-    </style>
-""", unsafe_allow_html=True)
-
 def display_ancestry_tree(df):
     # 1. Clean data: Fill empty Series with 'Standalone'
     df = df.copy()
@@ -37,12 +16,12 @@ def display_ancestry_tree(df):
 
     for author, author_df in df.groupby('Author'):
         parts.append(
-            f'<details class="tree-author-details">'
-            f'<summary><div class="author-card">'
-            f'<span class="author-name">🌳 {html.escape(str(author))}</span>'
-            f'<span class="author-count">({len(author_df)} books)</span>'
-            f'</div></summary>'
-            f'<div class="tree-series-row">'
+            f'<details class="atree-author">'
+            f'<summary>'
+            f'<span class="atree-pill">🌳 {html.escape(str(author))} '
+            f'({len(author_df)})</span>'
+            f'</summary>'
+            f'<div class="atree-series-row">'
         )
 
         series_list = author_df['Series'].unique()
@@ -50,12 +29,13 @@ def display_ancestry_tree(df):
         for series in series_list:
             series_books = author_df[author_df['Series'] == series]
             parts.append(
-                f'<details class="tree-series-details">'
-                f'<summary><div class="series-card">'
-                f'<span class="series-name">📂 {html.escape(str(series))}</span>'
-                f'<span class="series-count">({len(series_books)})</span>'
-                f'</div></summary>'
-                f'<div class="tree-books-list">'
+                f'<details class="atree-series">'
+                f'<summary>'
+                f'<span class="atree-pill atree-pill-sm">📂 '
+                f'{html.escape(str(series))} '
+                f'({len(series_books)})</span>'
+                f'</summary>'
+                f'<div class="atree-books">'
             )
             for _, book in series_books.iterrows():
                 title = html.escape(str(book.get('Title', '')))
@@ -65,9 +45,12 @@ def display_ancestry_tree(df):
                 if genre:
                     meta += f' · {genre}' if meta else genre
                 parts.append(
-                    f'<div class="book-branch">'
-                    f'<div class="book-title">📖 {title}</div>'
-                    + (f'<div class="book-meta">{meta}</div>' if meta else '')
+                    f'<div class="atree-book">'
+                    f'<div class="atree-book-title">📖 {title}</div>'
+                    + (
+                        f'<div class="atree-book-meta">{meta}</div>'
+                        if meta else ''
+                    )
                     + '</div>'
                 )
             parts.append('</div></details>')
@@ -79,10 +62,9 @@ def display_ancestry_tree(df):
     st.html(
         f"""
         <style>
-        /* Reuse the app's own author-card / series-card / book-branch
-           theme classes (already defined in the global stylesheet)
-           so all three tree levels look consistent, instead of the
-           plain bullet-list placeholder styling. */
+        /* Match these boxes to the app's real visual identity:
+           the .stButton>button pill for author/series toggles,
+           and the inline book-card style used elsewhere for books. */
 
         .book-ancestry-tree summary {{
             cursor: pointer;
@@ -95,34 +77,66 @@ def display_ancestry_tree(df):
             content: "";
         }}
 
-        .tree-author-details {{
-            margin: 25px 0;
-        }}
-        .tree-author-details > summary .author-card {{
-            display: flex;
-            align-items: baseline;
-            gap: 10px;
+        .atree-author {{
+            margin: 22px 0;
         }}
 
-        .tree-series-row {{
+        .atree-pill {{
+            display: inline-block;
+            width: 100%;
+            box-sizing: border-box;
+            background: linear-gradient(
+                135deg, var(--surface), var(--surface2)
+            );
+            color: var(--text);
+            border: 1px solid var(--accent);
+            border-radius: 18px 5px 18px 5px;
+            font-family: "Libre Baskerville", Georgia, serif;
+            box-shadow: 0 3px 10px rgba(0,0,0,.18);
+            padding: 0.5rem 1rem;
+            transition: all .15s ease;
+        }}
+        .atree-pill:hover {{
+            background: linear-gradient(
+                135deg, var(--surface2), var(--card)
+            );
+            box-shadow: 0 4px 14px rgba(0,0,0,.25);
+        }}
+        .atree-pill-sm {{
+            font-size: 0.9em;
+        }}
+
+        .atree-series-row {{
             display: flex;
             flex-wrap: wrap;
-            gap: 16px;
-            padding-left: 35px;
-            margin-top: 10px;
+            gap: 14px;
+            padding: 12px 0 4px 35px;
         }}
-        .tree-series-details {{
-            flex: 1 1 240px;
-            min-width: 220px;
-        }}
-        .tree-series-details > summary .series-card {{
-            display: flex;
-            align-items: baseline;
-            gap: 8px;
+        .atree-series {{
+            flex: 1 1 230px;
+            min-width: 210px;
         }}
 
-        .tree-books-list {{
-            margin-top: 6px;
+        .atree-books {{
+            margin-top: 8px;
+        }}
+        .atree-book {{
+            margin: 6px 0;
+            padding: 8px;
+            background: linear-gradient(90deg, var(--card), transparent);
+            border-left: 2px solid var(--line);
+            border-radius: 0 10px 0 0;
+        }}
+        .atree-book-title {{
+            font-family: "Berkshire Swash", Georgia, serif;
+            font-size: 16px;
+            color: var(--text);
+        }}
+        .atree-book-meta {{
+            color: var(--muted);
+            font-family: "Libre Baskerville", Georgia, serif;
+            font-size: 9px;
+            margin-top: 3px;
         }}
         </style>
         {''.join(parts)}
