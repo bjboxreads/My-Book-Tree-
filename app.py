@@ -1,4 +1,37 @@
 import streamlit as st
+py
+import streamlit as st
+
+def display_ancestry_tree(df):
+    # 1. Clean data: Fill empty Series with 'Standalone'
+    df['Series'] = df['Series'].fillna('Standalone').replace('', 'Standalone')
+    
+    # 2. Iterate through each Author (The Trunk)
+    for author, author_df in df.groupby('Author'):
+        # Creating the main trunk expander (Closed by default)
+        with st.expander(f"🌳 {author}", expanded=False):
+            
+            # 3. Get all Series for this specific author
+            series_list = author_df['Series'].unique()
+            
+            # 4. Create Columns so Series appear side-by-side (Siblings)
+            # This makes the "ancestry" horizontal row
+            cols = st.columns(len(series_list))
+            
+            for i, series in enumerate(series_list):
+                with cols[i]:
+                    # 5. Create a branch for each Series (Closed by default)
+                    with st.expander(f"📂 {series}", expanded=False):
+                        
+                        # 6. List the Books vertically underneath (The Kids)
+                        series_books = author_df[author_df['Series'] == series]
+                        for _, book in series_books.iterrows():
+                            # You can use st.info or st.write here
+                            st.write(f"📖 {book['Title']}")
+
+# Usage:
+# if not df.empty:
+#     display_ancestry_tree(df)
 import pandas as pd
 import requests
 import re
