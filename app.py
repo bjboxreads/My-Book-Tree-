@@ -187,7 +187,7 @@ st.html(f"""
 
 .block-container {{
     max-width: 1400px;
-    padding-top: 1.5rem;
+    padding-top: 3rem;
     padding-bottom: 4rem;
 }}
 
@@ -202,6 +202,8 @@ p, label {{
 
 .book-header {{
     text-align: center;
+    padding-top: 15px;
+    margin-bottom: 0;
 }}
 
 .book-header-title {{
