@@ -1640,7 +1640,6 @@ with books_tab:
                 == choice
             ]
 
-     py
 with books_tab:
     if library.empty:
         st.info("No books yet.")
