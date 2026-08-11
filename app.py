@@ -677,232 +677,225 @@ st.html(css)
 
 
 # ============================================================
-# HEADER + WILLOW
+# HEADER + WILLOW TREE
 # ============================================================
 
-st.html(
+st.markdown(
     """
-    <div class="book-header">
+    <div style="
+        text-align:center;
+        padding-top:30px;
+    ">
 
-        <div class="book-header-title">
+        <div style="
+            font-family:'Berkshire Swash', Georgia, serif;
+            font-size:70px;
+            color:#FFF7DE;
+            line-height:1.15;
+            margin-bottom:5px;
+        ">
             My Book Tree
         </div>
 
-    </div>
-
-    <div class="willow-logo">
-
         <svg
-            viewBox="0 0 1000 330"
+            width="100%"
+            height="300"
+            viewBox="0 0 1000 300"
             xmlns="http://www.w3.org/2000/svg"
+            style="display:block; margin:0 auto;"
         >
 
             <!-- TRUNK -->
             <path
-                d="M500 325
-                   C490 275 492 225 500 180
-                   C508 135 520 95 535 55"
+                d="M500 300
+                   C490 245 490 200 500 155
+                   C510 110 525 70 540 35"
                 fill="none"
-                stroke="#51352C"
+                stroke="#54382E"
                 stroke-width="30"
                 stroke-linecap="round"
             />
 
-            <path
-                d="M505 320
-                   C498 270 500 225 508 180
-                   C515 135 527 95 540 58"
-                fill="none"
-                stroke="#795449"
-                stroke-width="7"
-                stroke-linecap="round"
-            />
-
-            <!-- LEFT BRANCHES -->
+            <!-- BRANCHES -->
             <g
                 fill="none"
-                stroke="#51352C"
+                stroke="#54382E"
                 stroke-linecap="round"
             >
+
                 <path
-                    d="M505 180
-                       C445 145 370 115 285 105"
+                    d="M505 175
+                       C440 135 365 105 275 95"
                     stroke-width="14"
                 />
 
                 <path
-                    d="M500 205
-                       C425 180 340 175 245 190"
+                    d="M500 195
+                       C420 165 330 165 235 180"
                     stroke-width="11"
                 />
 
                 <path
-                    d="M510 145
-                       C465 105 425 70 395 30"
+                    d="M510 140
+                       C465 95 430 60 400 20"
                     stroke-width="10"
                 />
-            </g>
 
-            <!-- RIGHT BRANCHES -->
-            <g
-                fill="none"
-                stroke="#51352C"
-                stroke-linecap="round"
-            >
                 <path
-                    d="M515 175
-                       C575 140 650 110 735 105"
+                    d="M515 170
+                       C580 130 655 100 745 95"
                     stroke-width="14"
                 />
 
                 <path
-                    d="M515 205
-                       C590 180 675 175 760 190"
+                    d="M515 195
+                       C595 165 680 165 765 180"
                     stroke-width="11"
                 />
 
                 <path
-                    d="M520 140
-                       C565 100 605 65 635 25"
+                    d="M520 135
+                       C565 90 600 55 635 15"
                     stroke-width="10"
                 />
+
             </g>
 
-            <!-- WILLOW HANGING BRANCHES -->
+            <!-- HANGING WILLOW BRANCHES -->
             <g
                 fill="none"
-                stroke="#687653"
+                stroke="#72805C"
                 stroke-width="4"
                 stroke-linecap="round"
             >
-                <path d="M285 105 C275 160 282 225 300 300"/>
-                <path d="M330 115 C320 175 330 245 345 315"/>
-                <path d="M375 125 C365 185 375 250 390 305"/>
-                <path d="M420 140 C410 195 420 250 435 290"/>
-                <path d="M460 155 C450 205 458 250 470 280"/>
-                <path d="M245 190 C238 235 245 270 260 310"/>
 
-                <path d="M735 105 C745 160 738 225 720 300"/>
-                <path d="M690 115 C700 175 690 245 675 315"/>
-                <path d="M645 125 C655 185 645 250 630 305"/>
-                <path d="M600 140 C610 195 600 250 585 290"/>
-                <path d="M560 155 C570 205 562 250 550 280"/>
-                <path d="M760 190 C767 235 760 270 745 310"/>
+                <path d="M275 95 C260 155 270 225 290 295"/>
+                <path d="M320 105 C305 170 315 240 335 300"/>
+                <path d="M365 115 C350 180 360 245 380 290"/>
+                <path d="M410 130 C395 185 405 240 425 280"/>
+                <path d="M455 145 C445 195 455 240 470 270"/>
+                <path d="M235 180 C225 225 235 265 250 295"/>
+
+                <path d="M745 95 C760 155 750 225 730 295"/>
+                <path d="M700 105 C715 170 705 240 685 300"/>
+                <path d="M655 115 C670 180 660 245 640 290"/>
+                <path d="M610 130 C625 185 615 240 595 280"/>
+                <path d="M565 145 C575 195 565 240 550 270"/>
+                <path d="M765 180 C775 225 765 265 750 295"/>
+
             </g>
 
             <!-- LEAVES -->
             <g fill="#7D8C65">
 
-                <ellipse cx="285" cy="145" rx="7" ry="24"
-                    transform="rotate(-18 285 145)"/>
-                <ellipse cx="300" cy="205" rx="7" ry="25"
-                    transform="rotate(16 300 205)"/>
-                <ellipse cx="305" cy="260" rx="7" ry="24"
-                    transform="rotate(-14 305 260)"/>
+                <ellipse cx="275" cy="135" rx="7" ry="23"
+                    transform="rotate(-20 275 135)"/>
+                <ellipse cx="290" cy="195" rx="7" ry="24"
+                    transform="rotate(18 290 195)"/>
+                <ellipse cx="295" cy="250" rx="7" ry="23"
+                    transform="rotate(-15 295 250)"/>
 
-                <ellipse cx="330" cy="155" rx="7" ry="24"
-                    transform="rotate(18 330 155)"/>
-                <ellipse cx="345" cy="220" rx="7" ry="25"
-                    transform="rotate(-15 345 220)"/>
-                <ellipse cx="350" cy="275" rx="7" ry="23"
-                    transform="rotate(15 350 275)"/>
+                <ellipse cx="320" cy="145" rx="7" ry="23"
+                    transform="rotate(18 320 145)"/>
+                <ellipse cx="335" cy="210" rx="7" ry="24"
+                    transform="rotate(-15 335 210)"/>
+                <ellipse cx="340" cy="265" rx="7" ry="22"
+                    transform="rotate(15 340 265)"/>
 
-                <ellipse cx="375" cy="165" rx="7" ry="24"
-                    transform="rotate(-18 375 165)"/>
-                <ellipse cx="390" cy="225" rx="7" ry="25"
-                    transform="rotate(15 390 225)"/>
+                <ellipse cx="365" cy="155" rx="7" ry="23"
+                    transform="rotate(-18 365 155)"/>
+                <ellipse cx="380" cy="215" rx="7" ry="24"
+                    transform="rotate(15 380 215)"/>
 
-                <ellipse cx="420" cy="175" rx="7" ry="24"
-                    transform="rotate(16 420 175)"/>
-                <ellipse cx="435" cy="230" rx="7" ry="24"
-                    transform="rotate(-16 435 230)"/>
+                <ellipse cx="410" cy="165" rx="7" ry="23"
+                    transform="rotate(16 410 165)"/>
+                <ellipse cx="425" cy="220" rx="7" ry="23"
+                    transform="rotate(-16 425 220)"/>
 
-                <ellipse cx="720" cy="145" rx="7" ry="24"
-                    transform="rotate(18 720 145)"/>
-                <ellipse cx="705" cy="205" rx="7" ry="25"
-                    transform="rotate(-16 705 205)"/>
-                <ellipse cx="700" cy="260" rx="7" ry="24"
-                    transform="rotate(14 700 260)"/>
+                <ellipse cx="745" cy="135" rx="7" ry="23"
+                    transform="rotate(20 745 135)"/>
+                <ellipse cx="730" cy="195" rx="7" ry="24"
+                    transform="rotate(-18 730 195)"/>
+                <ellipse cx="725" cy="250" rx="7" ry="23"
+                    transform="rotate(15 725 250)"/>
 
-                <ellipse cx="675" cy="155" rx="7" ry="24"
-                    transform="rotate(-18 675 155)"/>
-                <ellipse cx="660" cy="220" rx="7" ry="25"
-                    transform="rotate(15 660 220)"/>
-                <ellipse cx="655" cy="275" rx="7" ry="23"
-                    transform="rotate(-15 655 275)"/>
+                <ellipse cx="700" cy="145" rx="7" ry="23"
+                    transform="rotate(-18 700 145)"/>
+                <ellipse cx="685" cy="210" rx="7" ry="24"
+                    transform="rotate(15 685 210)"/>
+                <ellipse cx="680" cy="265" rx="7" ry="22"
+                    transform="rotate(-15 680 265)"/>
 
-                <ellipse cx="630" cy="165" rx="7" ry="24"
-                    transform="rotate(18 630 165)"/>
-                <ellipse cx="615" cy="225" rx="7" ry="25"
-                    transform="rotate(-15 615 225)"/>
+                <ellipse cx="655" cy="155" rx="7" ry="23"
+                    transform="rotate(18 655 155)"/>
+                <ellipse cx="640" cy="215" rx="7" ry="24"
+                    transform="rotate(-15 640 215)"/>
 
-                <ellipse cx="585" cy="175" rx="7" ry="24"
-                    transform="rotate(-16 585 175)"/>
-                <ellipse cx="570" cy="230" rx="7" ry="24"
-                    transform="rotate(16 570 230)"/>
+                <ellipse cx="610" cy="165" rx="7" ry="23"
+                    transform="rotate(-16 610 165)"/>
+                <ellipse cx="595" cy="220" rx="7" ry="23"
+                    transform="rotate(16 595 220)"/>
 
             </g>
 
             <!-- LIGHTER LEAVES -->
-            <g fill="#92A06F">
+            <g fill="#95A574">
 
-                <ellipse cx="320" cy="130" rx="6" ry="21"
-                    transform="rotate(-20 320 130)"/>
-                <ellipse cx="360" cy="195" rx="6" ry="22"
-                    transform="rotate(18 360 195)"/>
-                <ellipse cx="410" cy="145" rx="6" ry="21"
-                    transform="rotate(-17 410 145)"/>
+                <ellipse cx="310" cy="125" rx="6" ry="21"
+                    transform="rotate(-20 310 125)"/>
+                <ellipse cx="355" cy="190" rx="6" ry="22"
+                    transform="rotate(18 355 190)"/>
+                <ellipse cx="400" cy="140" rx="6" ry="21"
+                    transform="rotate(-17 400 140)"/>
 
-                <ellipse cx="680" cy="130" rx="6" ry="21"
-                    transform="rotate(20 680 130)"/>
-                <ellipse cx="640" cy="195" rx="6" ry="22"
-                    transform="rotate(-18 640 195)"/>
-                <ellipse cx="590" cy="145" rx="6" ry="21"
-                    transform="rotate(17 590 145)"/>
-
-            </g>
-
-            <!-- SMALL FLOWERS -->
-            <g fill="#B97888">
-
-                <circle cx="320" cy="120" r="5"/>
-                <circle cx="327" cy="124" r="5"/>
-                <circle cx="324" cy="116" r="5"/>
-                <circle cx="316" cy="117" r="5"/>
-
-                <circle cx="410" cy="150" r="5"/>
-                <circle cx="417" cy="154" r="5"/>
-                <circle cx="414" cy="146" r="5"/>
-                <circle cx="406" cy="147" r="5"/>
-
-                <circle cx="680" cy="120" r="5"/>
-                <circle cx="687" cy="124" r="5"/>
-                <circle cx="684" cy="116" r="5"/>
-                <circle cx="676" cy="117" r="5"/>
-
-                <circle cx="590" cy="150" r="5"/>
-                <circle cx="597" cy="154" r="5"/>
-                <circle cx="594" cy="146" r="5"/>
-                <circle cx="586" cy="147" r="5"/>
+                <ellipse cx="690" cy="125" rx="6" ry="21"
+                    transform="rotate(20 690 125)"/>
+                <ellipse cx="645" cy="190" rx="6" ry="22"
+                    transform="rotate(-18 645 190)"/>
+                <ellipse cx="600" cy="140" rx="6" ry="21"
+                    transform="rotate(17 600 140)"/>
 
             </g>
 
-            <!-- GOLD CENTERS -->
+            <!-- FLOWERS -->
+            <g fill="#B87587">
+
+                <circle cx="310" cy="115" r="6"/>
+                <circle cx="320" cy="120" r="6"/>
+                <circle cx="315" cy="108" r="6"/>
+                <circle cx="305" cy="110" r="6"/>
+
+                <circle cx="400" cy="145" r="6"/>
+                <circle cx="410" cy="150" r="6"/>
+                <circle cx="405" cy="138" r="6"/>
+                <circle cx="395" cy="140" r="6"/>
+
+                <circle cx="690" cy="115" r="6"/>
+                <circle cx="700" cy="120" r="6"/>
+                <circle cx="695" cy="108" r="6"/>
+                <circle cx="685" cy="110" r="6"/>
+
+                <circle cx="600" cy="145" r="6"/>
+                <circle cx="610" cy="150" r="6"/>
+                <circle cx="605" cy="138" r="6"/>
+                <circle cx="595" cy="140" r="6"/>
+
+            </g>
+
+            <!-- FLOWER CENTERS -->
             <g fill="#E2B35E">
-
-                <circle cx="321" cy="120" r="2"/>
-                <circle cx="411" cy="150" r="2"/>
-                <circle cx="681" cy="120" r="2"/>
-                <circle cx="591" cy="150" r="2"/>
-
+                <circle cx="312" cy="115" r="3"/>
+                <circle cx="402" cy="145" r="3"/>
+                <circle cx="692" cy="115" r="3"/>
+                <circle cx="602" cy="145" r="3"/>
             </g>
 
         </svg>
 
     </div>
-    """
+    """,
+    unsafe_allow_html=True,
 )
-
 
 # ============================================================
 # THEME PICKER
