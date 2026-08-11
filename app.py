@@ -275,7 +275,9 @@ st.markdown(
     <style>
     @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700&family=Montserrat:wght@300;600&display=swap');
 
-    .stat-card {
+    .stat-card {{
+        position: relative;
+        .stat-card {
         position: relative;
         background: var(--surface2) !important;
         border-radius: 20px;
@@ -283,13 +285,16 @@ st.markdown(
         border: 1px solid var(--accent) !important;
         overflow: hidden;
         text-align: center;
+        transition: all 0.5s ease;
+        box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+}}
         transition: all 0.5s cubic-bezier(0.23, 1, 0.32, 1);
         box-shadow: 0 10px 30px rgba(0,0,0,0.3);
         display: flex;
         flex-direction: column;
         align-items: center;
         justify-content: center;
-    }
+    }}
 
     .stat-card::before {
         content: '';
@@ -300,13 +305,13 @@ st.markdown(
         height: 4px;
         background: linear-gradient(90deg, transparent, var(--accent), transparent);
         opacity: 0.8;
-    }
+    }}
 
     .stat-card:hover {
         transform: translateY(-8px);
         background: var(--card) !important;
         border-color: var(--accent);
-    }
+    }}
 
     .stat-number {
         font-family: 'Playfair Display', serif !important;
@@ -317,7 +322,7 @@ st.markdown(
         font-weight: 700 !important;
         margin: 0 !important;
         line-height: 1.1 !important;
-    }
+    }}
 
     .stat-label {
         font-family: 'Montserrat', sans-serif !important;
@@ -327,7 +332,7 @@ st.markdown(
         letter-spacing: 4px !important;
         font-weight: 600 !important;
         margin-top: 15px;
-    }
+    }}
     </style>
     """, 
     unsafe_allow_html=True
