@@ -1,5 +1,26 @@
 import streamlit as st
 
+st.markdown("""
+    <style>
+        /* 1. Boost performance for large trees */
+        /* Targets the specific container holding your book tree */
+        .stVerticalBlock.st-emotion-cache-tn0cau.elzidro3 > div {
+            content-visibility: auto;
+            contain-intrinsic-size: 0 50px; /* Gives the browser an estimate of item height */
+        }
+
+        /* 2. Simplify the layout for text nodes to reduce recalculation lag */
+        .stMarkdown p {
+            contain: content;
+        }
+
+        /* 3. Ensure dropdowns stay on top and stay snappy */
+        .stSelectbox, .stMultiSelect {
+            z-index: 100;
+        }
+    </style>
+""", unsafe_allow_html=True)
+
 def display_ancestry_tree(df):
     # 1. Clean data: Fill empty Series with 'Standalone'
     df['Series'] = df['Series'].fillna('Standalone').replace('', 'Standalone')
