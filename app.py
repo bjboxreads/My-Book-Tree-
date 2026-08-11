@@ -270,17 +270,16 @@ div[data-baseweb="input"] input {{
 
 py
 st.markdown(
+   st.markdown(
     """
     <style>
     @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700&family=Montserrat:wght@300;600&display=swap');
 
-    .stat-card {{
+    .stat-card {
         position: relative;
-        /* ADAPTIVE BACKGROUND: Uses your theme's surface color */
         background: var(--surface2) !important;
         border-radius: 20px;
         padding: 30px 15px;
-        /* ADAPTIVE BORDER: Uses your theme's accent color */
         border: 1px solid var(--accent) !important;
         overflow: hidden;
         text-align: center;
@@ -299,14 +298,12 @@ st.markdown(
         left: 0;
         width: 100%;
         height: 4px;
-        /* ADAPTIVE ACCENT LINE */
         background: linear-gradient(90deg, transparent, var(--accent), transparent);
         opacity: 0.8;
     }
 
     .stat-card:hover {
         transform: translateY(-8px);
-        /* Lighter background on hover */
         background: var(--card) !important;
         border-color: var(--accent);
     }
@@ -314,7 +311,6 @@ st.markdown(
     .stat-number {
         font-family: 'Playfair Display', serif !important;
         font-size: 52px !important;
-        /* ADAPTIVE GRADIENT: White-ish text to theme accent color */
         background: linear-gradient(180deg, var(--text) 30%, var(--accent) 100%);
         -webkit-background-clip: text;
         -webkit-text-fill-color: transparent;
@@ -325,15 +321,17 @@ st.markdown(
 
     .stat-label {
         font-family: 'Montserrat', sans-serif !important;
-        /* ADAPTIVE LABEL COLOR */
         color: var(--muted) !important;
         font-size: 10px !important;
         text-transform: uppercase;
         letter-spacing: 4px !important;
         font-weight: 600 !important;
         margin-top: 15px;
-    }}
+    }
     </style>
+    """, 
+    unsafe_allow_html=True
+)
 }}
 
 .tree-container {{
