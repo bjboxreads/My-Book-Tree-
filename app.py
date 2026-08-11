@@ -1,3 +1,4 @@
+```python
 import streamlit as st
 import pandas as pd
 import requests
@@ -16,12 +17,12 @@ st.set_page_config(
 )
 
 # ============================================================
-# BOOKISH THEMES
+# THEMES
 # ============================================================
 
 THEMES = {
 
-    "Enchanted Library": {
+    "Emerald Library": {
         "page": "#071B18",
         "surface": "#0E2924",
         "surface2": "#164239",
@@ -35,7 +36,7 @@ THEMES = {
         "button_text": "#FFF7DE",
     },
 
-    "Midnight & Gold": {
+    "Sapphire & Gold": {
         "page": "#071426",
         "surface": "#0D2340",
         "surface2": "#15365D",
@@ -49,7 +50,7 @@ THEMES = {
         "button_text": "#FFF7E1",
     },
 
-    "Victorian Rose": {
+    "Gothic Rose": {
         "page": "#180B16",
         "surface": "#2A1024",
         "surface2": "#421735",
@@ -63,7 +64,7 @@ THEMES = {
         "button_text": "#FFF4F5",
     },
 
-    "Autumn Manor": {
+    "Autumn Library": {
         "page": "#24130A",
         "surface": "#38200F",
         "surface2": "#5A3015",
@@ -77,7 +78,7 @@ THEMES = {
         "button_text": "#FFF1D5",
     },
 
-    "Moonlit Library": {
+    "Midnight Fantasy": {
         "page": "#0C0A20",
         "surface": "#151235",
         "surface2": "#211C51",
@@ -91,7 +92,7 @@ THEMES = {
         "button_text": "#FFF8E7",
     },
 
-    "Secret Garden": {
+    "Teal & Coral Bookshop": {
         "page": "#08252A",
         "surface": "#0E3B42",
         "surface2": "#14565D",
@@ -105,7 +106,7 @@ THEMES = {
         "button_text": "#FFF6DF",
     },
 
-    "Old World Library": {
+    "Vintage Reader": {
         "page": "#172322",
         "surface": "#243633",
         "surface2": "#36504A",
@@ -119,7 +120,7 @@ THEMES = {
         "button_text": "#FFF3D8",
     },
 
-    "Spellbound": {
+    "Electric Bookstore": {
         "page": "#111225",
         "surface": "#1B1E3A",
         "surface2": "#292E59",
@@ -133,7 +134,7 @@ THEMES = {
         "button_text": "#FFFFFF",
     },
 
-    "Velvet & Crimson": {
+    "Classic Crimson": {
         "page": "#210D0D",
         "surface": "#351313",
         "surface2": "#531B1B",
@@ -156,7 +157,7 @@ if (
     "theme" not in st.session_state
     or st.session_state.theme not in THEMES
 ):
-    st.session_state.theme = "Enchanted Library"
+    st.session_state.theme = "Emerald Library"
 
 if "library" not in st.session_state:
     st.session_state.library = pd.DataFrame(
@@ -189,11 +190,13 @@ theme = THEMES[st.session_state.theme]
 # CSS
 # ============================================================
 
-st.html(
+st.markdown(
     f"""
 <style>
 
-@import url('https://fonts.googleapis.com/css2?family=Berkshire+Swash&family=Libre+Baskerville:wght@400;700&display=swap');
+@import url(
+    'https://fonts.googleapis.com/css2?family=Berkshire+Swash&family=Cormorant+Garamond:wght@500;600;700&family=Libre+Baskerville:wght@400;700&display=swap'
+);
 
 :root {{
     --page: {theme["page"]};
@@ -207,144 +210,105 @@ st.html(
     --line: {theme["line"]};
 }}
 
+html, body, [class*="css"] {{
+    font-family: "Libre Baskerville", Georgia, serif;
+}}
+
 .stApp {{
     background:
         radial-gradient(
             ellipse at 50% -10%,
             var(--surface2) 0%,
-            var(--page) 62%
-        ) !important;
-    color: var(--text) !important;
+            var(--page) 48%,
+            var(--page) 100%
+        );
+    color: var(--text);
 }}
 
 .block-container {{
-    max-width: 1400px;
-    padding-top: 1rem;
-    padding-bottom: 4rem;
+    max-width: 1450px !important;
+    padding-top: 2.5rem !important;
+    padding-bottom: 4rem !important;
 }}
 
-/* =========================================================
-   GENERAL TYPOGRAPHY
-   ========================================================= */
+#MainMenu {{
+    visibility: hidden;
+}}
 
-h1, h2, h3, h4 {{
-    font-family:
-        "Berkshire Swash",
-        Georgia,
-        serif !important;
-    color: var(--text) !important;
+footer {{
+    visibility: hidden;
+}}
+
+header[data-testid="stHeader"] {{
+    background: transparent !important;
 }}
 
 p, label {{
     color: var(--text);
 }}
 
-.stMarkdown {{
-    color: var(--text);
-}}
-
-/* =========================================================
+/* ============================================================
    HEADER
-   ========================================================= */
+   ============================================================ */
 
 .book-header {{
+    width: 100%;
     text-align: center;
-    padding: 18px 0 0;
+    padding-top: 1rem;
+    margin-bottom: 0;
 }}
 
 .book-header-title {{
-    font-family:
-        "Berkshire Swash",
-        Georgia,
-        serif !important;
-    font-size: 70px;
-    line-height: 1;
+    font-family: "Berkshire Swash", cursive !important;
+    font-size: clamp(58px, 7vw, 94px);
+    line-height: 1.15;
     font-weight: 400;
+    letter-spacing: 0.01em;
     color: var(--text) !important;
     text-shadow:
-        0 3px 12px rgba(0,0,0,.35);
+        0 3px 10px rgba(0,0,0,.35);
+    margin: 0;
+    padding: 0 20px;
 }}
 
-/* =========================================================
-   DECORATIVE WILLOW
-   ========================================================= */
+/* ============================================================
+   WILLOW TREE
+   ============================================================ */
 
-.willow-logo {{
+.willow-header {{
     width: 100%;
-    max-width: 980px;
-    height: 250px;
-    margin: 0 auto 8px;
-    display: block;
-}}
-
-.willow-logo svg {{
-    width: 100%;
-    height: 100%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    margin-top: 5px;
+    margin-bottom: 18px;
     overflow: visible;
 }}
 
-.willow-trunk {{
-    fill: none;
-    stroke: #4A3028;
-    stroke-width: 27;
-    stroke-linecap: round;
+.willow-header svg {{
+    width: min(920px, 92vw);
+    height: 270px;
+    overflow: visible;
+    display: block;
 }}
 
-.willow-trunk-highlight {{
-    fill: none;
-    stroke: #765044;
-    stroke-width: 7;
-    stroke-linecap: round;
-}}
-
-.willow-main-branch {{
-    fill: none;
-    stroke: #54372E;
-    stroke-linecap: round;
-}}
-
-.willow-hanging {{
-    fill: none;
-    stroke: #657452;
-    stroke-width: 4;
-    stroke-linecap: round;
-}}
-
-.willow-leaf {{
-    fill: #74835D;
-}}
-
-.willow-leaf-light {{
-    fill: #89966B;
-}}
-
-.willow-leaf-deep {{
-    fill: #536346;
-}}
-
-.willow-flower {{
-    fill: #B87587;
-}}
-
-.willow-flower-center {{
-    fill: #E2B35E;
-}}
-
-/* =========================================================
+/* ============================================================
    THEME SELECTOR
-   ========================================================= */
+   ============================================================ */
+
+.theme-section {{
+    max-width: 520px;
+    margin: 0 auto 30px auto;
+}}
 
 .theme-heading {{
-    font-family:
-        "Berkshire Swash",
-        Georgia,
-        serif;
-    font-size: 25px;
+    font-family: "Cormorant Garamond", Georgia, serif;
+    font-size: 21px;
+    font-weight: 700;
     color: var(--text);
-    margin: 4px 0 7px;
+    margin-bottom: 7px;
+    text-align: center;
 }}
-
-/* Closed selector */
 
 div[data-baseweb="select"] > div {{
     background: #171717 !important;
@@ -362,15 +326,12 @@ div[data-baseweb="select"] input {{
     color: #FFFFFF !important;
 }}
 
-/* Open selector */
-
 div[role="listbox"] {{
     background: #171717 !important;
     border: 2px solid #D7A83A !important;
     border-radius: 10px !important;
     padding: 5px !important;
-    box-shadow:
-        0 15px 40px rgba(0,0,0,.6) !important;
+    box-shadow: 0 15px 40px rgba(0,0,0,.6) !important;
 }}
 
 div[role="option"] {{
@@ -378,10 +339,7 @@ div[role="option"] {{
     color: #FFFFFF !important;
     padding: 12px 14px !important;
     border-radius: 7px !important;
-    font-family:
-        "Libre Baskerville",
-        Georgia,
-        serif !important;
+    font-family: "Libre Baskerville", Georgia, serif !important;
     font-size: 14px !important;
 }}
 
@@ -402,254 +360,195 @@ div[role="option"][aria-selected="true"] * {{
     color: #FFFFFF !important;
 }}
 
-/* =========================================================
-   STATS
-   ========================================================= */
+/* ============================================================
+   STATS — SIMPLE, NOT BOXES
+   ============================================================ */
 
-.stat-card {{
-    position: relative;
-    background:
-        linear-gradient(
-            145deg,
-            rgba(255,255,255,.045),
-            rgba(0,0,0,.12)
-        );
-    border: none;
-    border-bottom: 2px solid var(--line);
-    border-radius: 4px 18px 4px 18px;
-    padding: 16px 8px 13px;
+.stats-row {{
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 0;
+    margin: 8px auto 30px;
+    max-width: 900px;
+}}
+
+.stat-item {{
+    min-width: 145px;
+    padding: 3px 24px;
     text-align: center;
-    box-shadow:
-        0 8px 25px rgba(0,0,0,.14);
+    border-right: 1px solid var(--line);
+}}
+
+.stat-item:last-child {{
+    border-right: none;
 }}
 
 .stat-number {{
-    font-family:
-        "Berkshire Swash",
-        Georgia,
-        serif;
-    font-size: 36px;
-    font-weight: 400;
+    font-family: "Berkshire Swash", cursive !important;
+    font-size: 31px;
+    line-height: 1;
     color: var(--accent);
 }}
 
 .stat-label {{
     color: var(--muted);
-    font-family:
-        "Libre Baskerville",
-        Georgia,
-        serif;
-    font-size: 10px;
+    font-family: "Libre Baskerville", Georgia, serif;
+    font-size: 9px;
     text-transform: uppercase;
-    letter-spacing: .12em;
+    letter-spacing: .13em;
+    margin-top: 7px;
 }}
 
-/* =========================================================
-   TREE AREA
-   ========================================================= */
+/* ============================================================
+   TREE AREA — OPEN, ORGANIC
+   ============================================================ */
 
 .tree-area {{
-    margin-top: 25px;
-    padding: 35px 25px;
-    background:
-        radial-gradient(
-            ellipse at top,
-            rgba(255,255,255,.035),
-            transparent 65%
-        );
+    position: relative;
+    margin-top: 15px;
+    padding: 30px 15px 45px;
+    background: transparent;
     border: none;
-    border-top: 1px solid rgba(255,255,255,.10);
-    border-bottom: 1px solid rgba(255,255,255,.08);
 }}
 
+/* ============================================================
+   ROOT
+   ============================================================ */
+
 .root-node {{
-    width: 300px;
-    margin: 0 auto 38px;
-    padding: 17px 25px;
-    background: var(--accent);
-    color: {theme["page"]};
-    border-radius: 4px 28px 4px 28px;
+    width: min(360px, 85%);
+    margin: 0 auto 42px;
+    padding: 15px 28px 17px;
+    background: transparent;
+    border-top: 1px solid var(--line);
+    border-bottom: 1px solid var(--line);
     text-align: center;
-    box-shadow:
-        0 10px 28px rgba(0,0,0,.25);
 }}
 
 .root-node-title {{
-    color: {theme["page"]};
-    font-family:
-        "Berkshire Swash",
-        Georgia,
-        serif;
-    font-size: 34px;
+    color: var(--accent) !important;
+    font-family: "Berkshire Swash", cursive !important;
+    font-size: 36px;
     font-weight: 400;
 }}
 
 .root-node-small {{
-    color: {theme["page"]};
-    font-family:
-        "Libre Baskerville",
-        Georgia,
-        serif;
+    color: var(--muted) !important;
     font-size: 10px;
-    font-weight: 700;
-    opacity: .78;
+    margin-top: 5px;
 }}
 
-/* =========================================================
-   AUTHOR BRANCH
-   ========================================================= */
+/* ============================================================
+   AUTHOR
+   ============================================================ */
 
 .author-info {{
-    padding: 11px 17px;
-    margin: 9px 0;
-    border-left: 3px solid var(--accent);
-    background:
-        linear-gradient(
-            90deg,
-            var(--surface),
-            transparent
-        );
-    border-radius: 0 18px 0 0;
+    padding: 8px 15px 8px 18px;
+    margin: 10px 0 4px;
+    border-left: 2px solid var(--accent);
+    background: transparent;
 }}
 
 .author-name {{
-    font-family:
-        "Berkshire Swash",
-        Georgia,
-        serif;
+    font-family: "Berkshire Swash", cursive !important;
     font-size: 28px;
     font-weight: 400;
+    color: var(--text) !important;
 }}
 
 .author-count {{
-    color: var(--muted);
-    font-family:
-        "Libre Baskerville",
-        Georgia,
-        serif;
+    color: var(--muted) !important;
     font-size: 10px;
+    margin-top: 2px;
 }}
 
-/* =========================================================
-   SERIES BRANCH
-   ========================================================= */
+/* ============================================================
+   SERIES
+   ============================================================ */
 
 .series-info {{
-    margin-left: 48px;
-    padding: 10px 15px;
-    border-left: 2px solid var(--accent2);
-    background:
-        linear-gradient(
-            90deg,
-            var(--surface2),
-            transparent
-        );
-    border-radius: 0 15px 0 0;
+    margin-left: 45px;
+    padding: 7px 15px;
+    border-left: 1px solid var(--accent2);
+    background: transparent;
 }}
 
 .series-name {{
-    font-family:
-        "Berkshire Swash",
-        Georgia,
-        serif;
+    font-family: "Cormorant Garamond", Georgia, serif;
     font-size: 24px;
-    font-weight: 400;
+    font-weight: 700;
+    color: var(--text) !important;
 }}
 
 .series-count {{
-    color: var(--muted);
-    font-family:
-        "Libre Baskerville",
-        Georgia,
-        serif;
+    color: var(--muted) !important;
     font-size: 10px;
 }}
 
-/* =========================================================
-   BOOK BRANCH
-   ========================================================= */
+/* ============================================================
+   BOOK
+   ============================================================ */
 
 .book-info {{
-    margin-left: 100px;
-    margin-top: 8px;
-    padding: 11px 14px;
-    background:
-        linear-gradient(
-            90deg,
-            var(--card),
-            transparent
-        );
-    border-left: 2px solid var(--line);
-    border-radius: 0 14px 0 0;
+    margin-left: 92px;
+    margin-top: 7px;
+    padding: 8px 12px;
+    background: transparent;
+    border-left: 1px solid var(--line);
 }}
 
 .book-title {{
-    font-family:
-        "Berkshire Swash",
-        Georgia,
-        serif;
-    font-size: 22px;
-    font-weight: 400;
+    font-family: "Cormorant Garamond", Georgia, serif;
+    font-size: 21px;
+    font-weight: 700;
+    color: var(--text) !important;
 }}
 
 .book-meta {{
-    color: var(--muted);
-    font-family:
-        "Libre Baskerville",
-        Georgia,
-        serif;
+    color: var(--muted) !important;
     font-size: 10px;
-    margin-top: 4px;
+    margin-top: 3px;
 }}
 
 .book-cover {{
     width: 55px;
     height: 80px;
     object-fit: cover;
-    border-radius: 3px 10px 3px 10px;
+    border-radius: 2px;
     border: 1px solid var(--accent);
-    box-shadow:
-        3px 5px 12px rgba(0,0,0,.3);
 }}
 
-/* =========================================================
+/* ============================================================
    BUTTONS
-   ========================================================= */
+   ============================================================ */
 
 .stButton > button {{
-    background:
-        linear-gradient(
-            90deg,
-            var(--surface),
-            rgba(255,255,255,.025)
-        ) !important;
+    background: transparent !important;
     color: var(--text) !important;
     border: none !important;
-    border-left: 2px solid var(--line) !important;
-    border-radius: 0 14px 0 14px !important;
-    font-family:
-        "Libre Baskerville",
-        Georgia,
-        serif !important;
-    font-weight: 600 !important;
-    transition: all .2s ease !important;
+    border-bottom: 1px solid transparent !important;
+    border-radius: 0 !important;
+    font-family: "Cormorant Garamond", Georgia, serif !important;
+    font-size: 17px !important;
+    font-weight: 700 !important;
+    text-align: left !important;
+    box-shadow: none !important;
 }}
 
 .stButton > button:hover {{
-    background: var(--surface2) !important;
-    border-left-color: var(--accent) !important;
-    color: var(--text) !important;
-    transform: translateX(3px);
+    background: transparent !important;
+    color: var(--accent) !important;
+    border-color: var(--accent) !important;
 }}
 
-/* =========================================================
+/* ============================================================
    INPUTS
-   ========================================================= */
+   ============================================================ */
 
 div[data-baseweb="input"] > div {{
     background: var(--surface) !important;
     border-color: var(--line) !important;
-    border-radius: 4px 12px 4px 12px !important;
 }}
 
 div[data-baseweb="input"] input {{
@@ -659,19 +558,20 @@ div[data-baseweb="input"] input {{
 textarea {{
     background: var(--surface) !important;
     color: var(--text) !important;
-    border-radius: 4px 12px 4px 12px !important;
 }}
 
-/* =========================================================
+div[data-baseweb="textarea"] > div {{
+    background: var(--surface) !important;
+    border-color: var(--line) !important;
+}}
+
+/* ============================================================
    TABS
-   ========================================================= */
+   ============================================================ */
 
 button[data-baseweb="tab"] {{
-    font-family:
-        "Berkshire Swash",
-        Georgia,
-        serif !important;
-    font-size: 17px !important;
+    font-family: "Cormorant Garamond", Georgia, serif !important;
+    font-size: 18px !important;
     color: var(--muted) !important;
 }}
 
@@ -683,25 +583,64 @@ div[data-baseweb="tab-highlight"] {{
     background-color: var(--accent) !important;
 }}
 
-/* =========================================================
-   FILE UPLOADER
-   ========================================================= */
+/* ============================================================
+   CHECKBOX
+   ============================================================ */
 
-section[data-testid="stFileUploaderDropzone"] {{
-    background: var(--surface) !important;
-    border: 1px dashed var(--line) !important;
-    border-radius: 4px 18px 4px 18px !important;
+div[data-testid="stCheckbox"] label {{
+    color: var(--text) !important;
+}}
+
+/* ============================================================
+   MOBILE
+   ============================================================ */
+
+@media (max-width: 700px) {{
+
+    .block-container {{
+        padding-top: 1.5rem !important;
+    }}
+
+    .book-header-title {{
+        font-size: 58px;
+    }}
+
+    .willow-header svg {{
+        height: 205px;
+    }}
+
+    .stats-row {{
+        flex-wrap: wrap;
+    }}
+
+    .stat-item {{
+        min-width: 100px;
+        padding: 8px 15px;
+    }}
+
+    .stat-item:nth-child(3) {{
+        border-right: none;
+    }}
+
+    .book-info {{
+        margin-left: 35px;
+    }}
+
+    .series-info {{
+        margin-left: 20px;
+    }}
 }}
 
 </style>
-"""
+""",
+    unsafe_allow_html=True,
 )
 
 # ============================================================
-# HEADER + WILLOW
+# HEADER + ACTUAL WILLOW TREE
 # ============================================================
 
-st.html(
+st.markdown(
     """
 <div class="book-header">
 
@@ -709,307 +648,241 @@ st.html(
         My Book Tree
     </div>
 
-</div>
-
-<div class="willow-logo">
-
-<svg viewBox="0 0 1200 310"
-     xmlns="http://www.w3.org/2000/svg"
-     aria-label="Decorative willow tree">
-
-    <!-- MAIN TRUNK -->
-
-    <path
-        class="willow-trunk"
-        d="
-        M600 305
-        C592 260 585 215 592 170
-        C598 125 608 82 625 38
-        "
-    />
-
-    <path
-        class="willow-trunk-highlight"
-        d="
-        M605 300
-        C598 250 596 210 602 168
-        C608 120 618 78 630 42
-        "
-    />
-
-    <!-- LEFT MAIN BRANCHES -->
-
-    <path
-        class="willow-main-branch"
-        stroke-width="13"
-        d="M602 155 C535 120 458 82 360 70"
-    />
-
-    <path
-        class="willow-main-branch"
-        stroke-width="10"
-        d="M600 180 C520 150 430 145 320 155"
-    />
-
-    <path
-        class="willow-main-branch"
-        stroke-width="9"
-        d="M602 125 C550 82 520 52 492 18"
-    />
-
-    <!-- RIGHT MAIN BRANCHES -->
-
-    <path
-        class="willow-main-branch"
-        stroke-width="13"
-        d="M612 150 C680 112 760 78 850 68"
-    />
-
-    <path
-        class="willow-main-branch"
-        stroke-width="10"
-        d="M612 178 C690 148 780 140 875 150"
-    />
-
-    <path
-        class="willow-main-branch"
-        stroke-width="9"
-        d="M620 118 C680 78 715 45 742 12"
-    />
-
-    <!-- LEFT HANGING BRANCHES -->
-
-    <path class="willow-hanging"
-        d="M360 70 C348 125 355 190 372 255"/>
-
-    <path class="willow-hanging"
-        d="M405 75 C394 135 404 205 422 275"/>
-
-    <path class="willow-hanging"
-        d="M450 80 C440 145 450 215 470 280"/>
-
-    <path class="willow-hanging"
-        d="M495 87 C485 145 498 205 515 270"/>
-
-    <path class="willow-hanging"
-        d="M535 105 C530 155 538 205 550 250"/>
-
-    <path class="willow-hanging"
-        d="M320 155 C315 200 322 240 338 282"/>
-
-    <!-- RIGHT HANGING BRANCHES -->
-
-    <path class="willow-hanging"
-        d="M680 90 C690 150 682 215 665 275"/>
-
-    <path class="willow-hanging"
-        d="M725 78 C738 140 730 210 712 280"/>
-
-    <path class="willow-hanging"
-        d="M770 72 C785 130 778 200 758 265"/>
-
-    <path class="willow-hanging"
-        d="M815 68 C830 125 822 190 805 250"/>
-
-    <path class="willow-hanging"
-        d="M850 150 C860 195 853 240 838 282"/>
-
-    <!-- LEFT LEAVES -->
-
-    <g>
-        <ellipse class="willow-leaf-light"
-            cx="360" cy="108" rx="7" ry="22"
-            transform="rotate(-24 360 108)"/>
-
-        <ellipse class="willow-leaf"
-            cx="370" cy="158" rx="7" ry="23"
-            transform="rotate(18 370 158)"/>
-
-        <ellipse class="willow-leaf-deep"
-            cx="380" cy="205" rx="7" ry="21"
-            transform="rotate(-18 380 205)"/>
-
-        <ellipse class="willow-leaf-light"
-            cx="405" cy="135" rx="7" ry="22"
-            transform="rotate(20 405 135)"/>
-
-        <ellipse class="willow-leaf"
-            cx="420" cy="185" rx="7" ry="23"
-            transform="rotate(-15 420 185)"/>
-
-        <ellipse class="willow-leaf-deep"
-            cx="425" cy="235" rx="7" ry="22"
-            transform="rotate(18 425 235)"/>
-
-        <ellipse class="willow-leaf"
-            cx="450" cy="120" rx="7" ry="22"
-            transform="rotate(-20 450 120)"/>
-
-        <ellipse class="willow-leaf-light"
-            cx="465" cy="170" rx="7" ry="23"
-            transform="rotate(16 465 170)"/>
-
-        <ellipse class="willow-leaf"
-            cx="480" cy="225" rx="7" ry="22"
-            transform="rotate(-18 480 225)"/>
-
-        <ellipse class="willow-leaf-deep"
-            cx="500" cy="145" rx="7" ry="21"
-            transform="rotate(19 500 145)"/>
-
-        <ellipse class="willow-leaf-light"
-            cx="515" cy="195" rx="7" ry="23"
-            transform="rotate(-15 515 195)"/>
-
-        <ellipse class="willow-leaf"
-            cx="525" cy="235" rx="7" ry="21"
-            transform="rotate(16 525 235)"/>
-
-        <ellipse class="willow-leaf"
-            cx="340" cy="205" rx="7" ry="22"
-            transform="rotate(-15 340 205)"/>
-
-        <ellipse class="willow-leaf-light"
-            cx="350" cy="255" rx="7" ry="22"
-            transform="rotate(17 350 255)"/>
-    </g>
-
-    <!-- RIGHT LEAVES -->
-
-    <g>
-        <ellipse class="willow-leaf-light"
-            cx="840" cy="108" rx="7" ry="22"
-            transform="rotate(23 840 108)"/>
-
-        <ellipse class="willow-leaf"
-            cx="830" cy="158" rx="7" ry="23"
-            transform="rotate(-18 830 158)"/>
-
-        <ellipse class="willow-leaf-deep"
-            cx="820" cy="205" rx="7" ry="21"
-            transform="rotate(18 820 205)"/>
-
-        <ellipse class="willow-leaf-light"
-            cx="795" cy="135" rx="7" ry="22"
-            transform="rotate(-20 795 135)"/>
-
-        <ellipse class="willow-leaf"
-            cx="780" cy="185" rx="7" ry="23"
-            transform="rotate(15 780 185)"/>
-
-        <ellipse class="willow-leaf-deep"
-            cx="775" cy="235" rx="7" ry="22"
-            transform="rotate(-18 775 235)"/>
-
-        <ellipse class="willow-leaf"
-            cx="750" cy="120" rx="7" ry="22"
-            transform="rotate(20 750 120)"/>
-
-        <ellipse class="willow-leaf-light"
-            cx="735" cy="170" rx="7" ry="23"
-            transform="rotate(-16 735 170)"/>
-
-        <ellipse class="willow-leaf"
-            cx="720" cy="225" rx="7" ry="22"
-            transform="rotate(18 720 225)"/>
-
-        <ellipse class="willow-leaf-deep"
-            cx="700" cy="145" rx="7" ry="21"
-            transform="rotate(-19 700 145)"/>
-
-        <ellipse class="willow-leaf-light"
-            cx="685" cy="195" rx="7" ry="23"
-            transform="rotate(15 685 195)"/>
-
-        <ellipse class="willow-leaf"
-            cx="675" cy="235" rx="7" ry="21"
-            transform="rotate(-16 675 235)"/>
-
-        <ellipse class="willow-leaf"
-            cx="860" cy="205" rx="7" ry="22"
-            transform="rotate(15 860 205)"/>
-
-        <ellipse class="willow-leaf-light"
-            cx="850" cy="255" rx="7" ry="22"
-            transform="rotate(-17 850 255)"/>
-    </g>
-
-    <!-- SMALL ROSE BLOSSOMS -->
-
-    <g>
-        <g class="willow-flower">
-            <circle cx="405" cy="104" r="5"/>
-            <circle cx="414" cy="108" r="5"/>
-            <circle cx="410" cy="99" r="5"/>
-            <circle cx="401" cy="101" r="5"/>
-        </g>
-
-        <circle class="willow-flower-center"
-            cx="407" cy="104" r="2"/>
-
-        <g class="willow-flower">
-            <circle cx="478" cy="143" r="5"/>
-            <circle cx="487" cy="147" r="5"/>
-            <circle cx="483" cy="138" r="5"/>
-            <circle cx="474" cy="140" r="5"/>
-        </g>
-
-        <circle class="willow-flower-center"
-            cx="480" cy="143" r="2"/>
-
-        <g class="willow-flower">
-            <circle cx="520" cy="176" r="5"/>
-            <circle cx="529" cy="180" r="5"/>
-            <circle cx="525" cy="171" r="5"/>
-            <circle cx="516" cy="173" r="5"/>
-        </g>
-
-        <circle class="willow-flower-center"
-            cx="522" cy="176" r="2"/>
-
-        <g class="willow-flower">
-            <circle cx="795" cy="143" r="5"/>
-            <circle cx="804" cy="147" r="5"/>
-            <circle cx="800" cy="138" r="5"/>
-            <circle cx="791" cy="140" r="5"/>
-        </g>
-
-        <circle class="willow-flower-center"
-            cx="797" cy="143" r="2"/>
-
-        <g class="willow-flower">
-            <circle cx="735" cy="105" r="5"/>
-            <circle cx="744" cy="109" r="5"/>
-            <circle cx="740" cy="100" r="5"/>
-            <circle cx="731" cy="102" r="5"/>
-        </g>
-
-        <circle class="willow-flower-center"
-            cx="737" cy="105" r="2"/>
-
-        <g class="willow-flower">
-            <circle cx="690" cy="175" r="5"/>
-            <circle cx="699" cy="179" r="5"/>
-            <circle cx="695" cy="170" r="5"/>
-            <circle cx="686" cy="172" r="5"/>
-        </g>
-
-        <circle class="willow-flower-center"
-            cx="692" cy="175" r="2"/>
-    </g>
-
-</svg>
+    <div class="willow-header">
+
+        <svg
+            viewBox="300 0 600 280"
+            xmlns="http://www.w3.org/2000/svg"
+            aria-label="Decorative willow tree"
+        >
+
+            <!-- trunk -->
+            <path
+                d="M600 310
+                   C590 250 585 190 595 135
+                   C600 105 610 75 625 45"
+                fill="none"
+                stroke="#4A3028"
+                stroke-width="28"
+                stroke-linecap="round"
+            />
+
+            <path
+                d="M604 305
+                   C598 245 597 190 605 140
+                   C610 105 620 75 630 48"
+                fill="none"
+                stroke="#765044"
+                stroke-width="7"
+                stroke-linecap="round"
+            />
+
+            <!-- main branches -->
+            <g
+                fill="none"
+                stroke="#54372E"
+                stroke-linecap="round"
+            >
+
+                <path
+                    d="M605 150 C535 115 470 85 390 70"
+                    stroke-width="12"
+                />
+
+                <path
+                    d="M610 140 C675 100 745 72 825 65"
+                    stroke-width="12"
+                />
+
+                <path
+                    d="M600 180 C520 155 445 145 350 150"
+                    stroke-width="9"
+                />
+
+                <path
+                    d="M615 175 C690 145 770 135 860 145"
+                    stroke-width="9"
+                />
+
+                <path
+                    d="M600 115 C550 75 520 45 500 15"
+                    stroke-width="8"
+                />
+
+                <path
+                    d="M625 110 C680 70 710 40 730 10"
+                    stroke-width="8"
+                />
+
+            </g>
+
+            <!-- hanging willow branches -->
+            <g
+                fill="none"
+                stroke="#657452"
+                stroke-width="4"
+                stroke-linecap="round"
+            >
+
+                <path d="M390 70 C380 125 390 175 405 235"/>
+                <path d="M430 75 C420 135 430 195 445 250"/>
+                <path d="M475 82 C465 145 475 205 490 255"/>
+                <path d="M520 90 C510 145 520 205 535 245"/>
+
+                <path d="M680 88 C690 145 680 205 665 250"/>
+                <path d="M725 75 C735 135 725 195 710 255"/>
+                <path d="M770 70 C780 125 770 185 755 235"/>
+                <path d="M815 68 C825 120 815 175 800 225"/>
+
+                <path d="M350 150 C345 190 350 225 360 270"/>
+                <path d="M860 145 C865 190 860 225 850 270"/>
+
+            </g>
+
+            <!-- leaves -->
+            <g fill="#74835D">
+
+                <ellipse
+                    cx="380" cy="115"
+                    rx="7" ry="20"
+                    transform="rotate(-20 380 115)"
+                />
+
+                <ellipse
+                    cx="398" cy="150"
+                    rx="7" ry="21"
+                    transform="rotate(18 398 150)"
+                />
+
+                <ellipse
+                    cx="415" cy="190"
+                    rx="7" ry="20"
+                    transform="rotate(-15 415 190)"
+                />
+
+                <ellipse
+                    cx="435" cy="215"
+                    rx="7" ry="22"
+                    transform="rotate(17 435 215)"
+                />
+
+                <ellipse
+                    cx="465" cy="130"
+                    rx="7" ry="21"
+                    transform="rotate(-18 465 130)"
+                />
+
+                <ellipse
+                    cx="485" cy="180"
+                    rx="7" ry="22"
+                    transform="rotate(16 485 180)"
+                />
+
+                <ellipse
+                    cx="510" cy="215"
+                    rx="7" ry="20"
+                    transform="rotate(-18 510 215)"
+                />
+
+                <ellipse
+                    cx="820" cy="115"
+                    rx="7" ry="20"
+                    transform="rotate(20 820 115)"
+                />
+
+                <ellipse
+                    cx="802" cy="150"
+                    rx="7" ry="21"
+                    transform="rotate(-18 802 150)"
+                />
+
+                <ellipse
+                    cx="785" cy="190"
+                    rx="7" ry="20"
+                    transform="rotate(15 785 190)"
+                />
+
+                <ellipse
+                    cx="765" cy="215"
+                    rx="7" ry="22"
+                    transform="rotate(-17 765 215)"
+                />
+
+                <ellipse
+                    cx="735" cy="130"
+                    rx="7" ry="21"
+                    transform="rotate(18 735 130)"
+                />
+
+                <ellipse
+                    cx="715" cy="180"
+                    rx="7" ry="22"
+                    transform="rotate(-16 715 180)"
+                />
+
+                <ellipse
+                    cx="690" cy="215"
+                    rx="7" ry="20"
+                    transform="rotate(18 690 215)"
+                />
+
+                <ellipse
+                    cx="350" cy="205"
+                    rx="7" ry="20"
+                    transform="rotate(-15 350 205)"
+                />
+
+                <ellipse
+                    cx="360" cy="245"
+                    rx="7" ry="21"
+                    transform="rotate(15 360 245)"
+                />
+
+                <ellipse
+                    cx="850" cy="205"
+                    rx="7" ry="20"
+                    transform="rotate(15 850 205)"
+                />
+
+                <ellipse
+                    cx="840" cy="245"
+                    rx="7" ry="21"
+                    transform="rotate(-15 840 245)"
+                />
+
+            </g>
+
+            <!-- subtle rose blossoms -->
+            <g fill="#B87587">
+
+                <circle cx="430" cy="105" r="4"/>
+                <circle cx="475" cy="145" r="4"/>
+                <circle cx="520" cy="175" r="4"/>
+
+                <circle cx="770" cy="145" r="4"/>
+                <circle cx="725" cy="105" r="4"/>
+                <circle cx="680" cy="175" r="4"/>
+
+            </g>
+
+        </svg>
+
+    </div>
 
 </div>
-"""
+""",
+    unsafe_allow_html=True,
 )
 
 # ============================================================
 # THEME PICKER
 # ============================================================
 
-st.html(
+st.markdown(
+    '<div class="theme-section">'
     '<div class="theme-heading">Choose your bookish theme</div>'
+    '</div>',
+    unsafe_allow_html=True,
 )
 
 theme_choice = st.selectbox(
@@ -1136,6 +1009,7 @@ def get_cover(title, author="", isbn=""):
 
     return ""
 
+
 # ============================================================
 # SERIES HELPERS
 # ============================================================
@@ -1143,10 +1017,10 @@ def get_cover(title, author="", isbn=""):
 def detect_series(title):
 
     patterns = [
-        r"\(([^()]*)#\s*\d+(?:\.\d+)?[^()]*\)",
-        r"\[([^\[\]]*)#\s*\d+(?:\.\d+)?[^\[\]]*\]",
-        r"\(([^()]*)\bBook\s+\d+(?:\.\d+)?[^()]*\)",
-        r"\[([^\[\]]*)\bBook\s+\d+(?:\.\d+)?[^\[\]]*\]",
+        r"\(([^()]*?)#\s*\d+(?:\.\d+)?[^()]*\)",
+        r"\[([^\[\]]*?)#\s*\d+(?:\.\d+)?[^\[\]]*\]",
+        r"\(([^()]*?)\bBook\s+\d+(?:\.\d+)?[^()]*\)",
+        r"\[([^\[\]]*?)\bBook\s+\d+(?:\.\d+)?[^\[\]]*\]",
     ]
 
     for pattern in patterns:
@@ -1222,6 +1096,7 @@ def safe_id(text):
         "_",
         str(text)
     )
+
 
 # ============================================================
 # IMPORT
@@ -1338,13 +1213,11 @@ def import_books(uploaded):
         if rating_col:
 
             try:
-
                 rating = float(
                     row.get(
                         rating_col
                     )
                 )
-
             except Exception:
                 pass
 
@@ -1375,8 +1248,7 @@ def import_books(uploaded):
                 "Title": title,
                 "Author": author,
                 "Series": detect_series(title),
-                "Series Number":
-                    detect_series_number(title),
+                "Series Number": detect_series_number(title),
                 "ISBN": isbn,
                 "My Rating": rating,
                 "Status": status,
@@ -1423,11 +1295,11 @@ def import_books(uploaded):
     progress.empty()
 
     st.session_state.library = new_library
-
     st.session_state.open_authors = set()
     st.session_state.open_series = set()
 
     return True
+
 
 # ============================================================
 # DATA
@@ -1475,8 +1347,6 @@ favorites = (
 # STATS
 # ============================================================
 
-columns = st.columns(5)
-
 stats = [
     (total, "Books"),
     (authors, "Authors"),
@@ -1485,28 +1355,23 @@ stats = [
     (favorites, "Favorites"),
 ]
 
-for col, (number, label) in zip(
-    columns,
-    stats
-):
+stats_html = '<div class="stats-row">'
 
-    with col:
+for number, label in stats:
 
-        st.html(
-            f"""
-            <div class="stat-card">
+    stats_html += f"""
+        <div class="stat-item">
+            <div class="stat-number">{number}</div>
+            <div class="stat-label">{label}</div>
+        </div>
+    """
 
-                <div class="stat-number">
-                    {number}
-                </div>
+stats_html += "</div>"
 
-                <div class="stat-label">
-                    {label}
-                </div>
-
-            </div>
-            """
-        )
+st.markdown(
+    stats_html,
+    unsafe_allow_html=True
+)
 
 # ============================================================
 # TABS
@@ -1538,9 +1403,7 @@ with tree_tab:
 
         search = st.text_input(
             "Search your tree",
-            placeholder=(
-                "Search author, series, or book..."
-            )
+            placeholder="Search author, series, or book..."
         )
 
         filtered = library.copy()
@@ -1569,25 +1432,21 @@ with tree_tab:
                 .str.contains(q, na=False)
             ]
 
-        st.html(
+        st.markdown(
             f"""
             <div class="tree-area">
-
                 <div class="root-node">
-
                     <div class="root-node-title">
                         My Library
                     </div>
-
                     <div class="root-node-small">
                         {len(filtered)} books ·
                         {filtered["Author"].nunique()} authors
                     </div>
-
                 </div>
-
             </div>
-            """
+            """,
+            unsafe_allow_html=True
         )
 
         author_list = sorted(
@@ -1600,9 +1459,7 @@ with tree_tab:
 
         for author in author_list:
 
-            author_id = safe_id(
-                author
-            )
+            author_id = safe_id(author)
 
             author_books = filtered[
                 filtered["Author"]
@@ -1638,7 +1495,7 @@ with tree_tab:
 
                 st.rerun()
 
-            st.html(
+            st.markdown(
                 f"""
                 <div class="author-info">
 
@@ -1652,7 +1509,8 @@ with tree_tab:
                     </div>
 
                 </div>
-                """
+                """,
+                unsafe_allow_html=True
             )
 
             if not opened:
@@ -1677,7 +1535,7 @@ with tree_tab:
                         == "Standalone"
                     ]
 
-                    st.html(
+                    st.markdown(
                         f"""
                         <div class="series-info">
 
@@ -1691,7 +1549,8 @@ with tree_tab:
                             </div>
 
                         </div>
-                        """
+                        """,
+                        unsafe_allow_html=True
                     )
 
                     for _, book in standalone_books.iterrows():
@@ -1712,9 +1571,18 @@ with tree_tab:
                             )
                         )
 
+                        status = html.escape(
+                            str(
+                                book.get(
+                                    "Status",
+                                    ""
+                                )
+                            )
+                        )
+
                         if cover:
 
-                            st.html(
+                            st.markdown(
                                 f"""
                                 <div class="book-info">
 
@@ -1736,14 +1604,7 @@ with tree_tab:
                                             </div>
 
                                             <div class="book-meta">
-                                                {html.escape(
-                                                    str(
-                                                        book.get(
-                                                            "Status",
-                                                            ""
-                                                        )
-                                                    )
-                                                )}
+                                                {status}
                                             </div>
 
                                         </div>
@@ -1751,12 +1612,13 @@ with tree_tab:
                                     </div>
 
                                 </div>
-                                """
+                                """,
+                                unsafe_allow_html=True
                             )
 
                         else:
 
-                            st.html(
+                            st.markdown(
                                 f"""
                                 <div class="book-info">
 
@@ -1765,18 +1627,12 @@ with tree_tab:
                                     </div>
 
                                     <div class="book-meta">
-                                        {html.escape(
-                                            str(
-                                                book.get(
-                                                    "Status",
-                                                    ""
-                                                )
-                                            )
-                                        )}
+                                        {status}
                                     </div>
 
                                 </div>
-                                """
+                                """,
+                                unsafe_allow_html=True
                             )
 
                     continue
@@ -1825,7 +1681,7 @@ with tree_tab:
                     == series
                 ].copy()
 
-                st.html(
+                st.markdown(
                     f"""
                     <div class="series-info">
 
@@ -1839,7 +1695,8 @@ with tree_tab:
                         </div>
 
                     </div>
-                    """
+                    """,
+                    unsafe_allow_html=True
                 )
 
                 if not series_open:
@@ -1906,9 +1763,18 @@ with tree_tab:
                         )
                     )
 
+                    status = html.escape(
+                        str(
+                            book.get(
+                                "Status",
+                                ""
+                            )
+                        )
+                    )
+
                     if cover:
 
-                        st.html(
+                        st.markdown(
                             f"""
                             <div class="book-info">
 
@@ -1932,14 +1798,7 @@ with tree_tab:
                                         </div>
 
                                         <div class="book-meta">
-                                            {html.escape(
-                                                str(
-                                                    book.get(
-                                                        "Status",
-                                                        ""
-                                                    )
-                                                )
-                                            )}
+                                            {status}
                                         </div>
 
                                     </div>
@@ -1947,12 +1806,13 @@ with tree_tab:
                                 </div>
 
                             </div>
-                            """
+                            """,
+                            unsafe_allow_html=True
                         )
 
                     else:
 
-                        st.html(
+                        st.markdown(
                             f"""
                             <div class="book-info">
 
@@ -1963,18 +1823,12 @@ with tree_tab:
                                 </div>
 
                                 <div class="book-meta">
-                                    {html.escape(
-                                        str(
-                                            book.get(
-                                                "Status",
-                                                ""
-                                            )
-                                        )
-                                    )}
+                                    {status}
                                 </div>
 
                             </div>
-                            """
+                            """,
+                            unsafe_allow_html=True
                         )
 
 # ============================================================
@@ -2034,30 +1888,25 @@ with books_tab:
 
             with col2:
 
-                st.html(
+                st.markdown(
                     f"""
                     <div class="book-title">
                         {html.escape(
-                            str(
-                                book["Title"]
-                            )
+                            str(book["Title"])
                         )}
                     </div>
 
                     <div class="book-meta">
                         {html.escape(
-                            str(
-                                book["Author"]
-                            )
+                            str(book["Author"])
                         )}
                         <br>
                         {html.escape(
-                            str(
-                                book["Series"]
-                            )
+                            str(book["Series"])
                         )}
                     </div>
-                    """
+                    """,
+                    unsafe_allow_html=True
                 )
 
             with col3:
@@ -2118,7 +1967,7 @@ with add_tab:
             "Series number",
             min_value=0.0,
             value=0.0,
-            step=.5
+            step=0.5
         )
 
         isbn = st.text_input(
@@ -2182,18 +2031,14 @@ with add_tab:
                     "Author": author.strip(),
                     "Series": actual_series,
                     "Series Number":
-                        number
-                        if number
-                        else None,
+                        number if number else None,
                     "ISBN": re.sub(
                         r"\D",
                         "",
                         isbn
                     ),
                     "My Rating":
-                        rating
-                        if rating
-                        else None,
+                        rating if rating else None,
                     "Status": status,
                     "Favorite": favorite,
                     "Cover": cover,
@@ -2260,3 +2105,4 @@ with import_tab:
                 )
 
                 st.rerun()
+```
