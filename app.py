@@ -200,8 +200,10 @@ p, label {{
     color: var(--text) !important;
 }}
 
-.book-header {{
+.book-header {
     text-align: center;
+    padding: 95px 0 30px;
+}
 
 .book-header-title {{
     font-family: "Berkshire Swash", Georgia, serif !important;
