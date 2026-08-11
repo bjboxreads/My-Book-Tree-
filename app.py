@@ -266,57 +266,58 @@ div[data-baseweb="input"] input {{
 .stButton > button:hover {{
     background: var(--surface2) !important;
     border-color: var(--accent) !important;
-.stat-card {{
-    /* Uses the second-level surface color for that 'shade down' look */
-    background: var(--surface2) !important;
-    
-    border: 2px solid var(--accent) !important;
-    padding: 25px 15px !important;
-    text-align: center;
-    position: relative;
-    transition: all 0.4s ease;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    box-shadow: 0 8px 20px rgba(0,0,0,0.5);
-    border-radius: 15px 45px 15px 45px !important; 
-    min-height: 140px !important;
-    min-width: 130px !important;
-    margin: 5px;
-}}
+py
+st.markdown(
+    """
+    <style>
+    .stat-card {{
+        background: var(--card) !important;
+        border: 2px solid var(--accent) !important;
+        padding: 25px 15px !important;
+        text-align: center;
+        position: relative;
+        transition: all 0.4s ease;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        box-shadow: 0 8px 20px rgba(0,0,0,0.5);
+        border-radius: 15px 45px 15px 45px !important; 
+        min-height: 140px !important;
+        min-width: 130px !important;
+        margin: 5px;
+    }}
 
-.stat-card::before {{
-    content: '❦'; 
-    position: absolute;
-    top: -15px;
-    left: 50%;
-    transform: translateX(-50%);
-    color: var(--accent);
-    /* Match the background of the filigree to the card background */
-    background: var(--surface2) !important;
-    padding: 0 10px;
-    z-index: 3;
-}}
+    .stat-card::before {{
+        content: '❦'; 
+        position: absolute;
+        top: -15px;
+        left: 50%;
+        transform: translateX(-50%);
+        color: var(--accent);
+        background: var(--card) !important;
+        padding: 0 10px;
+        z-index: 3;
+    }}
 
-.stat-card:hover {{
-    /* Goes one shade further on hover */
-    background: var(--card) !important;
-    transform: translateY(-5px);
-}}
+    .stat-number {{
+        font-family: "Berkshire Swash", serif !important;
+        font-size: 42px !important;
+        color: var(--accent) !important;
+        margin: 0 !important;
+        line-height: 1 !important;
+    }}
 
-.stat-number {{
-    font-family: "Berkshire Swash", serif !important;
-    font-size: 42px !important;
-    color: var(--accent) !important;
-    margin: 0 !important;
-}}
-
-.stat-label {{
-    font-family: "Berkshire Swash", serif !important;
-    color: var(--text) !important;
-    font-size: 14px !important; 
-    margin-top: 5px;
+    .stat-label {{
+        font-family: "Berkshire Swash", serif !important;
+        color: var(--text) !important;
+        font-size: 14px !important; 
+        margin-top: 5px;
+    }}
+    </style>
+    """, 
+    unsafe_allow_html=True
+)
 }}
 
 .tree-container {{
