@@ -268,21 +268,21 @@ div[data-baseweb="input"] input {{
     border-color: var(--accent) !important;
 }}
 
-.stat-card {{
-    background: var(--surface) !important;
-    border: 2px solid var(--accent) !important;
-    padding: 30px 20px !important;
-    text-align: center;
-    position: relative;
-    transition: all 0.4s ease;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    box-shadow: 0 10px 25px rgba(0,0,0,0.5), inset 0 0 10px rgba(0,0,0,0.5);
-    border-radius: 30% 70% 30% 70% / 70% 30% 70% 30% !important;
-    min-height: 140px;
-}}
+     background: var(--surface) !important;
+     border: 2px solid var(--accent) !important;
+     padding: 30px 20px !important;
+     text-align: center;
+     position: relative;
+     transition: all 0.4s ease;
+     display: flex;
+     flex-direction: column;
+     align-items: center;
+     justify-content: center;
+     box-shadow: 0 10px 25px rgba(0,0,0,0.5), inset 0 0 10px rgba(0,0,0,0.5);
+     border-radius: 30% 70% 30% 70% / 70% 30% 70% 30% !important;
+     min-height: 140px;
+ }}
+
 
 /* Floral Filigree Ornament at the Top */
 .stat-card::before {{
