@@ -202,7 +202,8 @@ p, label {{
 
 .book-header {{
     text-align: center;
-    margin-top: 72px !important;
+    padding-top: 95px;
+    padding-bottom: 30px;
 }}
 
 .book-header-title {{
@@ -266,59 +267,6 @@ div[data-baseweb="input"] input {{
 .stButton > button:hover {{
     background: var(--surface2) !important;
     border-color: var(--accent) !important;
-    background: var(--surface2) !important;
-    border-color: var(--accent) !important;
-}}
-
-/* Victorian-inspired buttons: decorative, not pill-shaped */
-.stButton > button {{
-    background: linear-gradient(135deg, var(--surface), var(--surface2)) !important;
-    color: var(--text) !important;
-    border: 1px solid var(--accent) !important;
-    border-radius: 18px 5px 18px 5px !important;
-    font-family: "Libre Baskerville", Georgia, serif !important;
-    box-shadow: 0 3px 10px rgba(0,0,0,.18) !important;
-    transition: all .15s ease !important;
-}}
-
-.stButton > button:hover {{
-    background: linear-gradient(135deg, var(--surface2), var(--card)) !important;
-    border-color: var(--accent) !important;
-    box-shadow: 0 4px 14px rgba(0,0,0,.25) !important;
-}}
-
-/* Decorative stat cards */
-.stat-card {{
-    background: var(--card);
-    border: 1px solid var(--accent);
-    border-radius: 24px 7px 24px 7px;
-    padding: 18px 10px;
-    text-align: center;
-    position: relative;
-    box-shadow: 0 6px 18px rgba(0,0,0,.18);
-}}
-
-.stat-card::before {{
-    content: "❦";
-    display: block;
-    color: var(--accent);
-    font-size: 18px;
-    line-height: 1;
-    margin-bottom: 4px;
-}}
-
-.stat-number {{
-    font-family: "Berkshire Swash", Georgia, serif;
-    font-size: 38px;
-    color: var(--accent);
-}}
-
-.stat-label {{
-    font-family: "Libre Baskerville", Georgia, serif;
-    color: var(--text);
-    font-size: 10px;
-    text-transform: uppercase;
-    letter-spacing: .08em;
 }}
 
 .tree-root {{
@@ -752,6 +700,11 @@ def safe_id(text):
 # ============================================================
 
 def import_books(uploaded):
+
+    try:
+        uploaded.seek(0)
+    except Exception:
+        pass
 
     try:
         df = pd.read_csv(
