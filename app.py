@@ -41,18 +41,32 @@ def display_ancestry_tree(df):
                 title = html.escape(str(book.get('Title', '')))
                 status = html.escape(str(book.get('Status', '') or ''))
                 genre = html.escape(str(book.get('Genre', '') or ''))
+                cover = str(book.get('Cover', '') or '')
                 meta = status
                 if genre:
                     meta += f' · {genre}' if meta else genre
-                parts.append(
-                    f'<div class="atree-book">'
-                    f'<div class="atree-book-title">📖 {title}</div>'
-                    + (
-                        f'<div class="atree-book-meta">{meta}</div>'
-                        if meta else ''
-                    )
-                    + '</div>'
+                meta_html = (
+                    f'<div class="atree-book-meta">{meta}</div>'
+                    if meta else ''
                 )
+                if cover:
+                    parts.append(
+                        f'<div class="atree-book atree-book-cover">'
+                        f'<img class="atree-book-img" '
+                        f'src="{html.escape(cover)}">'
+                        f'<div>'
+                        f'<div class="atree-book-title">📖 {title}</div>'
+                        f'{meta_html}'
+                        f'</div>'
+                        f'</div>'
+                    )
+                else:
+                    parts.append(
+                        f'<div class="atree-book">'
+                        f'<div class="atree-book-title">📖 {title}</div>'
+                        f'{meta_html}'
+                        f'</div>'
+                    )
             parts.append('</div></details>')
 
         parts.append('</div></details>')
@@ -126,6 +140,19 @@ def display_ancestry_tree(df):
             background: linear-gradient(90deg, var(--card), transparent);
             border-left: 2px solid var(--line);
             border-radius: 0 10px 0 0;
+        }}
+        .atree-book-cover {{
+            display: flex;
+            gap: 10px;
+            align-items: center;
+        }}
+        .atree-book-img {{
+            width: 50px;
+            height: 72px;
+            object-fit: cover;
+            border-radius: 3px 8px 3px 8px;
+            border: 1px solid var(--accent);
+            flex-shrink: 0;
         }}
         .atree-book-title {{
             font-family: "Berkshire Swash", Georgia, serif;
