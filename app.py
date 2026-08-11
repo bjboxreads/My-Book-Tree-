@@ -58,6 +58,6 @@ st.markdown("""
 
 <div class="book-title">
     <div class="book-title-main">My Book Tree</div>
-    <div class="book-title-subtitle">where every story has a branch</div>
+    <div class="book-title-subtitle"></div>
 </div>
 """, unsafe_allow_html=True)
