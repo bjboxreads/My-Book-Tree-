@@ -1223,18 +1223,17 @@ tree_tab, books_tab, add_tab, import_tab = st.tabs(
 # BOOK TREE
 # ============================================================
 
+# ============================================================
+# BOOK TREE — HORIZONTAL ANCESTRY STYLE
+# ============================================================
+
 with tree_tab:
 
-    st.subheader(
-        "Search My Book Tree"
-    )
+    st.subheader("Search My Book Tree")
 
     search = st.text_input(
         "Search",
-        placeholder=(
-            "Search by author, title, "
-            "series, genre, or ISBN..."
-        ),
+        placeholder="Search by author, title, series, genre, or ISBN...",
         label_visibility="collapsed",
     )
 
@@ -1244,30 +1243,24 @@ with tree_tab:
 
     filtered = library.copy()
 
+    # --------------------------------------------------------
+    # SEARCH
+    # --------------------------------------------------------
+
     if search.strip():
 
         q = search.strip().lower()
 
         searchable = (
-            filtered["Title"]
-            .fillna("")
-            .astype(str)
+            filtered["Title"].fillna("").astype(str)
             + " "
-            + filtered["Author"]
-            .fillna("")
-            .astype(str)
+            + filtered["Author"].fillna("").astype(str)
             + " "
-            + filtered["Series"]
-            .fillna("")
-            .astype(str)
+            + filtered["Series"].fillna("").astype(str)
             + " "
-            + filtered["Genre"]
-            .fillna("")
-            .astype(str)
+            + filtered["Genre"].fillna("").astype(str)
             + " "
-            + filtered["ISBN"]
-            .fillna("")
-            .astype(str)
+            + filtered["ISBN"].fillna("").astype(str)
         ).str.lower()
 
         filtered = filtered[
@@ -1283,8 +1276,8 @@ with tree_tab:
         if library.empty:
 
             st.info(
-                "Your tree is empty. "
-                "Import your library or add your first book."
+                "Your tree is empty. Import your library "
+                "or add your first book."
             )
 
         else:
@@ -1295,309 +1288,443 @@ with tree_tab:
 
     else:
 
-        # ROOT
+        # ----------------------------------------------------
+        # CLEAN SERIES DATA
+        # ----------------------------------------------------
 
-        st.html(
-            f"""
-            <div class="tree-container">
+        filtered = filtered.copy()
 
-                <div class="tree-root">
-
-                    <div class="tree-root-title">
-                        My Library
-                    </div>
-
-                    <div class="tree-root-count">
-                        {len(filtered)} books ·
-                        {filtered["Author"].nunique()} authors
-                    </div>
-
-                </div>
-
-            </div>
-            """
+        filtered["Author"] = (
+            filtered["Author"]
+            .fillna("Unknown Author")
+            .astype(str)
+            .replace(
+                ["", "nan", "None"],
+                "Unknown Author",
+            )
         )
 
-        # AUTHORS
+        filtered["Series"] = (
+            filtered["Series"]
+            .fillna("Standalone")
+            .astype(str)
+            .replace(
+                ["", "nan", "None"],
+                "Standalone",
+            )
+        )
+
+        # ----------------------------------------------------
+        # ROOT
+        # ----------------------------------------------------
+
+        library_open = (
+            "library"
+            in st.session_state.open_authors
+        )
+
+        root_arrow = "▼" if library_open else "▶"
+
+        st.markdown(
+            f"""
+            <div style="
+                text-align:center;
+                margin:20px auto 35px auto;
+            ">
+                <div style="
+                    display:inline-block;
+                    min-width:300px;
+                    padding:18px 30px;
+                    background:var(--accent);
+                    color:var(--page);
+                    border-radius:5px 28px 5px 28px;
+                    font-family:'Berkshire Swash', Georgia, serif;
+                    font-size:32px;
+                    box-shadow:0 6px 18px rgba(0,0,0,.20);
+                ">
+                    🌳 MY LIBRARY
+                </div>
+            </div>
+            """,
+            unsafe_allow_html=True,
+        )
+
+        if st.button(
+            f"{root_arrow} My Library",
+            key="tree_library_toggle",
+            use_container_width=True,
+        ):
+
+            if library_open:
+                st.session_state.open_authors.discard(
+                    "library"
+                )
+            else:
+                st.session_state.open_authors.add(
+                    "library"
+                )
+
+            st.rerun()
+
+        if not library_open:
+            st.stop()
+
+        # ----------------------------------------------------
+        # AUTHOR LIST
+        # ----------------------------------------------------
 
         author_list = sorted(
-            filtered["Author"]
-            .fillna(
-                "Unknown Author"
-            )
-            .astype(str)
-            .unique(),
-            key=lambda x: x.lower(),
+            filtered["Author"].unique(),
+            key=lambda x: str(x).lower(),
         )
 
-        for author in author_list:
+        # ----------------------------------------------------
+        # HORIZONTAL AUTHOR ROW
+        # ----------------------------------------------------
 
-            author_id = safe_id(
-                author
-            )
+        author_cols = st.columns(
+            len(author_list)
+        )
 
-            author_books = filtered[
-                filtered["Author"]
-                .fillna(
-                    "Unknown Author"
+        for author_index, author in enumerate(
+            author_list
+        ):
+
+            with author_cols[author_index]:
+
+                author_id = safe_id(author)
+
+                author_books = filtered[
+                    filtered["Author"] == author
+                ].copy()
+
+                author_open = (
+                    author_id
+                    in st.session_state.open_authors
                 )
-                .astype(str)
-                == author
-            ].copy()
 
-            opened = (
-                author_id
-                in st.session_state.open_authors
-            )
+                author_arrow = (
+                    "▼"
+                    if author_open
+                    else "▶"
+                )
 
-            arrow = (
-                "▼"
-                if opened
-                else "▶"
-            )
+                # --------------------------------------------
+                # AUTHOR CONNECTOR
+                # --------------------------------------------
 
-            st.html(
-                f"""
-                <div class="author-branch">
+                st.markdown(
+                    """
+                    <div style="
+                        height:30px;
+                        border-left:3px solid var(--accent);
+                        margin:auto;
+                        width:0;
+                    "></div>
+                    """,
+                    unsafe_allow_html=True,
+                )
 
-                    <div class="author-card">
+                # --------------------------------------------
+                # AUTHOR BUTTON
+                # --------------------------------------------
 
-                        <div class="author-name">
-                            {html.escape(author)}
-                        </div>
+                if st.button(
+                    f"{author_arrow} {author}",
+                    key=f"tree_author_{author_id}",
+                    use_container_width=True,
+                ):
 
-                        <div class="author-count">
-                            {len(author_books)}
-                            {
-                                "book"
-                                if len(author_books) == 1
-                                else "books"
-                            }
-                        </div>
+                    if author_open:
 
+                        st.session_state.open_authors.discard(
+                            author_id
+                        )
+
+                    else:
+
+                        st.session_state.open_authors.add(
+                            author_id
+                        )
+
+                    st.rerun()
+
+                st.markdown(
+                    f"""
+                    <div style="
+                        text-align:center;
+                        color:var(--muted);
+                        font-family:'Libre Baskerville', Georgia, serif;
+                        font-size:10px;
+                        margin-top:-8px;
+                        margin-bottom:12px;
+                    ">
+                        {len(author_books)}
+                        {"book" if len(author_books) == 1 else "books"}
                     </div>
-
-                </div>
-                """
-            )
-
-            if st.button(
-                f"{arrow} {author}",
-                key=(
-                    f"author_{author_id}"
-                ),
-                use_container_width=True,
-            ):
-
-                if opened:
-
-                    st.session_state.open_authors.discard(
-                        author_id
-                    )
-
-                else:
-
-                    st.session_state.open_authors.add(
-                        author_id
-                    )
-
-                st.rerun()
-
-            if not opened:
-                continue
-
-            # SERIES
-
-            series_list = sorted(
-                author_books["Series"]
-                .fillna(
-                    "Standalone"
+                    """,
+                    unsafe_allow_html=True,
                 )
-                .astype(str)
-                .unique(),
-                key=lambda x: x.lower(),
-            )
 
-            for series in series_list:
+                if not author_open:
+                    continue
 
-                # STANDALONE BOOKS
+                # --------------------------------------------
+                # AUTHOR → SERIES CONNECTOR
+                # --------------------------------------------
 
-                if series == "Standalone":
+                st.markdown(
+                    """
+                    <div style="
+                        height:25px;
+                        border-left:2px solid var(--accent);
+                        margin:auto;
+                        width:0;
+                    "></div>
+                    """,
+                    unsafe_allow_html=True,
+                )
 
-                    standalone_books = (
-                        author_books[
+                # --------------------------------------------
+                # SERIES
+                # --------------------------------------------
+
+                series_list = sorted(
+                    author_books["Series"].unique(),
+                    key=lambda x: (
+                        str(x).lower()
+                    ),
+                )
+
+                # Put the author's branches horizontally
+                series_cols = st.columns(
+                    len(series_list)
+                )
+
+                for series_index, series in enumerate(
+                    series_list
+                ):
+
+                    with series_cols[series_index]:
+
+                        series_id = safe_id(
+                            f"{author}_{series}"
+                        )
+
+                        series_books = author_books[
                             author_books["Series"]
-                            .fillna(
-                                "Standalone"
-                            )
-                            .astype(str)
-                            == "Standalone"
+                            == series
                         ].copy()
-                    )
 
-                    st.html(
-                        f"""
-                        <div class="series-branch">
+                        series_open = (
+                            series_id
+                            in st.session_state.open_series
+                        )
 
-                            <div class="series-card">
+                        series_arrow = (
+                            "▼"
+                            if series_open
+                            else "▶"
+                        )
 
-                                <div class="series-name">
-                                    Standalone Books
-                                </div>
+                        # ----------------------------
+                        # SERIES BRANCH
+                        # ----------------------------
 
-                                <div class="series-count">
-                                    {len(standalone_books)}
-                                    {
-                                        "book"
-                                        if len(standalone_books) == 1
-                                        else "books"
-                                    }
-                                </div>
+                        st.markdown(
+                            """
+                            <div style="
+                                height:18px;
+                                border-top:2px solid var(--accent2);
+                                margin-top:4px;
+                            "></div>
+                            """,
+                            unsafe_allow_html=True,
+                        )
 
+                        # ----------------------------
+                        # SERIES DROPDOWN
+                        # ----------------------------
+
+                        display_series = (
+                            "Standalone Books"
+                            if series == "Standalone"
+                            else series
+                        )
+
+                        if st.button(
+                            f"{series_arrow} {display_series}",
+                            key=f"tree_series_{series_id}",
+                            use_container_width=True,
+                        ):
+
+                            if series_open:
+
+                                st.session_state.open_series.discard(
+                                    series_id
+                                )
+
+                            else:
+
+                                st.session_state.open_series.add(
+                                    series_id
+                                )
+
+                            st.rerun()
+
+                        st.markdown(
+                            f"""
+                            <div style="
+                                text-align:center;
+                                color:var(--muted);
+                                font-family:'Libre Baskerville', Georgia, serif;
+                                font-size:9px;
+                                margin-bottom:10px;
+                            ">
+                                {len(series_books)}
+                                {"book" if len(series_books) == 1 else "books"}
                             </div>
-
-                        </div>
-                        """
-                    )
-
-                    for _, book in (
-                        standalone_books.iterrows()
-                    ):
-
-                        cover = str(
-                            book.get(
-                                "Cover",
-                                "",
-                            )
-                            or ""
+                            """,
+                            unsafe_allow_html=True,
                         )
 
-                        title = html.escape(
-                            str(
-                                book.get(
-                                    "Title",
-                                    "",
+                        if not series_open:
+                            continue
+
+                        # ----------------------------
+                        # SERIES → BOOK CONNECTOR
+                        # ----------------------------
+
+                        st.markdown(
+                            """
+                            <div style="
+                                height:20px;
+                                border-left:2px solid var(--line);
+                                margin:auto;
+                                width:0;
+                            "></div>
+                            """,
+                            unsafe_allow_html=True,
+                        )
+
+                        # ----------------------------
+                        # BOOKS
+                        # ----------------------------
+
+                        for _, book in series_books.iterrows():
+
+                            title = html.escape(
+                                str(
+                                    book.get(
+                                        "Title",
+                                        "",
+                                    )
                                 )
                             )
-                        )
 
-                        status = html.escape(
-                            str(
+                            cover = str(
                                 book.get(
-                                    "Status",
-                                    "",
-                                )
-                            )
-                        )
-
-                        genre = html.escape(
-                            str(
-                                book.get(
-                                    "Genre",
+                                    "Cover",
                                     "",
                                 )
                                 or ""
                             )
-                        )
 
-                        meta = status
-
-                        if genre:
-                            meta += (
-                                f" · {genre}"
+                            status = html.escape(
+                                str(
+                                    book.get(
+                                        "Status",
+                                        "",
+                                    )
+                                )
                             )
 
-                        if cover:
+                            genre = html.escape(
+                                str(
+                                    book.get(
+                                        "Genre",
+                                        "",
+                                    )
+                                    or ""
+                                )
+                            )
 
-                            st.html(
-                                f"""
-                                <div class="book-branch">
+                            meta = status
 
-                                    <div style="
-                                        display:flex;
-                                        gap:14px;
-                                        align-items:center;
-                                    ">
+                            if genre:
+                                meta += (
+                                    f" · {genre}"
+                                )
+
+                            # ------------------------
+                            # BOOK CARD
+                            # ------------------------
+
+                            if cover:
+
+                                st.markdown(
+                                    f"""
+                                    <div class="book-branch"
+                                         style="
+                                            margin:8px 0;
+                                            padding:10px;
+                                         ">
 
                                         <img
                                             class="book-cover"
                                             src="{html.escape(cover)}"
                                         >
 
-                                        <div>
+                                        <div
+                                            class="book-title"
+                                            style="
+                                                font-size:16px;
+                                                margin-top:6px;
+                                            "
+                                        >
+                                            {title}
+                                        </div>
 
-                                            <div class="book-title">
-                                                {title}
-                                            </div>
-
-                                            <div class="book-meta">
-                                                {meta}
-                                            </div>
-
+                                        <div
+                                            class="book-meta"
+                                        >
+                                            {meta}
                                         </div>
 
                                     </div>
+                                    """,
+                                    unsafe_allow_html=True,
+                                )
 
-                                </div>
-                                """
-                            )
+                            else:
 
-                        else:
+                                st.markdown(
+                                    f"""
+                                    <div class="book-branch"
+                                         style="
+                                            margin:8px 0;
+                                            padding:10px;
+                                         ">
 
-                            st.html(
-                                f"""
-                                <div class="book-branch">
+                                        <div
+                                            class="book-title"
+                                            style="
+                                                font-size:16px;
+                                            "
+                                        >
+                                            📖 {title}
+                                        </div>
 
-                                    <div class="book-title">
-                                        {title}
+                                        <div
+                                            class="book-meta"
+                                        >
+                                            {meta}
+                                        </div>
+
                                     </div>
-
-                                    <div class="book-meta">
-                                        {meta}
-                                    </div>
-
-                                </div>
-                                """
-                            )
-
-                    continue
-
-                # SERIES
-
-                           # ============================================================
-        # ANCESTRY TREE VIEW
-        # ============================================================
-        
-        # 1. Clean data: Fill empty Series with 'Standalone'
-        filtered['Series'] = filtered['Series'].fillna('Standalone').replace(['', 'nan', 'None'], 'Standalone')
-        
-        # 2. Iterate through each Author (The Trunk)
-        author_list = sorted(filtered["Author"].unique(), key=lambda x: str(x).lower())
-        
-        for author in author_list:
-            author_df = filtered[filtered["Author"] == author]
-            
-            # Creating the main trunk expander (Closed by default)
-            with st.expander(f"🌳 {author} ({len(author_df)} books)", expanded=False):
-                
-                # 3. Get all Series for this specific author
-                series_list = sorted(author_df['Series'].unique(), key=lambda x: str(x).lower())
-                
-                # 4. Create Columns so Series appear side-by-side (Siblings)
-                cols = st.columns(len(series_list))
-                
-                for i, series in enumerate(series_list):
-                    with cols[i]:
-                        # 5. Create a branch for each Series (Closed by default)
-                        with st.expander(f"📂 {series}", expanded=False):
-                            
-                            # 6. List the Books vertically underneath (The Kids)
-                            series_books = author_df[author_df['Series'] == series]
-                            for _, book in series_books.iterrows():
-                                # Display book title and cover if it exists
-                                if book['Cover']:
-                                    st.image(book['Cover'], width=60)
-                                st.write(f"📖 {book['Title']}")
+                                    """,
+                                    unsafe_allow_html=True,
+                                )
 # ============================================================
 # BOOKS TAB
 # ============================================================
