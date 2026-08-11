@@ -1,3 +1,4 @@
+```python
 import io
 import re
 import hashlib
@@ -109,7 +110,7 @@ def initialize_state():
         "theme": "Velvet Conservatory",
         "library_loaded": False,
         "library_source": "",
-        "enrichment_done": False,
+        "upload_hash": None,
     }
 
     for key, value in defaults.items():
@@ -125,20 +126,12 @@ initialize_state()
 # ============================================================
 
 def apply_theme(theme: dict):
+
     st.markdown(
         f"""
         <style>
 
-        @import url(
-            'https://fonts.googleapis.com/css2?
-            family=Cormorant+Garamond:wght@400;500;600;700&
-            family=Lora:wght@400;500;600&
-            family=Cinzel:wght@400;500;600&
-            family=Libre+Baskerville:wght@400;700&
-            family=Playfair+Display:wght@400;500;600;700&
-            family=Bodoni+Moda:wght@400;500;600&
-            display=swap'
-        );
+        @import url('https://fonts.googleapis.com/css2?family=Bodoni+Moda:wght@400;500;600&family=Cinzel:wght@400;500;600&family=Cormorant+Garamond:wght@400;500;600;700&family=Libre+Baskerville:wght@400;700&family=Lora:wght@400;500;600&family=Playfair+Display:wght@400;500;600;700&display=swap');
 
         :root {{
             --bg: {theme["background"]};
@@ -166,14 +159,15 @@ def apply_theme(theme: dict):
 
         .block-container {{
             max-width: 1450px;
-            padding-top: 1.5rem;
+            padding-top: 1rem;
             padding-bottom: 4rem;
         }}
+
+        /* GENERAL TEXT */
 
         p,
         label,
         .stMarkdown,
-        .stText,
         .stCaption {{
             color: var(--text);
         }}
@@ -185,28 +179,26 @@ def apply_theme(theme: dict):
             color: var(--text) !important;
         }}
 
-        /* ----------------------------------------------------
-           TITLE
-        ---------------------------------------------------- */
+        /* HEADER */
 
         .book-tree-header {{
             text-align: center;
-            padding: 1rem 0 1.4rem;
+            padding: 1.5rem 0 1rem;
         }}
 
         .book-tree-eyebrow {{
             color: var(--accent);
             text-transform: uppercase;
-            letter-spacing: .28em;
+            letter-spacing: .32em;
             font-size: .68rem;
-            font-weight: 700;
-            margin-bottom: .3rem;
+            font-weight: 600;
+            margin-bottom: .7rem;
         }}
 
         .book-tree-title {{
             font-family: '{theme["heading"]}', Georgia, serif;
-            font-size: clamp(3rem, 7vw, 6rem);
-            line-height: .9;
+            font-size: clamp(3.2rem, 7vw, 6.5rem);
+            line-height: .95;
             font-weight: 500;
             color: var(--text);
             margin: 0;
@@ -217,79 +209,47 @@ def apply_theme(theme: dict):
             font-family: '{theme["body"]}', Georgia, serif;
             color: var(--muted);
             font-size: 1rem;
-            margin-top: .7rem;
-            letter-spacing: .03em;
+            margin-top: .8rem;
+            letter-spacing: .08em;
         }}
 
-        /* ----------------------------------------------------
-           VINE
-        ---------------------------------------------------- */
-
         .vine {{
+            width: min(650px, 80%);
+            height: 40px;
+            margin: .7rem auto 0;
             position: relative;
-            width: min(700px, 85%);
-            height: 42px;
-            margin: 1rem auto 0;
-            overflow: hidden;
         }}
 
         .vine::before {{
             content: "";
             position: absolute;
-            top: 20px;
-            left: -10%;
-            width: 120%;
-            height: 22px;
+            left: 5%;
+            right: 5%;
+            top: 18px;
             border-top: 2px solid var(--accent2);
             border-radius: 50%;
-            transform: rotate(-2deg);
-            animation: grow-vine 2.3s ease-out forwards;
-            transform-origin: left center;
+            transform: rotate(-1deg);
         }}
 
         .vine::after {{
             content: "❧   ❦   ❧";
             position: absolute;
-            top: 0;
             left: 50%;
+            top: 2px;
             transform: translateX(-50%);
             color: var(--accent2);
             font-size: 1.1rem;
-            letter-spacing: .4rem;
-            opacity: 0;
-            animation: bloom-leaves 1.2s 1.4s ease-out forwards;
+            letter-spacing: .5rem;
         }}
 
-        @keyframes grow-vine {{
-            0% {{
-                clip-path: inset(0 100% 0 0);
-            }}
-            100% {{
-                clip-path: inset(0 0 0 0);
-            }}
-        }}
-
-        @keyframes bloom-leaves {{
-            0% {{
-                opacity: 0;
-                transform: translateX(-50%) scale(.4);
-            }}
-            100% {{
-                opacity: 1;
-                transform: translateX(-50%) scale(1);
-            }}
-        }}
-
-        /* ----------------------------------------------------
-           STATISTICS
-        ---------------------------------------------------- */
+        /* STATISTICS */
 
         .stats {{
             display: flex;
             justify-content: center;
             gap: clamp(2rem, 7vw, 6rem);
             flex-wrap: wrap;
-            margin: .5rem 0 1.7rem;
+            margin: .5rem 0 2rem;
         }}
 
         .stat {{
@@ -311,12 +271,10 @@ def apply_theme(theme: dict):
             font-size: .65rem;
             letter-spacing: .17em;
             text-transform: uppercase;
-            margin-top: .35rem;
+            margin-top: .4rem;
         }}
 
-        /* ----------------------------------------------------
-           SIDEBAR
-        ---------------------------------------------------- */
+        /* SIDEBAR */
 
         [data-testid="stSidebar"] {{
             background:
@@ -325,31 +283,27 @@ def apply_theme(theme: dict):
                     var(--surface),
                     var(--bg)
                 ) !important;
-            border-right:
-                1px solid var(--border);
+            border-right: 1px solid var(--border);
         }}
 
         [data-testid="stSidebar"] * {{
             color: var(--text);
         }}
 
-        [data-testid="stSidebar"] h1,
-        [data-testid="stSidebar"] h2,
-        [data-testid="stSidebar"] h3 {{
-            font-family:
-                '{theme["heading"]}',
-                Georgia,
-                serif !important;
-        }}
+        /* CONTROLS */
 
-        /* ----------------------------------------------------
-           SELECTBOXES
-        ---------------------------------------------------- */
+        .control-heading {{
+            font-family: '{theme["heading"]}', Georgia, serif;
+            font-size: 1.4rem;
+            color: var(--text);
+            margin: .5rem 0 .8rem;
+        }}
 
         div[data-baseweb="select"] > div {{
             background: var(--surface) !important;
             border: 1px solid var(--border) !important;
             color: var(--text) !important;
+            border-radius: 10px !important;
         }}
 
         div[data-baseweb="select"] span {{
@@ -371,13 +325,10 @@ def apply_theme(theme: dict):
             color: var(--accent) !important;
         }}
 
-        /* ----------------------------------------------------
-           SEARCH
-        ---------------------------------------------------- */
-
         .stTextInput > div > div {{
             background: var(--surface) !important;
-            border-color: var(--border) !important;
+            border: 1px solid var(--border) !important;
+            border-radius: 10px !important;
         }}
 
         .stTextInput input {{
@@ -389,51 +340,43 @@ def apply_theme(theme: dict):
             color: var(--muted) !important;
         }}
 
-        /* ----------------------------------------------------
-           TREE
-        ---------------------------------------------------- */
+        /* TREE */
 
         .tree-introduction {{
             text-align: center;
             color: var(--muted);
-            font-family:
-                '{theme["body"]}',
-                Georgia,
-                serif;
-            font-size: .85rem;
-            letter-spacing: .08em;
+            font-family: '{theme["body"]}', Georgia, serif;
+            font-size: .78rem;
+            letter-spacing: .16em;
             text-transform: uppercase;
-            margin: .5rem 0 1.2rem;
+            margin: 1.5rem 0 .8rem;
         }}
 
         .tree-root {{
             text-align: center;
-            margin-bottom: 1rem;
+            margin-bottom: 1.3rem;
         }}
 
         .tree-root-title {{
             display: inline-block;
-            font-family:
-                '{theme["heading"]}',
-                Georgia,
-                serif;
-            font-size: 1.45rem;
+            font-family: '{theme["heading"]}', Georgia, serif;
+            font-size: 1.5rem;
             color: var(--accent);
-            padding: .35rem 1.5rem;
+            padding: .4rem 2rem .6rem;
             border-bottom: 1px solid var(--border);
         }}
 
-        /* Native expander styling */
+        /* EXPANDERS */
 
         [data-testid="stExpander"] {{
             background: transparent !important;
             border: none !important;
-            margin-bottom: .35rem;
+            margin-bottom: .45rem;
         }}
 
         [data-testid="stExpander"] details {{
-            border: none !important;
             background: transparent !important;
+            border: none !important;
         }}
 
         [data-testid="stExpander"] summary {{
@@ -443,15 +386,12 @@ def apply_theme(theme: dict):
                     var(--surface),
                     var(--surface-alt)
                 ) !important;
-            border:
-                1px solid var(--border) !important;
-            border-radius:
-                35px 18px 35px 18px !important;
+            border: 1px solid var(--border) !important;
+            border-radius: 18px 34px 18px 34px !important;
             color: var(--text) !important;
-            padding: .65rem 1rem !important;
-            box-shadow:
-                0 8px 25px var(--shadow);
-            transition: all .2s ease;
+            padding: .7rem 1.1rem !important;
+            box-shadow: 0 6px 20px var(--shadow);
+            transition: .2s ease;
         }}
 
         [data-testid="stExpander"] summary:hover {{
@@ -461,65 +401,50 @@ def apply_theme(theme: dict):
 
         [data-testid="stExpander"] summary p {{
             color: var(--text) !important;
-            font-family:
-                '{theme["heading"]}',
-                Georgia,
-                serif !important;
+            font-family: '{theme["heading"]}', Georgia, serif !important;
             font-size: 1.05rem !important;
         }}
 
         [data-testid="stExpander"] > div {{
-            border-left:
-                2px solid var(--branch) !important;
-            margin-left: 1.35rem;
-            padding-left: 1.2rem !important;
+            border-left: 2px solid var(--branch) !important;
+            margin-left: 1.4rem;
+            padding-left: 1.1rem !important;
         }}
 
-        /* ----------------------------------------------------
-           BOOK ROWS
-        ---------------------------------------------------- */
+        /* BOOKS */
 
         .book-row {{
             display: flex;
             align-items: center;
-            gap: .85rem;
-            padding: .6rem .5rem;
-            margin: .35rem 0;
-            border-bottom:
-                1px solid
-                color-mix(
-                    in srgb,
-                    var(--border) 40%,
-                    transparent
-                );
+            gap: 1rem;
+            padding: .75rem .5rem;
+            margin: .25rem 0;
+            border-bottom: 1px solid var(--border);
         }}
 
         .book-cover {{
-            width: 48px;
-            height: 68px;
+            width: 52px;
+            height: 74px;
             object-fit: cover;
-            border-radius: 3px 7px 7px 3px;
-            box-shadow: 5px 7px 14px var(--shadow);
+            border-radius: 3px 8px 8px 3px;
+            box-shadow: 4px 6px 15px var(--shadow);
             border: 1px solid var(--border);
             flex-shrink: 0;
         }}
 
         .book-placeholder {{
-            width: 48px;
-            height: 68px;
+            width: 52px;
+            height: 74px;
             display: flex;
             align-items: center;
             justify-content: center;
             background: var(--surface-alt);
             color: var(--accent);
             border: 1px solid var(--border);
-            border-radius: 3px 7px 7px 3px;
+            border-radius: 3px 8px 8px 3px;
             flex-shrink: 0;
-            font-family:
-                '{theme["heading"]}',
-                Georgia,
-                serif;
-            font-size: 1.4rem;
+            font-family: '{theme["heading"]}', Georgia, serif;
+            font-size: 1.5rem;
         }}
 
         .book-details {{
@@ -527,41 +452,34 @@ def apply_theme(theme: dict):
         }}
 
         .book-title {{
-            font-family:
-                '{theme["heading"]}',
-                Georgia,
-                serif;
+            font-family: '{theme["heading"]}', Georgia, serif;
             color: var(--text);
-            font-size: 1rem;
+            font-size: 1.05rem;
             font-weight: 600;
         }}
 
         .book-meta {{
             color: var(--muted);
-            font-family:
-                '{theme["body"]}',
-                Georgia,
-                serif;
+            font-family: '{theme["body"]}', Georgia, serif;
             font-size: .75rem;
-            margin-top: .2rem;
+            margin-top: .25rem;
+        }}
+
+        .book-status {{
+            display: inline-block;
+            border: 1px solid var(--border);
+            border-radius: 20px;
+            padding: .1rem .5rem;
+            margin-left: .4rem;
+            font-size: .62rem;
         }}
 
         .book-rating {{
             color: var(--accent);
-            margin-left: .4rem;
+            margin-left: .45rem;
         }}
 
-        .book-status {{
-            border: 1px solid var(--border);
-            border-radius: 20px;
-            padding: .1rem .45rem;
-            margin-left: .35rem;
-            font-size: .62rem;
-        }}
-
-        /* ----------------------------------------------------
-           BUTTONS
-        ---------------------------------------------------- */
+        /* BUTTONS */
 
         .stButton > button {{
             background: transparent !important;
@@ -575,18 +493,20 @@ def apply_theme(theme: dict):
             border-color: var(--accent) !important;
         }}
 
-        /* ----------------------------------------------------
-           FILE UPLOADER
-        ---------------------------------------------------- */
+        /* FILE UPLOADER */
 
         [data-testid="stFileUploader"] section {{
             background: var(--surface) !important;
             border-color: var(--border) !important;
         }}
 
-        /* ----------------------------------------------------
-           MOBILE
-        ---------------------------------------------------- */
+        /* DIVIDER */
+
+        hr {{
+            border-color: var(--border) !important;
+        }}
+
+        /* MOBILE */
 
         @media (max-width: 700px) {{
             .block-container {{
@@ -594,12 +514,12 @@ def apply_theme(theme: dict):
                 padding-right: .7rem;
             }}
 
-            .stats {{
-                gap: 1.5rem;
+            .book-tree-title {{
+                font-size: 3.2rem;
             }}
 
-            .book-title {{
-                font-size: .92rem;
+            .stats {{
+                gap: 1.5rem;
             }}
         }}
 
@@ -625,11 +545,7 @@ def safe_text(value, default=""):
 
     text = str(value).strip()
 
-    if text.lower() in {
-        "nan",
-        "none",
-        "null",
-    }:
+    if text.lower() in {"nan", "none", "null"}:
         return default
 
     return text
@@ -638,16 +554,10 @@ def safe_text(value, default=""):
 def normalize_text(value):
     text = safe_text(value)
 
-    text = unicodedata.normalize(
-        "NFKD",
-        text,
-    )
+    text = unicodedata.normalize("NFKD", text)
 
     text = (
-        text.encode(
-            "ascii",
-            "ignore",
-        )
+        text.encode("ascii", "ignore")
         .decode()
     )
 
@@ -672,9 +582,7 @@ def parse_number(value):
         return None
 
     try:
-        return float(
-            match.group()
-        )
+        return float(match.group())
     except ValueError:
         return None
 
@@ -701,32 +609,19 @@ def get_value(
     row: pd.Series,
     possible_names: List[str],
 ):
-    for name in possible_names:
-        column = find_column(
-            pd.DataFrame(
-                columns=row.index
-            ),
-            [name],
-        )
+    columns = list(row.index)
 
-        if column is not None:
-            value = safe_text(
-                row[column]
-            )
-
-            if value:
-                return value
-
-    # Faster fallback using normalized column names.
-    wanted = {
-        normalize_text(name)
-        for name in possible_names
+    normalized_columns = {
+        normalize_text(column): column
+        for column in columns
     }
 
-    for column in row.index:
-        if normalize_text(column) in wanted:
+    for name in possible_names:
+        key = normalize_text(name)
+
+        if key in normalized_columns:
             value = safe_text(
-                row[column]
+                row[normalized_columns[key]]
             )
 
             if value:
@@ -735,9 +630,14 @@ def get_value(
     return ""
 
 
+# ============================================================
+# SERIES DETECTION
+# ============================================================
+
 def detect_series(
     row: pd.Series,
 ) -> Tuple[str, Optional[float]]:
+
     series = get_value(
         row,
         [
@@ -791,17 +691,18 @@ def detect_series(
             if name:
                 return (
                     name,
-                    float(
-                        match.group(2)
-                    ),
+                    float(match.group(2)),
                 )
 
     return "", None
 
 
-def detect_status(
-    row: pd.Series,
-) -> str:
+# ============================================================
+# STATUS / GENRE
+# ============================================================
+
+def detect_status(row: pd.Series) -> str:
+
     shelf = get_value(
         row,
         [
@@ -810,28 +711,22 @@ def detect_status(
         ],
     )
 
-    shelf_key = normalize_text(
-        shelf
-    )
+    shelf_key = normalize_text(shelf)
 
     if "currently" in shelf_key:
         return "Currently Reading"
 
-    if (
-        shelf_key == "read"
-        or (
-            "read" in shelf_key
-            and "to read" not in shelf_key
-        )
-    ):
+    if shelf_key == "read":
+        return "Read"
+
+    if "read" in shelf_key and "to read" not in shelf_key:
         return "Read"
 
     return "Want to Read"
 
 
-def detect_genre(
-    row: pd.Series,
-) -> str:
+def detect_genre(row: pd.Series) -> str:
+
     genre = get_value(
         row,
         [
@@ -847,12 +742,18 @@ def detect_genre(
     return "Uncategorized"
 
 
+# ============================================================
+# GOODREADS IMPORT
+# ============================================================
+
 def normalize_goodreads_csv(
     dataframe: pd.DataFrame,
 ) -> pd.DataFrame:
+
     records = []
 
     for index, row in dataframe.iterrows():
+
         title = get_value(
             row,
             ["Title"],
@@ -869,9 +770,7 @@ def normalize_goodreads_csv(
         if not title and not author:
             continue
 
-        series, series_number = detect_series(
-            row
-        )
+        series, series_number = detect_series(row)
 
         rating = parse_number(
             get_value(
@@ -919,8 +818,7 @@ def normalize_goodreads_csv(
                 ),
                 "year": (
                     int(year)
-                    if year is not None
-                    and year > 0
+                    if year is not None and year > 0
                     else None
                 ),
                 "cover": cover,
@@ -956,7 +854,9 @@ def lookup_openlibrary(
     title: str,
     author: str,
 ) -> dict:
+
     try:
+
         response = requests.get(
             "https://openlibrary.org/search.json",
             params={
@@ -985,11 +885,9 @@ def lookup_openlibrary(
 
         best = docs[0]
 
-        cover_id = best.get(
-            "cover_i"
-        )
-
         cover = ""
+
+        cover_id = best.get("cover_i")
 
         if cover_id:
             cover = (
@@ -997,15 +895,8 @@ def lookup_openlibrary(
                 f"b/id/{cover_id}-L.jpg"
             )
 
-        subjects = (
-            best.get("subject")
-            or []
-        )
-
-        genres = (
-            best.get("genre")
-            or []
-        )
+        subjects = best.get("subject") or []
+        genres = best.get("genre") or []
 
         genre = ""
 
@@ -1016,10 +907,7 @@ def lookup_openlibrary(
 
         series = ""
 
-        series_values = (
-            best.get("series")
-            or []
-        )
+        series_values = best.get("series") or []
 
         if series_values:
             series = series_values[0]
@@ -1042,6 +930,7 @@ def enrich_books(
     dataframe: pd.DataFrame,
     limit: int = 75,
 ) -> pd.DataFrame:
+
     if dataframe.empty:
         return dataframe
 
@@ -1049,28 +938,20 @@ def enrich_books(
     checked = 0
 
     for index in result.index:
+
         missing_cover = not safe_text(
-            result.at[
-                index,
-                "cover",
-            ]
+            result.at[index, "cover"]
         )
 
         missing_genre = (
             safe_text(
-                result.at[
-                    index,
-                    "genre",
-                ]
+                result.at[index, "genre"]
             )
             == "Uncategorized"
         )
 
         missing_series = not safe_text(
-            result.at[
-                index,
-                "series",
-            ]
+            result.at[index, "series"]
         )
 
         if not (
@@ -1085,45 +966,21 @@ def enrich_books(
 
         info = lookup_openlibrary(
             safe_text(
-                result.at[
-                    index,
-                    "title",
-                ]
+                result.at[index, "title"]
             ),
             safe_text(
-                result.at[
-                    index,
-                    "author",
-                ]
+                result.at[index, "author"]
             ),
         )
 
-        if (
-            missing_cover
-            and info.get("cover")
-        ):
-            result.at[
-                index,
-                "cover",
-            ] = info["cover"]
+        if missing_cover and info.get("cover"):
+            result.at[index, "cover"] = info["cover"]
 
-        if (
-            missing_genre
-            and info.get("genre")
-        ):
-            result.at[
-                index,
-                "genre",
-            ] = info["genre"]
+        if missing_genre and info.get("genre"):
+            result.at[index, "genre"] = info["genre"]
 
-        if (
-            missing_series
-            and info.get("series")
-        ):
-            result.at[
-                index,
-                "series",
-            ] = info["series"]
+        if missing_series and info.get("series"):
+            result.at[index, "series"] = info["series"]
 
         checked += 1
 
@@ -1135,6 +992,7 @@ def enrich_books(
 # ============================================================
 
 def create_demo_library():
+
     demo = [
         (
             "Lillian Lark",
@@ -1230,9 +1088,8 @@ def create_demo_library():
 
     records = []
 
-    for number, item in enumerate(
-        demo
-    ):
+    for number, item in enumerate(demo):
+
         (
             author,
             title,
@@ -1258,9 +1115,7 @@ def create_demo_library():
             }
         )
 
-    return pd.DataFrame(
-        records
-    )
+    return pd.DataFrame(records)
 
 
 # ============================================================
@@ -1274,22 +1129,23 @@ def filter_books(
     status: str,
     sort_by: str,
 ) -> pd.DataFrame:
+
     if dataframe.empty:
         return dataframe
 
     result = dataframe.copy()
 
-    search_value = normalize_text(
-        search
-    )
+    search_value = normalize_text(search)
 
     if search_value:
+
         mask = (
             result["title"]
             .map(normalize_text)
             .str.contains(
                 search_value,
                 na=False,
+                regex=False,
             )
             |
             result["author"]
@@ -1297,6 +1153,7 @@ def filter_books(
             .str.contains(
                 search_value,
                 na=False,
+                regex=False,
             )
             |
             result["series"]
@@ -1304,6 +1161,7 @@ def filter_books(
             .str.contains(
                 search_value,
                 na=False,
+                regex=False,
             )
             |
             result["genre"]
@@ -1311,6 +1169,7 @@ def filter_books(
             .str.contains(
                 search_value,
                 na=False,
+                regex=False,
             )
         )
 
@@ -1327,6 +1186,7 @@ def filter_books(
         ]
 
     if sort_by == "Author A–Z":
+
         result = result.sort_values(
             ["author", "title"],
             key=lambda s:
@@ -1336,12 +1196,10 @@ def filter_books(
         )
 
     elif sort_by == "Author Z–A":
+
         result = result.sort_values(
             ["author", "title"],
-            ascending=[
-                False,
-                True,
-            ],
+            ascending=[False, True],
             key=lambda s:
                 s.str.lower()
                 if s.dtype == "object"
@@ -1349,33 +1207,36 @@ def filter_books(
         )
 
     elif sort_by == "Title A–Z":
+
         result = result.sort_values(
             "title",
-            key=lambda s:
-                s.str.lower(),
+            key=lambda s: s.str.lower(),
         )
 
     elif sort_by == "Title Z–A":
+
         result = result.sort_values(
             "title",
             ascending=False,
-            key=lambda s:
-                s.str.lower(),
+            key=lambda s: s.str.lower(),
         )
 
     elif sort_by == "Highest Rated":
+
         result = result.sort_values(
             "rating",
             ascending=False,
         )
 
     elif sort_by == "Lowest Rated":
+
         result = result.sort_values(
             "rating",
             ascending=True,
         )
 
     elif sort_by == "Newest":
+
         result = result.sort_values(
             "year",
             ascending=False,
@@ -1383,27 +1244,21 @@ def filter_books(
         )
 
     elif sort_by == "Oldest":
+
         result = result.sort_values(
             "year",
             ascending=True,
             na_position="last",
         )
 
-    elif sort_by == "Read":
-        result = result[
-            result["status"] == "Read"
-        ]
+    elif sort_by in {
+        "Read",
+        "Currently Reading",
+        "Want to Read",
+    }:
 
-    elif sort_by == "Currently Reading":
         result = result[
-            result["status"]
-            == "Currently Reading"
-        ]
-
-    elif sort_by == "Want to Read":
-        result = result[
-            result["status"]
-            == "Want to Read"
+            result["status"] == sort_by
         ]
 
     return result
@@ -1414,6 +1269,7 @@ def filter_books(
 # ============================================================
 
 def stars(rating) -> str:
+
     try:
         value = float(rating)
     except (
@@ -1440,6 +1296,7 @@ def stars(rating) -> str:
 
 
 def render_book(book: dict):
+
     cover = safe_text(
         book.get("cover")
     )
@@ -1474,11 +1331,11 @@ def render_book(book: dict):
         "series_number"
     )
 
+    number_text = ""
+
     if (
         series_number is not None
-        and not pd.isna(
-            series_number
-        )
+        and not pd.isna(series_number)
     ):
         try:
             number_text = (
@@ -1489,38 +1346,42 @@ def render_book(book: dict):
             ValueError,
         ):
             number_text = ""
-    else:
-        number_text = ""
 
     if cover:
+
         image = (
             f'<img class="book-cover" '
             f'src="{cover}" '
             f'alt="Book cover">'
         )
+
     else:
+
         image = (
             '<div class="book-placeholder">'
             "✦"
             "</div>"
         )
 
+    display_title = title
+
+    if number_text:
+        display_title += f" · {number_text}"
+
     st.markdown(
         f"""
         <div class="book-row">
+
             {image}
 
             <div class="book-details">
+
                 <div class="book-title">
-                    {title}
-                    {
-                        " · " + number_text
-                        if number_text
-                        else ""
-                    }
+                    {display_title}
                 </div>
 
                 <div class="book-meta">
+
                     {genre}
 
                     <span class="book-status">
@@ -1530,8 +1391,11 @@ def render_book(book: dict):
                     <span class="book-rating">
                         {stars(rating)}
                     </span>
+
                 </div>
+
             </div>
+
         </div>
         """,
         unsafe_allow_html=True,
@@ -1545,26 +1409,30 @@ def render_book(book: dict):
 def build_tree(
     dataframe: pd.DataFrame,
 ) -> Dict:
+
     tree = {}
 
     if dataframe.empty:
         return tree
 
-    for author in sorted(
+    authors = sorted(
         dataframe["author"]
         .dropna()
         .unique(),
         key=str.lower,
-    ):
+    )
+
+    for author in authors:
+
         author_df = dataframe[
-            dataframe["author"]
-            == author
+            dataframe["author"] == author
         ]
 
         series = {}
         standalone = []
 
         for _, row in author_df.iterrows():
+
             record = row.to_dict()
 
             series_name = safe_text(
@@ -1572,35 +1440,27 @@ def build_tree(
             )
 
             if series_name:
+
                 series.setdefault(
                     series_name,
                     [],
                 ).append(record)
+
             else:
-                standalone.append(
-                    record
-                )
+
+                standalone.append(record)
 
         for series_name in series:
+
             series[series_name] = sorted(
                 series[series_name],
                 key=lambda book: (
-                    book.get(
-                        "series_number"
-                    )
-                    is None,
-                    book.get(
-                        "series_number"
-                    )
-                    if book.get(
-                        "series_number"
-                    )
-                    is not None
+                    book.get("series_number") is None,
+                    book.get("series_number")
+                    if book.get("series_number") is not None
                     else 9999,
                     safe_text(
-                        book.get(
-                            "title"
-                        )
+                        book.get("title")
                     ).lower(),
                 ),
             )
@@ -1617,9 +1477,7 @@ def build_tree(
                 standalone,
                 key=lambda book:
                     safe_text(
-                        book.get(
-                            "title"
-                        )
+                        book.get("title")
                     ).lower(),
             ),
         }
@@ -1630,11 +1488,11 @@ def build_tree(
 def render_tree(
     dataframe: pd.DataFrame,
 ):
-    tree = build_tree(
-        dataframe
-    )
+
+    tree = build_tree(dataframe)
 
     if not tree:
+
         st.markdown(
             """
             <div style="
@@ -1649,6 +1507,7 @@ def render_tree(
             """,
             unsafe_allow_html=True,
         )
+
         return
 
     st.markdown(
@@ -1671,69 +1530,70 @@ def render_tree(
         total_author_books = (
             sum(
                 len(books)
-                for books
-                in author_data[
-                    "series"
-                ].values()
+                for books in author_data["series"].values()
             )
-            + len(
-                author_data[
-                    "standalone"
-                ]
-            )
+            + len(author_data["standalone"])
+        )
+
+        book_word = (
+            "book"
+            if total_author_books == 1
+            else "books"
         )
 
         author_label = (
             f"✦  {author}  ·  "
-            f"{total_author_books} "
-            f"{'book' if total_author_books == 1 else 'books'}"
+            f"{total_author_books} {book_word}"
         )
 
         with st.expander(
             author_label,
             expanded=False,
         ):
-            series_data = author_data[
-                "series"
-            ]
 
-            for (
-                series_name,
-                books,
-            ) in series_data.items():
+            series_data = author_data["series"]
+
+            for series_name, books in series_data.items():
+
+                book_word = (
+                    "book"
+                    if len(books) == 1
+                    else "books"
+                )
 
                 series_label = (
                     f"❧  {series_name}  ·  "
-                    f"{len(books)} "
-                    f"{'book' if len(books) == 1 else 'books'}"
+                    f"{len(books)} {book_word}"
                 )
 
                 with st.expander(
                     series_label,
                     expanded=False,
                 ):
-                    for book in books:
-                        render_book(
-                            book
-                        )
 
-            standalone = author_data[
-                "standalone"
-            ]
+                    for book in books:
+                        render_book(book)
+
+            standalone = author_data["standalone"]
 
             if standalone:
+
+                book_word = (
+                    "book"
+                    if len(standalone) == 1
+                    else "books"
+                )
+
                 with st.expander(
                     (
                         f"❦  Standalone Books  ·  "
-                        f"{len(standalone)} "
-                        f"{'book' if len(standalone) == 1 else 'books'}"
+                        f"{len(standalone)} {book_word}"
                     ),
                     expanded=False,
                 ):
+
                     for book in standalone:
-                        render_book(
-                            book
-                        )
+                        render_book(book)
 
 
 # ============================================================
@@ -1743,11 +1603,11 @@ def render_tree(
 def render_header(
     dataframe: pd.DataFrame,
 ):
+
     total = len(dataframe)
 
     authors = (
-        dataframe["author"]
-        .nunique()
+        dataframe["author"].nunique()
         if not dataframe.empty
         else 0
     )
@@ -1758,8 +1618,7 @@ def render_header(
             .astype(str)
             .str.strip()
             != ""
-        ]["series"]
-        .nunique()
+        ]["series"].nunique()
         if not dataframe.empty
         else 0
     )
@@ -1858,8 +1717,7 @@ def render_controls(
     genres = sorted(
         [
             safe_text(value)
-            for value
-            in dataframe["genre"]
+            for value in dataframe["genre"]
             .dropna()
             .unique()
             if safe_text(value)
@@ -1867,10 +1725,9 @@ def render_controls(
         key=str.lower,
     )
 
-    genre_options = (
-        ["All Genres"]
-        + genres
-    )
+    genre_options = [
+        "All Genres"
+    ] + genres
 
     status_options = [
         "All Statuses",
@@ -1894,7 +1751,8 @@ def render_controls(
     ]
 
     st.markdown(
-        "### Find a Book"
+        '<div class="control-heading">Find a Book</div>',
+        unsafe_allow_html=True,
     )
 
     c1, c2, c3, c4 = st.columns(
@@ -1902,6 +1760,7 @@ def render_controls(
     )
 
     with c1:
+
         search = st.text_input(
             "Search",
             placeholder=(
@@ -1910,18 +1769,21 @@ def render_controls(
         )
 
     with c2:
+
         genre = st.selectbox(
             "Genre",
             genre_options,
         )
 
     with c3:
+
         status = st.selectbox(
             "Status",
             status_options,
         )
 
     with c4:
+
         sort_by = st.selectbox(
             "Sort",
             sort_options,
@@ -1941,13 +1803,14 @@ def render_controls(
 # ============================================================
 
 def render_sidebar():
+
     with st.sidebar:
 
         st.markdown(
             "# 🌿 My Book Tree"
         )
 
-        st.markdown(
+        st.caption(
             "Your library, arranged like "
             "a literary family tree."
         )
@@ -1958,15 +1821,11 @@ def render_sidebar():
             "### Appearance"
         )
 
-        theme_names = list(
-            THEMES.keys()
-        )
+        theme_names = list(THEMES.keys())
 
-        current_theme = (
-            st.session_state.get(
-                "theme",
-                theme_names[0],
-            )
+        current_theme = st.session_state.get(
+            "theme",
+            theme_names[0],
         )
 
         if current_theme not in theme_names:
@@ -1981,13 +1840,10 @@ def render_sidebar():
             key="theme_choice",
         )
 
-        if (
-            selected_theme
-            != st.session_state.theme
-        ):
-            st.session_state.theme = (
-                selected_theme
-            )
+        if selected_theme != st.session_state.theme:
+
+            st.session_state.theme = selected_theme
+
             st.rerun()
 
         st.divider()
@@ -2016,6 +1872,7 @@ def render_sidebar():
             if file_hash != previous_hash:
 
                 try:
+
                     uploaded_df = pd.read_csv(
                         io.BytesIO(
                             uploaded.getvalue()
@@ -2029,35 +1886,24 @@ def render_sidebar():
                     )
 
                     if normalized.empty:
+
                         st.error(
                             "I couldn't find any "
                             "recognizable books in "
                             "that CSV."
                         )
+
                     else:
-                        st.session_state.books = (
-                            normalized
-                        )
 
-                        st.session_state.library_loaded = (
-                            True
-                        )
-
-                        st.session_state.library_source = (
-                            uploaded.name
-                        )
-
-                        st.session_state.upload_hash = (
-                            file_hash
-                        )
-
-                        st.session_state.enrichment_done = (
-                            False
-                        )
+                        st.session_state.books = normalized
+                        st.session_state.library_loaded = True
+                        st.session_state.library_source = uploaded.name
+                        st.session_state.upload_hash = file_hash
 
                         st.rerun()
 
                 except Exception as error:
+
                     st.error(
                         f"Could not read CSV: {error}"
                     )
@@ -2073,27 +1919,24 @@ def render_sidebar():
                 "Find missing covers & genres",
                 use_container_width=True,
             ):
+
                 with st.spinner(
                     "Looking up book information..."
                 ):
-                    st.session_state.books = (
-                        enrich_books(
-                            st.session_state.books
-                        )
-                    )
 
-                st.session_state.enrichment_done = (
-                    True
-                )
+                    st.session_state.books = enrich_books(
+                        st.session_state.books
+                    )
 
                 st.success(
                     "Finished checking the library."
                 )
 
         else:
+
             st.caption(
-                "A small sample library is shown "
-                "until you import your Goodreads CSV."
+                "A sample library is shown until "
+                "you import your Goodreads CSV."
             )
 
         st.divider()
@@ -2102,21 +1945,14 @@ def render_sidebar():
             "Use sample library",
             use_container_width=True,
         ):
+
             st.session_state.books = (
                 create_demo_library()
             )
 
-            st.session_state.library_loaded = (
-                False
-            )
-
-            st.session_state.library_source = (
-                "Sample library"
-            )
-
-            st.session_state.upload_hash = (
-                None
-            )
+            st.session_state.library_loaded = False
+            st.session_state.library_source = "Sample library"
+            st.session_state.upload_hash = None
 
             st.rerun()
 
@@ -2133,24 +1969,18 @@ def main():
     )
 
     if theme_name not in THEMES:
-        theme_name = (
-            "Velvet Conservatory"
-        )
-        st.session_state.theme = (
-            theme_name
-        )
 
-    theme = THEMES[
-        theme_name
-    ]
+        theme_name = "Velvet Conservatory"
+
+        st.session_state.theme = theme_name
+
+    theme = THEMES[theme_name]
 
     apply_theme(theme)
 
     render_sidebar()
 
-    books = st.session_state.get(
-        "books"
-    )
+    books = st.session_state.get("books")
 
     if not isinstance(
         books,
@@ -2162,9 +1992,7 @@ def main():
         if not st.session_state.library_loaded:
             st.session_state.books = books
 
-    render_header(
-        books
-    )
+    render_header(books)
 
     filtered_books = render_controls(
         books
@@ -2172,9 +2000,7 @@ def main():
 
     st.divider()
 
-    render_tree(
-        filtered_books
-    )
+    render_tree(filtered_books)
 
     st.markdown(
         """
@@ -2194,3 +2020,4 @@ def main():
 
 if __name__ == "__main__":
     main()
+```
