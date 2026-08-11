@@ -1,124 +1,617 @@
-"""My Book Tree — ancestry-style book library."""
-
 import io
 import re
-import html
 import hashlib
 import unicodedata
-from urllib.parse import quote_plus
+from typing import Dict, List, Optional, Tuple
 
 import pandas as pd
 import requests
 import streamlit as st
 
 
+# ============================================================
+# PAGE SETUP
+# ============================================================
+
 st.set_page_config(
     page_title="My Book Tree",
     page_icon="🌿",
     layout="wide",
-    initial_sidebar_state="collapsed",
+    initial_sidebar_state="expanded",
 )
 
-APP_VERSION = "1.0.0"
+
+# ============================================================
+# THEMES
+# ============================================================
 
 THEMES = {
     "Velvet Conservatory": {
-        "bg": "#160F16",
+        "background": "#160F16",
         "surface": "#211622",
-        "surface_2": "#2D1B2B",
-        "ink": "#F7EAF0",
-        "muted": "#C9AEBB",
-        "accent": "#D46A8A",
+        "surface_alt": "#2C1A2B",
+        "text": "#F7EAF0",
+        "muted": "#C8AEBB",
+        "accent": "#D36A8A",
         "accent_2": "#4E9A78",
-        "line": "#A54E70",
-        "node": "#2A1725",
-        "leaf": "#E8B4C8",
-        "shadow": "rgba(0,0,0,.38)",
-        "font_head": "Cormorant Garamond",
-        "font_body": "Lora",
+        "border": "#74405A",
+        "branch": "#87516A",
+        "shadow": "rgba(0,0,0,.45)",
+        "heading": "Cormorant Garamond",
+        "body": "Lora",
     },
     "Midnight Library": {
-        "bg": "#0C1220",
-        "surface": "#121B2D",
-        "surface_2": "#18243A",
-        "ink": "#EEF2FF",
+        "background": "#0B101A",
+        "surface": "#111B2B",
+        "surface_alt": "#18243A",
+        "text": "#EEF2FF",
         "muted": "#AAB7D4",
-        "accent": "#8D7BE7",
+        "accent": "#9684EF",
         "accent_2": "#5EA7C7",
-        "line": "#6357A5",
-        "node": "#141F34",
-        "leaf": "#B8B0F2",
-        "shadow": "rgba(0,0,0,.45)",
-        "font_head": "Cinzel",
-        "font_body": "Libre Baskerville",
+        "border": "#4C4B79",
+        "branch": "#5F6598",
+        "shadow": "rgba(0,0,0,.5)",
+        "heading": "Cinzel",
+        "body": "Libre Baskerville",
     },
     "Oxblood & Rose": {
-        "bg": "#1A0C0E",
-        "surface": "#281316",
-        "surface_2": "#35191E",
-        "ink": "#F8E9E5",
-        "muted": "#D1A8A4",
-        "accent": "#C34D62",
-        "accent_2": "#8D6A86",
-        "line": "#884052",
-        "node": "#2A1115",
-        "leaf": "#E0A0AA",
-        "shadow": "rgba(0,0,0,.43)",
-        "font_head": "Playfair Display",
-        "font_body": "Lora",
+        "background": "#190A0D",
+        "surface": "#281216",
+        "surface_alt": "#35191E",
+        "text": "#F8E9E5",
+        "muted": "#D0A5A2",
+        "accent": "#C94F66",
+        "accent_2": "#966A86",
+        "border": "#75404B",
+        "branch": "#8C4C58",
+        "shadow": "rgba(0,0,0,.5)",
+        "heading": "Playfair Display",
+        "body": "Lora",
     },
     "Enchanted Garden": {
-        "bg": "#091711",
-        "surface": "#10251C",
-        "surface_2": "#173126",
-        "ink": "#EEF6EA",
+        "background": "#091610",
+        "surface": "#10241B",
+        "surface_alt": "#173126",
+        "text": "#EEF6EA",
         "muted": "#B3CBB6",
-        "accent": "#B37BC4",
-        "accent_2": "#55A477",
-        "line": "#5F8F70",
-        "node": "#11291F",
-        "leaf": "#C69BD0",
-        "shadow": "rgba(0,0,0,.42)",
-        "font_head": "Libre Baskerville",
-        "font_body": "Cormorant Garamond",
+        "accent": "#B77BC8",
+        "accent_2": "#5AAA7B",
+        "border": "#47735B",
+        "branch": "#5D8C6C",
+        "shadow": "rgba(0,0,0,.48)",
+        "heading": "Libre Baskerville",
+        "body": "Cormorant Garamond",
     },
     "Sapphire Study": {
-        "bg": "#0B101A",
-        "surface": "#111B29",
-        "surface_2": "#18283B",
-        "ink": "#EDF5FA",
+        "background": "#090F18",
+        "surface": "#101A28",
+        "surface_alt": "#17283A",
+        "text": "#EDF5FA",
         "muted": "#A8C0D0",
-        "accent": "#4E91B8",
-        "accent_2": "#A65F93",
-        "line": "#3C6D8A",
-        "node": "#102235",
-        "leaf": "#8FC2DD",
-        "shadow": "rgba(0,0,0,.46)",
-        "font_head": "Bodoni Moda",
-        "font_body": "Libre Baskerville",
+        "accent": "#4E94BE",
+        "accent_2": "#A85D96",
+        "border": "#3D637C",
+        "branch": "#4A7892",
+        "shadow": "rgba(0,0,0,.5)",
+        "heading": "Bodoni Moda",
+        "body": "Libre Baskerville",
     },
 }
 
-STATUS_LABELS = {
-    "read": "Read",
-    "currently-reading": "Currently Reading",
-    "to-read": "Want to Read",
-}
 
-SORT_OPTIONS = [
-    "Author A–Z",
-    "Author Z–A",
-    "Title A–Z",
-    "Title Z–A",
-    "Highest rated",
-    "Lowest rated",
-    "Newest",
-    "Oldest",
-    "Read",
-    "Currently Reading",
-    "Want to Read",
-]
+# ============================================================
+# SESSION STATE
+# ============================================================
 
+def initialize_state():
+    defaults = {
+        "books": pd.DataFrame(),
+        "theme": "Velvet Conservatory",
+        "library_loaded": False,
+        "library_source": "",
+        "enrichment_done": False,
+    }
+
+    for key, value in defaults.items():
+        if key not in st.session_state:
+            st.session_state[key] = value
+
+
+initialize_state()
+
+
+# ============================================================
+# CSS
+# ============================================================
+
+def apply_theme(theme: dict):
+    st.markdown(
+        f"""
+        <style>
+
+        @import url(
+            'https://fonts.googleapis.com/css2?
+            family=Cormorant+Garamond:wght@400;500;600;700&
+            family=Lora:wght@400;500;600&
+            family=Cinzel:wght@400;500;600&
+            family=Libre+Baskerville:wght@400;700&
+            family=Playfair+Display:wght@400;500;600;700&
+            family=Bodoni+Moda:wght@400;500;600&
+            display=swap'
+        );
+
+        :root {{
+            --bg: {theme["background"]};
+            --surface: {theme["surface"]};
+            --surface-alt: {theme["surface_alt"]};
+            --text: {theme["text"]};
+            --muted: {theme["muted"]};
+            --accent: {theme["accent"]};
+            --accent2: {theme["accent_2"]};
+            --border: {theme["border"]};
+            --branch: {theme["branch"]};
+            --shadow: {theme["shadow"]};
+        }}
+
+        html,
+        body,
+        [data-testid="stAppViewContainer"],
+        [data-testid="stAppViewContainer"] > .main {{
+            background: var(--bg) !important;
+        }}
+
+        [data-testid="stHeader"] {{
+            background: transparent !important;
+        }}
+
+        .block-container {{
+            max-width: 1450px;
+            padding-top: 1.5rem;
+            padding-bottom: 4rem;
+        }}
+
+        p,
+        label,
+        .stMarkdown,
+        .stText,
+        .stCaption {{
+            color: var(--text);
+        }}
+
+        h1,
+        h2,
+        h3 {{
+            font-family: '{theme["heading"]}', Georgia, serif !important;
+            color: var(--text) !important;
+        }}
+
+        /* ----------------------------------------------------
+           TITLE
+        ---------------------------------------------------- */
+
+        .book-tree-header {{
+            text-align: center;
+            padding: 1rem 0 1.4rem;
+        }}
+
+        .book-tree-eyebrow {{
+            color: var(--accent);
+            text-transform: uppercase;
+            letter-spacing: .28em;
+            font-size: .68rem;
+            font-weight: 700;
+            margin-bottom: .3rem;
+        }}
+
+        .book-tree-title {{
+            font-family: '{theme["heading"]}', Georgia, serif;
+            font-size: clamp(3rem, 7vw, 6rem);
+            line-height: .9;
+            font-weight: 500;
+            color: var(--text);
+            margin: 0;
+            text-shadow: 0 8px 30px var(--shadow);
+        }}
+
+        .book-tree-subtitle {{
+            font-family: '{theme["body"]}', Georgia, serif;
+            color: var(--muted);
+            font-size: 1rem;
+            margin-top: .7rem;
+            letter-spacing: .03em;
+        }}
+
+        /* ----------------------------------------------------
+           VINE
+        ---------------------------------------------------- */
+
+        .vine {{
+            position: relative;
+            width: min(700px, 85%);
+            height: 42px;
+            margin: 1rem auto 0;
+            overflow: hidden;
+        }}
+
+        .vine::before {{
+            content: "";
+            position: absolute;
+            top: 20px;
+            left: -10%;
+            width: 120%;
+            height: 22px;
+            border-top: 2px solid var(--accent2);
+            border-radius: 50%;
+            transform: rotate(-2deg);
+            animation: grow-vine 2.3s ease-out forwards;
+            transform-origin: left center;
+        }}
+
+        .vine::after {{
+            content: "❧   ❦   ❧";
+            position: absolute;
+            top: 0;
+            left: 50%;
+            transform: translateX(-50%);
+            color: var(--accent2);
+            font-size: 1.1rem;
+            letter-spacing: .4rem;
+            opacity: 0;
+            animation: bloom-leaves 1.2s 1.4s ease-out forwards;
+        }}
+
+        @keyframes grow-vine {{
+            0% {{
+                clip-path: inset(0 100% 0 0);
+            }}
+            100% {{
+                clip-path: inset(0 0 0 0);
+            }}
+        }}
+
+        @keyframes bloom-leaves {{
+            0% {{
+                opacity: 0;
+                transform: translateX(-50%) scale(.4);
+            }}
+            100% {{
+                opacity: 1;
+                transform: translateX(-50%) scale(1);
+            }}
+        }}
+
+        /* ----------------------------------------------------
+           STATISTICS
+        ---------------------------------------------------- */
+
+        .stats {{
+            display: flex;
+            justify-content: center;
+            gap: clamp(2rem, 7vw, 6rem);
+            flex-wrap: wrap;
+            margin: .5rem 0 1.7rem;
+        }}
+
+        .stat {{
+            text-align: center;
+            min-width: 90px;
+        }}
+
+        .stat-number {{
+            display: block;
+            font-family: '{theme["heading"]}', Georgia, serif;
+            color: var(--accent);
+            font-size: 2rem;
+            line-height: 1;
+        }}
+
+        .stat-label {{
+            display: block;
+            color: var(--muted);
+            font-size: .65rem;
+            letter-spacing: .17em;
+            text-transform: uppercase;
+            margin-top: .35rem;
+        }}
+
+        /* ----------------------------------------------------
+           SIDEBAR
+        ---------------------------------------------------- */
+
+        [data-testid="stSidebar"] {{
+            background:
+                linear-gradient(
+                    180deg,
+                    var(--surface),
+                    var(--bg)
+                ) !important;
+            border-right:
+                1px solid var(--border);
+        }}
+
+        [data-testid="stSidebar"] * {{
+            color: var(--text);
+        }}
+
+        [data-testid="stSidebar"] h1,
+        [data-testid="stSidebar"] h2,
+        [data-testid="stSidebar"] h3 {{
+            font-family:
+                '{theme["heading"]}',
+                Georgia,
+                serif !important;
+        }}
+
+        /* ----------------------------------------------------
+           SELECTBOXES
+        ---------------------------------------------------- */
+
+        div[data-baseweb="select"] > div {{
+            background: var(--surface) !important;
+            border: 1px solid var(--border) !important;
+            color: var(--text) !important;
+        }}
+
+        div[data-baseweb="select"] span {{
+            color: var(--text) !important;
+        }}
+
+        ul[role="listbox"] {{
+            background: var(--surface-alt) !important;
+            border: 1px solid var(--border) !important;
+        }}
+
+        li[role="option"] {{
+            background: var(--surface-alt) !important;
+            color: var(--text) !important;
+        }}
+
+        li[role="option"]:hover {{
+            background: var(--surface) !important;
+            color: var(--accent) !important;
+        }}
+
+        /* ----------------------------------------------------
+           SEARCH
+        ---------------------------------------------------- */
+
+        .stTextInput > div > div {{
+            background: var(--surface) !important;
+            border-color: var(--border) !important;
+        }}
+
+        .stTextInput input {{
+            color: var(--text) !important;
+            background: transparent !important;
+        }}
+
+        .stTextInput input::placeholder {{
+            color: var(--muted) !important;
+        }}
+
+        /* ----------------------------------------------------
+           TREE
+        ---------------------------------------------------- */
+
+        .tree-introduction {{
+            text-align: center;
+            color: var(--muted);
+            font-family:
+                '{theme["body"]}',
+                Georgia,
+                serif;
+            font-size: .85rem;
+            letter-spacing: .08em;
+            text-transform: uppercase;
+            margin: .5rem 0 1.2rem;
+        }}
+
+        .tree-root {{
+            text-align: center;
+            margin-bottom: 1rem;
+        }}
+
+        .tree-root-title {{
+            display: inline-block;
+            font-family:
+                '{theme["heading"]}',
+                Georgia,
+                serif;
+            font-size: 1.45rem;
+            color: var(--accent);
+            padding: .35rem 1.5rem;
+            border-bottom: 1px solid var(--border);
+        }}
+
+        /* Native expander styling */
+
+        [data-testid="stExpander"] {{
+            background: transparent !important;
+            border: none !important;
+            margin-bottom: .35rem;
+        }}
+
+        [data-testid="stExpander"] details {{
+            border: none !important;
+            background: transparent !important;
+        }}
+
+        [data-testid="stExpander"] summary {{
+            background:
+                linear-gradient(
+                    90deg,
+                    var(--surface),
+                    var(--surface-alt)
+                ) !important;
+            border:
+                1px solid var(--border) !important;
+            border-radius:
+                35px 18px 35px 18px !important;
+            color: var(--text) !important;
+            padding: .65rem 1rem !important;
+            box-shadow:
+                0 8px 25px var(--shadow);
+            transition: all .2s ease;
+        }}
+
+        [data-testid="stExpander"] summary:hover {{
+            border-color: var(--accent) !important;
+            transform: translateX(3px);
+        }}
+
+        [data-testid="stExpander"] summary p {{
+            color: var(--text) !important;
+            font-family:
+                '{theme["heading"]}',
+                Georgia,
+                serif !important;
+            font-size: 1.05rem !important;
+        }}
+
+        [data-testid="stExpander"] > div {{
+            border-left:
+                2px solid var(--branch) !important;
+            margin-left: 1.35rem;
+            padding-left: 1.2rem !important;
+        }}
+
+        /* ----------------------------------------------------
+           BOOK ROWS
+        ---------------------------------------------------- */
+
+        .book-row {{
+            display: flex;
+            align-items: center;
+            gap: .85rem;
+            padding: .6rem .5rem;
+            margin: .35rem 0;
+            border-bottom:
+                1px solid
+                color-mix(
+                    in srgb,
+                    var(--border) 40%,
+                    transparent
+                );
+        }}
+
+        .book-cover {{
+            width: 48px;
+            height: 68px;
+            object-fit: cover;
+            border-radius: 3px 7px 7px 3px;
+            box-shadow: 5px 7px 14px var(--shadow);
+            border: 1px solid var(--border);
+            flex-shrink: 0;
+        }}
+
+        .book-placeholder {{
+            width: 48px;
+            height: 68px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: var(--surface-alt);
+            color: var(--accent);
+            border: 1px solid var(--border);
+            border-radius: 3px 7px 7px 3px;
+            flex-shrink: 0;
+            font-family:
+                '{theme["heading"]}',
+                Georgia,
+                serif;
+            font-size: 1.4rem;
+        }}
+
+        .book-details {{
+            min-width: 0;
+        }}
+
+        .book-title {{
+            font-family:
+                '{theme["heading"]}',
+                Georgia,
+                serif;
+            color: var(--text);
+            font-size: 1rem;
+            font-weight: 600;
+        }}
+
+        .book-meta {{
+            color: var(--muted);
+            font-family:
+                '{theme["body"]}',
+                Georgia,
+                serif;
+            font-size: .75rem;
+            margin-top: .2rem;
+        }}
+
+        .book-rating {{
+            color: var(--accent);
+            margin-left: .4rem;
+        }}
+
+        .book-status {{
+            border: 1px solid var(--border);
+            border-radius: 20px;
+            padding: .1rem .45rem;
+            margin-left: .35rem;
+            font-size: .62rem;
+        }}
+
+        /* ----------------------------------------------------
+           BUTTONS
+        ---------------------------------------------------- */
+
+        .stButton > button {{
+            background: transparent !important;
+            color: var(--text) !important;
+            border: 1px solid var(--border) !important;
+            border-radius: 999px !important;
+        }}
+
+        .stButton > button:hover {{
+            color: var(--accent) !important;
+            border-color: var(--accent) !important;
+        }}
+
+        /* ----------------------------------------------------
+           FILE UPLOADER
+        ---------------------------------------------------- */
+
+        [data-testid="stFileUploader"] section {{
+            background: var(--surface) !important;
+            border-color: var(--border) !important;
+        }}
+
+        /* ----------------------------------------------------
+           MOBILE
+        ---------------------------------------------------- */
+
+        @media (max-width: 700px) {{
+            .block-container {{
+                padding-left: .7rem;
+                padding-right: .7rem;
+            }}
+
+            .stats {{
+                gap: 1.5rem;
+            }}
+
+            .book-title {{
+                font-size: .92rem;
+            }}
+        }}
+
+        </style>
+        """,
+        unsafe_allow_html=True,
+    )
+
+
+# ============================================================
+# DATA HELPERS
+# ============================================================
 
 def safe_text(value, default=""):
     if value is None:
@@ -132,37 +625,39 @@ def safe_text(value, default=""):
 
     text = str(value).strip()
 
-    if text.lower() in {"nan", "none", "null"}:
-        return ""
+    if text.lower() in {
+        "nan",
+        "none",
+        "null",
+    }:
+        return default
 
     return text
 
 
-def normalize_key(value):
+def normalize_text(value):
+    text = safe_text(value)
+
+    text = unicodedata.normalize(
+        "NFKD",
+        text,
+    )
+
     text = (
-        unicodedata.normalize("NFKD", safe_text(value))
-        .encode("ascii", "ignore")
+        text.encode(
+            "ascii",
+            "ignore",
+        )
         .decode()
     )
 
     text = re.sub(
-        r"[^a-z0-9]+",
+        r"[^a-zA-Z0-9]+",
         " ",
-        text.lower(),
-    ).strip()
+        text,
+    )
 
-    return text
-
-
-def first_nonempty(row, names):
-    for name in names:
-        if name in row.index:
-            value = safe_text(row[name])
-
-            if value:
-                return value
-
-    return ""
+    return text.lower().strip()
 
 
 def parse_number(value):
@@ -177,31 +672,110 @@ def parse_number(value):
         return None
 
     try:
-        return float(match.group())
+        return float(
+            match.group()
+        )
     except ValueError:
         return None
 
 
-def parse_date(value):
-    text = safe_text(value)
+def find_column(
+    df: pd.DataFrame,
+    possible_names: List[str],
+):
+    normalized = {
+        normalize_text(column): column
+        for column in df.columns
+    }
 
-    if not text:
-        return pd.NaT
+    for name in possible_names:
+        key = normalize_text(name)
 
-    return pd.to_datetime(
-        text,
-        errors="coerce",
+        if key in normalized:
+            return normalized[key]
+
+    return None
+
+
+def get_value(
+    row: pd.Series,
+    possible_names: List[str],
+):
+    for name in possible_names:
+        column = find_column(
+            pd.DataFrame(
+                columns=row.index
+            ),
+            [name],
+        )
+
+        if column is not None:
+            value = safe_text(
+                row[column]
+            )
+
+            if value:
+                return value
+
+    # Faster fallback using normalized column names.
+    wanted = {
+        normalize_text(name)
+        for name in possible_names
+    }
+
+    for column in row.index:
+        if normalize_text(column) in wanted:
+            value = safe_text(
+                row[column]
+            )
+
+            if value:
+                return value
+
+    return ""
+
+
+def detect_series(
+    row: pd.Series,
+) -> Tuple[str, Optional[float]]:
+    series = get_value(
+        row,
+        [
+            "Series",
+            "Series Name",
+            "Series Title",
+        ],
     )
 
+    number = get_value(
+        row,
+        [
+            "Series Number",
+            "Series #",
+            "Book Number",
+            "Book #",
+        ],
+    )
 
-def parse_series_from_title(title):
-    title = safe_text(title)
+    series_number = (
+        parse_number(number)
+        if number
+        else None
+    )
+
+    if series:
+        return series, series_number
+
+    title = get_value(
+        row,
+        ["Title"],
+    )
 
     patterns = [
-        r"^(.*?)\s*\(\s*[^)]*(?:series|#)\s*#?\s*(\d+(?:\.\d+)?)\s*\)\s*$",
-        r"^(.*?)\s*,\s*(?:book|novel)\s+(\d+(?:\.\d+)?)\s*$",
-        r"^(.*?)\s+(?:book|#)\s*(\d+(?:\.\d+)?)\s*$",
-        r"^(.*?)\s*#\s*(\d+(?:\.\d+)?)\s*$",
+        r"^(.*?)\s*\(\s*[^)]*?(?:book|series)\s*#?\s*(\d+(?:\.\d+)?)\s*\)$",
+        r"^(.*?)\s+(?:book|#)\s*(\d+(?:\.\d+)?)$",
+        r"^(.*?)\s*,\s*(?:book|novel)\s+(\d+(?:\.\d+)?)$",
+        r"^(.*?)\s*#\s*(\d+(?:\.\d+)?)$",
     ]
 
     for pattern in patterns:
@@ -212,445 +786,243 @@ def parse_series_from_title(title):
         )
 
         if match:
-            series = match.group(1).strip(" -–—")
-            number = parse_number(match.group(2))
+            name = match.group(1).strip()
 
-            if series and number is not None:
-                return series, number
+            if name:
+                return (
+                    name,
+                    float(
+                        match.group(2)
+                    ),
+                )
 
     return "", None
 
 
-def detect_series(row):
-    series = first_nonempty(
+def detect_status(
+    row: pd.Series,
+) -> str:
+    shelf = get_value(
         row,
         [
-            "Series",
-            "series",
-            "Series Name",
-            "series_name",
-            "SeriesName",
-            "Series Title",
+            "Exclusive Shelf",
+            "Status",
         ],
     )
 
-    number = first_nonempty(
-        row,
-        [
-            "Series Number",
-            "Series #",
-            "series_number",
-            "series number",
-            "Book #",
-            "Book Number",
-        ],
+    shelf_key = normalize_text(
+        shelf
     )
 
-    parsed_number = (
-        parse_number(number)
-        if number
-        else None
-    )
+    if "currently" in shelf_key:
+        return "Currently Reading"
 
-    if series:
-        return series, parsed_number
+    if (
+        shelf_key == "read"
+        or (
+            "read" in shelf_key
+            and "to read" not in shelf_key
+        )
+    ):
+        return "Read"
 
-    title = first_nonempty(
-        row,
-        [
-            "Title",
-            "title",
-        ],
-    )
-
-    return parse_series_from_title(title)
+    return "Want to Read"
 
 
-def detect_genre(row):
-    explicit = first_nonempty(
+def detect_genre(
+    row: pd.Series,
+) -> str:
+    genre = get_value(
         row,
         [
             "Genre",
             "Genres",
-            "genre",
-            "genres",
             "Primary Genre",
-            "Genre(s)",
         ],
     )
 
-    if explicit:
-        return explicit.split(",")[0].strip()
+    if genre:
+        return genre.split(",")[0].strip()
 
-    return ""
-
-
-def detect_status(row):
-    shelf = first_nonempty(
-        row,
-        [
-            "Exclusive Shelf",
-            "exclusive shelf",
-            "Status",
-            "status",
-        ],
-    )
-
-    shelf_key = normalize_key(shelf).replace(
-        " ",
-        "-",
-    )
-
-    if shelf_key in {
-        "read",
-        "currently-reading",
-        "to-read",
-        "want-to-read",
-    }:
-        if shelf_key == "currently-reading":
-            return "currently-reading"
-
-        if shelf_key in {
-            "to-read",
-            "want-to-read",
-        }:
-            return "to-read"
-
-        return "read"
-
-    text = " ".join(
-        first_nonempty(
-            row,
-            [name],
-        )
-        for name in [
-            "Bookshelves",
-            "bookshelves",
-            "Exclusive Shelf",
-            "exclusive shelf",
-        ]
-    ).lower()
-
-    if (
-        "currently-reading" in text
-        or "currently reading" in text
-    ):
-        return "currently-reading"
-
-    if (
-        "read" in text
-        and "to-read" not in text
-        and "want-to-read" not in text
-    ):
-        return "read"
-
-    return "to-read"
+    return "Uncategorized"
 
 
-def clean_author(value):
-    return re.sub(
-        r"\s+",
-        " ",
-        safe_text(value),
-    ).strip()
-
-
-def clean_title(value):
-    return re.sub(
-        r"\s+",
-        " ",
-        safe_text(value),
-    ).strip()
-
-
-def book_id(row, index):
-    raw = first_nonempty(
-        row,
-        [
-            "Book Id",
-            "book_id",
-            "ISBN13",
-            "ISBN",
-            "Title",
-        ],
-    )
-
-    if not raw:
-        raw = f"row-{index}"
-
-    return hashlib.sha1(
-        f"{raw}-{index}".encode("utf-8")
-    ).hexdigest()[:12]
-
-
-def normalize_goodreads_dataframe(df):
-    if df.empty:
-        return pd.DataFrame()
-
+def normalize_goodreads_csv(
+    dataframe: pd.DataFrame,
+) -> pd.DataFrame:
     records = []
 
-    for index, row in df.iterrows():
-        title = clean_title(
-            first_nonempty(
-                row,
-                [
-                    "Title",
-                    "title",
-                ],
-            )
+    for index, row in dataframe.iterrows():
+        title = get_value(
+            row,
+            ["Title"],
         )
 
-        author = clean_author(
-            first_nonempty(
-                row,
-                [
-                    "Author",
-                    "author",
-                    "Author Name",
-                ],
-            )
+        author = get_value(
+            row,
+            [
+                "Author",
+                "Author Name",
+            ],
         )
 
         if not title and not author:
             continue
 
-        series, series_number = detect_series(row)
-        genre = detect_genre(row)
-        status = detect_status(row)
+        series, series_number = detect_series(
+            row
+        )
 
         rating = parse_number(
-            first_nonempty(
+            get_value(
                 row,
                 [
                     "My Rating",
-                    "my rating",
                     "Rating",
-                    "rating",
-                ],
-            )
-        )
-
-        avg_rating = parse_number(
-            first_nonempty(
-                row,
-                [
-                    "Average Rating",
-                    "average rating",
-                ],
-            )
-        )
-
-        date_read = parse_date(
-            first_nonempty(
-                row,
-                [
-                    "Date Read",
-                    "date read",
-                    "Date Added",
                 ],
             )
         )
 
         year = parse_number(
-            first_nonempty(
+            get_value(
                 row,
                 [
                     "Original Publication Year",
                     "Year Published",
-                    "year",
                 ],
             )
         )
 
-        cover = first_nonempty(
+        cover = get_value(
             row,
             [
                 "Cover URL",
-                "cover_url",
                 "Cover",
-                "cover",
             ],
         )
 
         records.append(
             {
-                "id": book_id(row, index),
+                "id": hashlib.sha1(
+                    f"{index}-{title}-{author}".encode()
+                ).hexdigest(),
                 "title": title or "Untitled",
                 "author": author or "Unknown Author",
                 "series": series,
                 "series_number": series_number,
-                "genre": genre or "Uncategorized",
-                "status": status,
+                "genre": detect_genre(row),
+                "status": detect_status(row),
                 "rating": (
                     rating
                     if rating is not None
                     else 0.0
                 ),
-                "avg_rating": (
-                    avg_rating
-                    if avg_rating is not None
-                    else 0.0
-                ),
-                "date": date_read,
                 "year": (
                     int(year)
-                    if year is not None and year > 0
+                    if year is not None
+                    and year > 0
                     else None
                 ),
                 "cover": cover,
             }
         )
 
-    return pd.DataFrame(records)
-
-
-@st.cache_data(ttl=60 * 60 * 24)
-def enrich_openlibrary(title, author):
-    query = (
-        f"title:{title} author:{author}"
+    return pd.DataFrame(
+        records,
+        columns=[
+            "id",
+            "title",
+            "author",
+            "series",
+            "series_number",
+            "genre",
+            "status",
+            "rating",
+            "year",
+            "cover",
+        ],
     )
 
-    url = "https://openlibrary.org/search.json"
 
+# ============================================================
+# OPEN LIBRARY
+# ============================================================
+
+@st.cache_data(
+    ttl=86400,
+    show_spinner=False,
+)
+def lookup_openlibrary(
+    title: str,
+    author: str,
+) -> dict:
     try:
         response = requests.get(
-            url,
+            "https://openlibrary.org/search.json",
             params={
-                "q": query,
+                "title": title,
+                "author": author,
                 "limit": 5,
-                "fields": (
-                    "title,author_name,cover_i,"
-                    "subject,genre,series,"
-                    "first_publish_year"
-                ),
             },
             timeout=8,
             headers={
-                "User-Agent": "My-Book-Tree/1.0"
+                "User-Agent": (
+                    "My-Book-Tree/1.0 "
+                    "(personal library app)"
+                )
             },
         )
 
         response.raise_for_status()
 
-        data = response.json()
-        docs = data.get(
+        docs = response.json().get(
             "docs",
             [],
         )
 
         if not docs:
-            return {
-                "cover": "",
-                "genre": "",
-                "series": "",
-            }
+            return {}
 
-        title_key = normalize_key(title)
-        author_key = normalize_key(author)
+        best = docs[0]
 
-        ranked = []
-
-        for doc in docs:
-            doc_title = normalize_key(
-                doc.get(
-                    "title",
-                    "",
-                )
-            )
-
-            doc_authors = " ".join(
-                doc.get(
-                    "author_name"
-                )
-                or []
-            )
-
-            doc_author_key = normalize_key(
-                doc_authors
-            )
-
-            title_score = int(
-                bool(
-                    title_key
-                    and (
-                        title_key == doc_title
-                        or title_key in doc_title
-                        or doc_title in title_key
-                    )
-                )
-            )
-
-            author_score = int(
-                bool(
-                    author_key
-                    and (
-                        author_key == doc_author_key
-                        or author_key in doc_author_key
-                        or doc_author_key in author_key
-                    )
-                )
-            )
-
-            ranked.append(
-                (
-                    title_score + author_score,
-                    doc,
-                )
-            )
-
-        ranked.sort(
-            key=lambda item: item[0],
-            reverse=True,
-        )
-
-        doc = ranked[0][1]
-
-        subjects = doc.get(
-            "subject"
-        ) or []
-
-        genres = doc.get(
-            "genre"
-        ) or []
-
-        genre = (
-            genres[0]
-            if genres
-            else (
-                subjects[0]
-                if subjects
-                else ""
-            )
-        )
-
-        series_values = doc.get(
-            "series"
-        ) or []
-
-        if isinstance(
-            series_values,
-            str,
-        ):
-            series_values = [
-                series_values
-            ]
-
-        series = (
-            series_values[0]
-            if series_values
-            else ""
-        )
-
-        cover_id = doc.get(
+        cover_id = best.get(
             "cover_i"
         )
 
-        cover = (
-            f"https://covers.openlibrary.org/"
-            f"b/id/{cover_id}-L.jpg"
-            if cover_id
-            else ""
+        cover = ""
+
+        if cover_id:
+            cover = (
+                "https://covers.openlibrary.org/"
+                f"b/id/{cover_id}-L.jpg"
+            )
+
+        subjects = (
+            best.get("subject")
+            or []
         )
+
+        genres = (
+            best.get("genre")
+            or []
+        )
+
+        genre = ""
+
+        if genres:
+            genre = genres[0]
+        elif subjects:
+            genre = subjects[0]
+
+        series = ""
+
+        series_values = (
+            best.get("series")
+            or []
+        )
+
+        if series_values:
+            series = series_values[0]
 
         return {
             "cover": cover,
@@ -663,45 +1035,38 @@ def enrich_openlibrary(title, author):
         ValueError,
         TypeError,
     ):
-        return {
-            "cover": "",
-            "genre": "",
-            "series": "",
-        }
+        return {}
 
 
-def enrich_missing_books(
-    df,
-    limit=80,
-):
-    if df.empty:
-        return df
+def enrich_books(
+    dataframe: pd.DataFrame,
+    limit: int = 75,
+) -> pd.DataFrame:
+    if dataframe.empty:
+        return dataframe
 
-    result = df.copy()
+    result = dataframe.copy()
     checked = 0
 
     for index in result.index:
-        needs_cover = not safe_text(
+        missing_cover = not safe_text(
             result.at[
                 index,
                 "cover",
             ]
         )
 
-        needs_genre = (
+        missing_genre = (
             safe_text(
                 result.at[
                     index,
                     "genre",
                 ]
             )
-            in {
-                "",
-                "Uncategorized",
-            }
+            == "Uncategorized"
         )
 
-        needs_series = not safe_text(
+        missing_series = not safe_text(
             result.at[
                 index,
                 "series",
@@ -709,28 +1074,32 @@ def enrich_missing_books(
         )
 
         if not (
-            needs_cover
-            or needs_genre
-            or needs_series
+            missing_cover
+            or missing_genre
+            or missing_series
         ):
             continue
 
         if checked >= limit:
             break
 
-        info = enrich_openlibrary(
-            result.at[
-                index,
-                "title",
-            ],
-            result.at[
-                index,
-                "author",
-            ],
+        info = lookup_openlibrary(
+            safe_text(
+                result.at[
+                    index,
+                    "title",
+                ]
+            ),
+            safe_text(
+                result.at[
+                    index,
+                    "author",
+                ]
+            ),
         )
 
         if (
-            needs_cover
+            missing_cover
             and info.get("cover")
         ):
             result.at[
@@ -739,7 +1108,7 @@ def enrich_missing_books(
             ] = info["cover"]
 
         if (
-            needs_genre
+            missing_genre
             and info.get("genre")
         ):
             result.at[
@@ -748,7 +1117,7 @@ def enrich_missing_books(
             ] = info["genre"]
 
         if (
-            needs_series
+            missing_series
             and info.get("series")
         ):
             result.at[
@@ -761,217 +1130,214 @@ def enrich_missing_books(
     return result
 
 
-def get_demo_books():
-    rows = [
-        [
+# ============================================================
+# DEMO LIBRARY
+# ============================================================
+
+def create_demo_library():
+    demo = [
+        (
             "Lillian Lark",
             "The Witches' Oath",
             "The Monstrous Series",
             1,
             "Fantasy Romance",
-            "read",
+            "Read",
             5,
-        ],
-        [
+        ),
+        (
             "Lillian Lark",
             "The Gargoyle's Captive",
             "The Monstrous Series",
             2,
             "Fantasy Romance",
-            "currently-reading",
+            "Currently Reading",
             4,
-        ],
-        [
+        ),
+        (
             "Lillian Lark",
             "The Coven's Promise",
             "The Monstrous Series",
             3,
             "Fantasy Romance",
-            "to-read",
+            "Want to Read",
             0,
-        ],
-        [
+        ),
+        (
             "Lillian Lark",
             "A House of Salt",
             "",
             None,
             "Fantasy Romance",
-            "read",
+            "Read",
             5,
-        ],
-        [
+        ),
+        (
             "Emily Wilde",
             "Emily Wilde's Encyclopaedia of Faeries",
             "Emily Wilde",
             1,
             "Fantasy",
-            "read",
+            "Read",
             5,
-        ],
-        [
+        ),
+        (
             "Emily Wilde",
             "Emily Wilde's Map of the Otherlands",
             "Emily Wilde",
             2,
             "Fantasy",
-            "to-read",
+            "Want to Read",
             0,
-        ],
-        [
+        ),
+        (
             "T. Kingfisher",
             "Nettle & Bone",
             "",
             None,
             "Fantasy",
-            "read",
+            "Read",
             4,
-        ],
-        [
+        ),
+        (
             "T. Kingfisher",
             "A Sorceress Comes to Call",
             "",
             None,
             "Fantasy",
-            "currently-reading",
+            "Currently Reading",
             5,
-        ],
-        [
+        ),
+        (
             "V. E. Schwab",
             "A Darker Shade of Magic",
             "Shades of Magic",
             1,
             "Fantasy",
-            "read",
+            "Read",
             5,
-        ],
-        [
+        ),
+        (
             "V. E. Schwab",
             "A Gathering of Shadows",
             "Shades of Magic",
             2,
             "Fantasy",
-            "to-read",
+            "Want to Read",
             0,
-        ],
+        ),
     ]
 
-    return pd.DataFrame(
-        [
+    records = []
+
+    for number, item in enumerate(
+        demo
+    ):
+        (
+            author,
+            title,
+            series,
+            series_number,
+            genre,
+            status,
+            rating,
+        ) = item
+
+        records.append(
             {
-                "id": f"demo-{i}",
-                "title": row[1],
-                "author": row[0],
-                "series": row[2],
-                "series_number": row[3],
-                "genre": row[4],
-                "status": row[5],
-                "rating": float(row[6]),
-                "avg_rating": 0.0,
-                "date": pd.NaT,
+                "id": f"demo-{number}",
+                "title": title,
+                "author": author,
+                "series": series,
+                "series_number": series_number,
+                "genre": genre,
+                "status": status,
+                "rating": float(rating),
                 "year": None,
                 "cover": "",
             }
-            for i, row in enumerate(rows)
-        ]
+        )
+
+    return pd.DataFrame(
+        records
     )
 
 
-def initialize_state():
-    defaults = {
-        "books": get_demo_books(),
-        "theme": "Velvet Conservatory",
-        "loaded_source": "demo",
-        "active_author": None,
-        "active_series": None,
-        "search": "",
-        "genre_filter": "All genres",
-        "status_filter": "All statuses",
-        "sort": "Author A–Z",
-    }
+# ============================================================
+# FILTERING
+# ============================================================
 
-    for key, value in defaults.items():
-        if key not in st.session_state:
-            st.session_state[key] = value
+def filter_books(
+    dataframe: pd.DataFrame,
+    search: str,
+    genre: str,
+    status: str,
+    sort_by: str,
+) -> pd.DataFrame:
+    if dataframe.empty:
+        return dataframe
 
+    result = dataframe.copy()
 
-def apply_filters(
-    df,
-    search,
-    genre,
-    status,
-    sort,
-):
-    if df.empty:
-        return df
-
-    result = df.copy()
-
-    search_norm = normalize_key(
+    search_value = normalize_text(
         search
     )
 
-    if search_norm:
-        pattern = re.escape(
-            search_norm
-        )
-
+    if search_value:
         mask = (
             result["title"]
-            .map(normalize_key)
+            .map(normalize_text)
             .str.contains(
-                pattern,
+                search_value,
                 na=False,
             )
-            | result["author"]
-            .map(normalize_key)
+            |
+            result["author"]
+            .map(normalize_text)
             .str.contains(
-                pattern,
+                search_value,
                 na=False,
             )
-            | result["series"]
-            .map(normalize_key)
+            |
+            result["series"]
+            .map(normalize_text)
             .str.contains(
-                pattern,
+                search_value,
                 na=False,
             )
-            | result["genre"]
-            .map(normalize_key)
+            |
+            result["genre"]
+            .map(normalize_text)
             .str.contains(
-                pattern,
+                search_value,
                 na=False,
             )
         )
 
         result = result[mask]
 
-    if genre != "All genres":
+    if genre != "All Genres":
         result = result[
             result["genre"] == genre
         ]
 
-    if status != "All statuses":
+    if status != "All Statuses":
         result = result[
             result["status"] == status
         ]
 
-    if sort == "Author A–Z":
+    if sort_by == "Author A–Z":
         result = result.sort_values(
-            [
-                "author",
-                "title",
-            ],
+            ["author", "title"],
             key=lambda s:
                 s.str.lower()
                 if s.dtype == "object"
                 else s,
         )
 
-    elif sort == "Author Z–A":
+    elif sort_by == "Author Z–A":
         result = result.sort_values(
-            [
-                "author",
-                "title",
-            ],
+            ["author", "title"],
             ascending=[
                 False,
                 True,
@@ -982,14 +1348,14 @@ def apply_filters(
                 else s,
         )
 
-    elif sort == "Title A–Z":
+    elif sort_by == "Title A–Z":
         result = result.sort_values(
             "title",
             key=lambda s:
                 s.str.lower(),
         )
 
-    elif sort == "Title Z–A":
+    elif sort_by == "Title Z–A":
         result = result.sort_values(
             "title",
             ascending=False,
@@ -997,115 +1363,252 @@ def apply_filters(
                 s.str.lower(),
         )
 
-    elif sort == "Highest rated":
+    elif sort_by == "Highest Rated":
         result = result.sort_values(
-            [
-                "rating",
-                "title",
-            ],
-            ascending=[
-                False,
-                True,
-            ],
+            "rating",
+            ascending=False,
         )
 
-    elif sort == "Lowest rated":
+    elif sort_by == "Lowest Rated":
         result = result.sort_values(
-            [
-                "rating",
-                "title",
-            ],
-            ascending=[
-                True,
-                True,
-            ],
+            "rating",
+            ascending=True,
         )
 
-    elif sort == "Newest":
+    elif sort_by == "Newest":
         result = result.sort_values(
             "year",
             ascending=False,
             na_position="last",
         )
 
-    elif sort == "Oldest":
+    elif sort_by == "Oldest":
         result = result.sort_values(
             "year",
             ascending=True,
             na_position="last",
         )
 
-    elif sort == "Read":
+    elif sort_by == "Read":
         result = result[
-            result["status"] == "read"
+            result["status"] == "Read"
         ]
 
-    elif sort == "Currently Reading":
+    elif sort_by == "Currently Reading":
         result = result[
             result["status"]
-            == "currently-reading"
+            == "Currently Reading"
         ]
 
-    elif sort == "Want to Read":
+    elif sort_by == "Want to Read":
         result = result[
-            result["status"] == "to-read"
+            result["status"]
+            == "Want to Read"
         ]
 
     return result
 
 
-def tree_structure(df):
-    structure = {}
+# ============================================================
+# BOOK DISPLAY
+# ============================================================
 
-    if df.empty:
-        return structure
-
-    for author, author_df in df.groupby(
-        "author",
-        sort=True,
+def stars(rating) -> str:
+    try:
+        value = float(rating)
+    except (
+        TypeError,
+        ValueError,
     ):
-        series_map = {}
+        value = 0
+
+    if value <= 0:
+        return "Not rated"
+
+    rounded = max(
+        0,
+        min(
+            5,
+            round(value),
+        ),
+    )
+
+    return (
+        "★" * rounded
+        + "☆" * (5 - rounded)
+    )
+
+
+def render_book(book: dict):
+    cover = safe_text(
+        book.get("cover")
+    )
+
+    title = safe_text(
+        book.get(
+            "title",
+            "Untitled",
+        )
+    )
+
+    genre = safe_text(
+        book.get(
+            "genre",
+            "Uncategorized",
+        )
+    )
+
+    status = safe_text(
+        book.get(
+            "status",
+            "Want to Read",
+        )
+    )
+
+    rating = book.get(
+        "rating",
+        0,
+    )
+
+    series_number = book.get(
+        "series_number"
+    )
+
+    if (
+        series_number is not None
+        and not pd.isna(
+            series_number
+        )
+    ):
+        try:
+            number_text = (
+                f"Book {float(series_number):g}"
+            )
+        except (
+            TypeError,
+            ValueError,
+        ):
+            number_text = ""
+    else:
+        number_text = ""
+
+    if cover:
+        image = (
+            f'<img class="book-cover" '
+            f'src="{cover}" '
+            f'alt="Book cover">'
+        )
+    else:
+        image = (
+            '<div class="book-placeholder">'
+            "✦"
+            "</div>"
+        )
+
+    st.markdown(
+        f"""
+        <div class="book-row">
+            {image}
+
+            <div class="book-details">
+                <div class="book-title">
+                    {title}
+                    {
+                        " · " + number_text
+                        if number_text
+                        else ""
+                    }
+                </div>
+
+                <div class="book-meta">
+                    {genre}
+
+                    <span class="book-status">
+                        {status}
+                    </span>
+
+                    <span class="book-rating">
+                        {stars(rating)}
+                    </span>
+                </div>
+            </div>
+        </div>
+        """,
+        unsafe_allow_html=True,
+    )
+
+
+# ============================================================
+# TREE
+# ============================================================
+
+def build_tree(
+    dataframe: pd.DataFrame,
+) -> Dict:
+    tree = {}
+
+    if dataframe.empty:
+        return tree
+
+    for author in sorted(
+        dataframe["author"]
+        .dropna()
+        .unique(),
+        key=str.lower,
+    ):
+        author_df = dataframe[
+            dataframe["author"]
+            == author
+        ]
+
+        series = {}
         standalone = []
 
-        for _, book in author_df.iterrows():
-            series = safe_text(
-                book["series"]
+        for _, row in author_df.iterrows():
+            record = row.to_dict()
+
+            series_name = safe_text(
+                record.get("series")
             )
 
-            if series:
-                series_map.setdefault(
-                    series,
+            if series_name:
+                series.setdefault(
+                    series_name,
                     [],
-                ).append(
-                    book.to_dict()
-                )
+                ).append(record)
             else:
                 standalone.append(
-                    book.to_dict()
+                    record
                 )
 
-        for name in series_map:
-            series_map[name] = sorted(
-                series_map[name],
+        for series_name in series:
+            series[series_name] = sorted(
+                series[series_name],
                 key=lambda book: (
-                    book["series_number"]
+                    book.get(
+                        "series_number"
+                    )
                     is None,
-                    (
-                        book["series_number"]
-                        if book["series_number"]
-                        is not None
-                        else 9999
-                    ),
+                    book.get(
+                        "series_number"
+                    )
+                    if book.get(
+                        "series_number"
+                    )
+                    is not None
+                    else 9999,
                     safe_text(
-                        book["title"]
+                        book.get(
+                            "title"
+                        )
                     ).lower(),
                 ),
             )
 
-        structure[author] = {
+        tree[author] = {
             "series": dict(
                 sorted(
-                    series_map.items(),
+                    series.items(),
                     key=lambda item:
                         item[0].lower(),
                 )
@@ -1114,1220 +1617,346 @@ def tree_structure(df):
                 standalone,
                 key=lambda book:
                     safe_text(
-                        book["title"]
+                        book.get(
+                            "title"
+                        )
                     ).lower(),
             ),
         }
 
-    return dict(
-        sorted(
-            structure.items(),
-            key=lambda item:
-                item[0].lower(),
-        )
+    return tree
+
+
+def render_tree(
+    dataframe: pd.DataFrame,
+):
+    tree = build_tree(
+        dataframe
     )
 
-
-def render_global_css(theme):
-    font_head = theme["font_head"]
-    font_body = theme["font_body"]
-
-    st.markdown(
-        f"""
-        <style>
-        @import url(
-            'https://fonts.googleapis.com/css2?
-            family={quote_plus(font_head)}:wght@400;500;600;700&
-            family={quote_plus(font_body)}:wght@400;500;600&
-            display=swap'
-        );
-
-        :root {{
-            --bt-bg: {theme["bg"]};
-            --bt-surface: {theme["surface"]};
-            --bt-surface-2: {theme["surface_2"]};
-            --bt-ink: {theme["ink"]};
-            --bt-muted: {theme["muted"]};
-            --bt-accent: {theme["accent"]};
-            --bt-accent2: {theme["accent_2"]};
-            --bt-line: {theme["line"]};
-            --bt-node: {theme["node"]};
-            --bt-leaf: {theme["leaf"]};
-            --bt-shadow: {theme["shadow"]};
-        }}
-
-        .stApp {{
-            background:
-                radial-gradient(
-                    circle at 15% 5%,
-                    color-mix(
-                        in srgb,
-                        var(--bt-accent) 12%,
-                        transparent
-                    ),
-                    transparent 28%
-                ),
-                radial-gradient(
-                    circle at 85% 20%,
-                    color-mix(
-                        in srgb,
-                        var(--bt-accent2) 10%,
-                        transparent
-                    ),
-                    transparent 26%
-                ),
-                var(--bt-bg);
-            color: var(--bt-ink);
-        }}
-
-        .stApp,
-        .stApp p,
-        .stApp label,
-        .stApp span,
-        .stApp div {{
-            font-family:
-                '{font_body}',
-                Georgia,
-                serif;
-        }}
-
-        h1,
-        h2,
-        h3,
-        .bt-title,
-        .bt-author-name,
-        .bt-series-name {{
-            font-family:
-                '{font_head}',
-                Georgia,
-                serif !important;
-        }}
-
-        [data-testid="stHeader"] {{
-            background: transparent;
-        }}
-
-        [data-testid="stToolbar"] {{
-            visibility: hidden;
-        }}
-
-        .block-container {{
-            max-width: 1500px;
-            padding-top: 1.2rem;
-            padding-bottom: 3rem;
-        }}
-
-        .bt-hero {{
-            position: relative;
-            padding: 1.1rem 1rem .5rem;
-            text-align: center;
-        }}
-
-        .bt-kicker {{
-            color: var(--bt-accent);
-            text-transform: uppercase;
-            letter-spacing: .24em;
-            font-size: .72rem;
-            font-weight: 700;
-            margin-bottom: .25rem;
-        }}
-
-        .bt-title {{
-            margin: 0;
-            color: var(--bt-ink);
-            font-size: clamp(
-                2.8rem,
-                6vw,
-                5.8rem
-            );
-            line-height: .95;
-            font-weight: 600;
-            text-shadow:
-                0 7px 25px var(--bt-shadow);
-        }}
-
-        .bt-subtitle {{
-            color: var(--bt-muted);
-            font-size: 1rem;
-            margin: .7rem auto 0;
-            max-width: 650px;
-        }}
-
-        .bt-vine-loader {{
-            height: 34px;
-            position: relative;
-            margin: .45rem auto .2rem;
-            max-width: 680px;
-            overflow: hidden;
-        }}
-
-        .bt-vine-loader::before {{
-            content: "";
-            position: absolute;
-            left: 50%;
-            top: 16px;
-            width: 130%;
-            height: 4px;
-            border-top:
-                2px solid var(--bt-accent2);
-            border-radius: 50%;
-            transform:
-                translateX(-50%)
-                rotate(-2deg);
-            transform-origin: center;
-            animation:
-                vineGrow 2.3s ease-out both;
-        }}
-
-        .bt-vine-loader::after {{
-            content: "❧  ❦  ❧";
-            position: absolute;
-            left: 50%;
-            top: 1px;
-            transform:
-                translateX(-50%);
-            color: var(--bt-accent2);
-            letter-spacing: .9rem;
-            font-size: 1.05rem;
-            animation:
-                leavesBloom 1.6s .6s ease-out both;
-        }}
-
-        @keyframes vineGrow {{
-            from {{
-                clip-path:
-                    inset(0 100% 0 0);
-            }}
-
-            to {{
-                clip-path:
-                    inset(0 0 0 0);
-            }}
-        }}
-
-        @keyframes leavesBloom {{
-            from {{
-                opacity: 0;
-                transform:
-                    translateX(-50%)
-                    scale(.35);
-            }}
-
-            to {{
-                opacity: 1;
-                transform:
-                    translateX(-50%)
-                    scale(1);
-            }}
-        }}
-
-        .bt-stat-row {{
-            display: flex;
-            justify-content: center;
-            gap: clamp(
-                1.5rem,
-                6vw,
-                5rem
-            );
-            margin: .4rem 0 1.2rem;
-            flex-wrap: wrap;
-        }}
-
-        .bt-stat {{
-            min-width: 100px;
-            text-align: center;
-        }}
-
-        .bt-stat-number {{
-            display: block;
-            font-family:
-                '{font_head}',
-                Georgia,
-                serif;
-            font-size: 2rem;
-            color: var(--bt-accent);
-            line-height: 1;
-        }}
-
-        .bt-stat-label {{
-            display: block;
-            margin-top: .25rem;
-            color: var(--bt-muted);
-            font-size: .72rem;
-            letter-spacing: .12em;
-            text-transform: uppercase;
-        }}
-
-        .bt-controls {{
-            background:
-                color-mix(
-                    in srgb,
-                    var(--bt-surface) 82%,
-                    transparent
-                );
-            border-top:
-                1px solid
-                color-mix(
-                    in srgb,
-                    var(--bt-line) 55%,
-                    transparent
-                );
-            border-bottom:
-                1px solid
-                color-mix(
-                    in srgb,
-                    var(--bt-line) 55%,
-                    transparent
-                );
-            padding: .8rem .4rem;
-            margin: .6rem 0 1.2rem;
-        }}
-
-        div[data-baseweb="select"] > div,
-        div[data-baseweb="input"] > div {{
-            background:
-                var(--bt-surface) !important;
-            color:
-                var(--bt-ink) !important;
-            border-color:
-                var(--bt-line) !important;
-        }}
-
-        div[data-baseweb="select"] *,
-        div[data-baseweb="input"] * {{
-            color:
-                var(--bt-ink) !important;
-        }}
-
-        ul[role="listbox"] {{
-            background:
-                var(--bt-surface-2) !important;
-            border-color:
-                var(--bt-line) !important;
-        }}
-
-        li[role="option"] {{
-            color:
-                var(--bt-ink) !important;
-            background:
-                var(--bt-surface-2) !important;
-        }}
-
-        li[role="option"]:hover,
-        li[role="option"][aria-selected="true"] {{
-            background:
-                var(--bt-node) !important;
-            color:
-                var(--bt-ink) !important;
-        }}
-
-        .stTextInput input {{
-            color:
-                var(--bt-ink) !important;
-            caret-color:
-                var(--bt-accent) !important;
-        }}
-
-        .stTextInput input::placeholder {{
-            color:
-                var(--bt-muted) !important;
-            opacity: 1;
-        }}
-
-        .stButton > button {{
-            border:
-                1px solid var(--bt-line);
-            background:
-                transparent;
-            color:
-                var(--bt-ink);
-            border-radius: 999px;
-            font-family:
-                '{font_body}',
-                Georgia,
-                serif;
-            transition: .2s ease;
-        }}
-
-        .stButton > button:hover {{
-            border-color:
-                var(--bt-accent);
-            color:
-                var(--bt-accent);
-            transform:
-                translateY(-1px);
-        }}
-
-        .bt-tree {{
-            position: relative;
-            padding:
-                1.2rem .4rem 2.4rem;
-        }}
-
-        .bt-tree-title {{
-            text-align: center;
-            font-family:
-                '{font_head}',
-                Georgia,
-                serif;
-            color:
-                var(--bt-muted);
-            letter-spacing: .16em;
-            text-transform: uppercase;
-            font-size: .68rem;
-            margin-bottom: 1.1rem;
-        }}
-
-        .bt-author-branch {{
-            position: relative;
-            margin: 0 auto 1.2rem;
-            max-width: 1250px;
-            padding: .25rem 0 1rem;
-        }}
-
-        .bt-author-node {{
-            position: relative;
-            display: inline-flex;
-            align-items: center;
-            gap: .55rem;
-            padding: .8rem 1.25rem;
-            margin-left: 3%;
-            color:
-                var(--bt-ink);
-            background:
-                var(--bt-node);
-            border:
-                1px solid var(--bt-line);
-            border-radius:
-                60% 55% 60% 48% /
-                48% 58% 45% 55%;
-            box-shadow:
-                0 12px 30px var(--bt-shadow);
-            text-decoration: none !important;
-        }}
-
-        .bt-author-node::before {{
-            content: "✦";
-            color:
-                var(--bt-accent);
-            font-size: .8rem;
-        }}
-
-        .bt-author-node.active {{
-            border-color:
-                var(--bt-accent);
-            box-shadow:
-                0 0 0 1px var(--bt-accent),
-                0 14px 34px var(--bt-shadow);
-        }}
-
-        .bt-author-name {{
-            font-size: 1.2rem;
-            font-weight: 600;
-        }}
-
-        .bt-children {{
-            position: relative;
-            margin:
-                .3rem 0 0 10%;
-            padding:
-                1rem 0 0 3.2rem;
-            border-left:
-                2px solid var(--bt-line);
-        }}
-
-        .bt-children::before {{
-            content: "";
-            position: absolute;
-            left: -2px;
-            top: 0;
-            width: 14px;
-            height: 14px;
-            border-radius: 50%;
-            background:
-                var(--bt-accent2);
-            transform:
-                translate(-50%, -50%);
-            box-shadow:
-                0 0 0 5px
-                color-mix(
-                    in srgb,
-                    var(--bt-accent2) 14%,
-                    transparent
-                );
-        }}
-
-        .bt-series-row,
-        .bt-standalone-row {{
-            position: relative;
-            margin: .8rem 0 1.25rem;
-        }}
-
-        .bt-series-row::before,
-        .bt-standalone-row::before {{
-            content: "";
-            position: absolute;
-            left: -3.2rem;
-            top: 1.15rem;
-            width: 3.2rem;
-            border-top:
-                2px solid var(--bt-line);
-        }}
-
-        .bt-series-node,
-        .bt-standalone-node {{
-            display: inline-flex;
-            align-items: center;
-            gap: .55rem;
-            padding: .55rem .9rem;
-            background:
-                var(--bt-surface-2);
-            border:
-                1px solid var(--bt-line);
-            color:
-                var(--bt-ink);
-            border-radius:
-                48% 52% 45% 55% /
-                55% 42% 58% 45%;
-            text-decoration: none !important;
-            box-shadow:
-                0 7px 18px var(--bt-shadow);
-        }}
-
-        .bt-series-node.active {{
-            border-color:
-                var(--bt-accent);
-        }}
-
-        .bt-series-name {{
-            font-size: 1rem;
-            font-weight: 600;
-        }}
-
-        .bt-series-count {{
-            color:
-                var(--bt-muted);
-            font-size: .72rem;
-        }}
-
-        .bt-books {{
-            position: relative;
-            margin:
-                .45rem 0 0 1.25rem;
-            padding:
-                .15rem 0 .1rem 2rem;
-            border-left:
-                1px dashed var(--bt-line);
-        }}
-
-        .bt-book {{
-            position: relative;
-            display: flex;
-            align-items: center;
-            gap: .8rem;
-            margin: .75rem 0;
-            min-height: 68px;
-        }}
-
-        .bt-book::before {{
-            content: "";
-            position: absolute;
-            left: -2rem;
-            top: 50%;
-            width: 2rem;
-            border-top:
-                1px dashed var(--bt-line);
-        }}
-
-        .bt-cover {{
-            width: 48px;
-            height: 68px;
-            object-fit: cover;
-            border-radius:
-                4px 8px 8px 4px;
-            border:
-                1px solid
-                color-mix(
-                    in srgb,
-                    var(--bt-accent) 55%,
-                    transparent
-                );
-            box-shadow:
-                5px 7px 14px var(--bt-shadow);
-            background:
-                var(--bt-surface);
-            flex: 0 0 auto;
-        }}
-
-        .bt-cover-placeholder {{
-            width: 48px;
-            height: 68px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            border-radius:
-                4px 8px 8px 4px;
-            border:
-                1px solid var(--bt-line);
-            background:
-                linear-gradient(
-                    145deg,
-                    var(--bt-surface-2),
-                    var(--bt-node)
-                );
-            color:
-                var(--bt-accent);
-            font-family:
-                '{font_head}',
-                Georgia,
-                serif;
-            font-size: 1.25rem;
-            flex: 0 0 auto;
-        }}
-
-        .bt-book-info {{
-            min-width: 0;
-        }}
-
-        .bt-book-title {{
-            color:
-                var(--bt-ink);
-            font-family:
-                '{font_head}',
-                Georgia,
-                serif;
-            font-size: 1rem;
-            font-weight: 600;
-            line-height: 1.1;
-        }}
-
-        .bt-book-meta {{
-            color:
-                var(--bt-muted);
-            font-size: .75rem;
-            margin-top: .25rem;
-        }}
-
-        .bt-status {{
-            display: inline-block;
-            margin-left: .35rem;
-            padding: .12rem .45rem;
-            border:
-                1px solid var(--bt-line);
-            border-radius: 999px;
-            font-size: .63rem;
-            letter-spacing: .04em;
-        }}
-
-        .bt-stars {{
-            color:
-                var(--bt-accent);
-            letter-spacing: .05em;
-        }}
-
-        .bt-empty {{
-            text-align: center;
-            padding: 4rem 1rem;
-            color:
-                var(--bt-muted);
-            font-family:
-                '{font_head}',
-                Georgia,
-                serif;
-            font-size: 1.4rem;
-        }}
-
-        .bt-footer {{
-            text-align: center;
-            color:
-                var(--bt-muted);
-            font-size: .75rem;
-            margin-top: 2.5rem;
-            opacity: .8;
-        }}
-
-        @media (max-width: 700px) {{
-            .bt-author-node {{
-                margin-left: 1%;
-            }}
-
-            .bt-children {{
-                margin-left: 4%;
-                padding-left: 2.2rem;
-            }}
-
-            .bt-series-row::before,
-            .bt-standalone-row::before {{
-                left: -2.2rem;
-                width: 2.2rem;
-            }}
-
-            .bt-book {{
-                gap: .55rem;
-            }}
-
-            .bt-cover,
-            .bt-cover-placeholder {{
-                width: 42px;
-                height: 60px;
-            }}
-        }}
-        </style>
-        """,
-        unsafe_allow_html=True,
-    )
-
-
-def render_header(df):
-    total = len(df)
-
-    authors = (
-        df["author"].nunique()
-        if not df.empty
-        else 0
-    )
-
-    series_count = (
-        df.loc[
-            df["series"]
-            .astype(str)
-            .str.strip()
-            != "",
-            "series",
-        ].nunique()
-        if not df.empty
-        else 0
-    )
-
-    read_count = (
-        int(
-            (
-                df["status"]
-                == "read"
-            ).sum()
-        )
-        if not df.empty
-        else 0
-    )
-
-    st.markdown(
-        f"""
-        <div class="bt-hero">
-            <div class="bt-kicker">
-                A living library
-            </div>
-
-            <div class="bt-title">
-                My Book Tree
-            </div>
-
-            <div class="bt-subtitle">
-                Authors at the roots · series among the branches ·
-                books at the leaves
-            </div>
-
-            <div class="bt-vine-loader"></div>
-        </div>
-
-        <div class="bt-stat-row">
-            <div class="bt-stat">
-                <span class="bt-stat-number">
-                    {total:,}
-                </span>
-                <span class="bt-stat-label">
-                    Books
-                </span>
-            </div>
-
-            <div class="bt-stat">
-                <span class="bt-stat-number">
-                    {authors:,}
-                </span>
-                <span class="bt-stat-label">
-                    Authors
-                </span>
-            </div>
-
-            <div class="bt-stat">
-                <span class="bt-stat-number">
-                    {series_count:,}
-                </span>
-                <span class="bt-stat-label">
-                    Series
-                </span>
-            </div>
-
-            <div class="bt-stat">
-                <span class="bt-stat-number">
-                    {read_count:,}
-                </span>
-                <span class="bt-stat-label">
-                    Read
-                </span>
-            </div>
-        </div>
-        """,
-        unsafe_allow_html=True,
-    )
-
-
-def read_tree_query(structure):
-    author = safe_text(
-        st.query_params.get(
-            "author",
-            "",
-        )
-    )
-
-    series = safe_text(
-        st.query_params.get(
-            "series",
-            "",
-        )
-    )
-
-    if author not in structure:
-        return None, None
-
-    if series == "__standalone__":
-        return author, "__standalone__"
-
-    if (
-        series
-        and series not in structure[
-            author
-        ]["series"]
-    ):
-        return author, None
-
-    return (
-        author,
-        series or None,
-    )
-
-
-def stars(rating):
-    try:
-        rating = float(rating)
-    except (
-        TypeError,
-        ValueError,
-    ):
-        rating = 0.0
-
-    if rating <= 0:
-        return "—"
-
-    full = max(
-        0,
-        min(
-            5,
-            int(
-                round(rating)
-            ),
-        ),
-    )
-
-    return (
-        "★" * full
-        + "☆" * (5 - full)
-    )
-
-
-def cover_html(book):
-    cover = safe_text(
-        book.get("cover")
-    )
-
-    if cover:
-        return (
-            '<img class="bt-cover" '
-            f'src="{html.escape(cover, quote=True)}" '
-            f'alt="Cover of '
-            f'{html.escape(safe_text(book.get("title")))}">'
-        )
-
-    return (
-        '<div class="bt-cover-placeholder">'
-        "✦"
-        "</div>"
-    )
-
-
-def book_html(book):
-    title = html.escape(
-        safe_text(
-            book.get("title"),
-            "Untitled",
-        )
-    )
-
-    genre = html.escape(
-        safe_text(
-            book.get("genre"),
-            "Uncategorized",
-        )
-    )
-
-    status_key = safe_text(
-        book.get("status"),
-        "to-read",
-    )
-
-    status = STATUS_LABELS.get(
-        status_key,
-        "Want to Read",
-    )
-
-    number = book.get(
-        "series_number"
-    )
-
-    number_text = ""
-
-    if (
-        isinstance(
-            number,
-            (int, float),
-        )
-        and not pd.isna(number)
-    ):
-        number_text = (
-            f" · Book {number:g}"
-        )
-
-    try:
-        rating = float(
-            book.get(
-                "rating",
-                0,
-            )
-        )
-    except (
-        TypeError,
-        ValueError,
-    ):
-        rating = 0.0
-
-    return f"""
-        <div class="bt-book">
-            {cover_html(book)}
-
-            <div class="bt-book-info">
-                <div class="bt-book-title">
-                    {title}
-                    {html.escape(number_text)}
-                </div>
-
-                <div class="bt-book-meta">
-                    {genre}
-
-                    <span class="bt-status">
-                        {html.escape(status)}
-                    </span>
-
-                    <span class="bt-stars">
-                        {stars(rating)}
-                    </span>
-                </div>
-            </div>
-        </div>
-    """
-
-
-def render_tree(df):
-    structure = tree_structure(df)
-
-    if not structure:
+    if not tree:
         st.markdown(
-            '<div class="bt-empty">'
-            "No books match those filters."
-            "</div>",
+            """
+            <div style="
+                text-align:center;
+                padding:5rem 1rem;
+                color:var(--muted);
+                font-family:'Cormorant Garamond',serif;
+                font-size:1.5rem;
+            ">
+                No books match your search.
+            </div>
+            """,
             unsafe_allow_html=True,
         )
         return
 
-    active_author, active_series = (
-        read_tree_query(structure)
+    st.markdown(
+        """
+        <div class="tree-introduction">
+            Your literary family tree
+        </div>
+
+        <div class="tree-root">
+            <div class="tree-root-title">
+                🌿 My Library
+            </div>
+        </div>
+        """,
+        unsafe_allow_html=True,
     )
 
-    parts = [
-        '<div class="bt-tree">',
-        '<div class="bt-tree-title">',
-        "The family tree of your library",
-        "</div>",
-    ]
+    for author, author_data in tree.items():
 
-    for author, data in structure.items():
-        author_active = (
-            author == active_author
-        )
-
-        if author_active:
-            author_url = "?"
-        else:
-            author_url = (
-                f"?author={quote_plus(author)}"
+        total_author_books = (
+            sum(
+                len(books)
+                for books
+                in author_data[
+                    "series"
+                ].values()
             )
-
-        parts.append(
-            '<div class="bt-author-branch">'
-        )
-
-        parts.append(
-            f'<a class="bt-author-node '
-            f'{"active" if author_active else ""}" '
-            f'href="{author_url}">'
-            f'<span class="bt-author-name">'
-            f'{html.escape(author)}'
-            "</span>"
-            "</a>"
-        )
-
-        if author_active:
-            parts.append(
-                '<div class="bt-children">'
+            + len(
+                author_data[
+                    "standalone"
+                ]
             )
+        )
+
+        author_label = (
+            f"✦  {author}  ·  "
+            f"{total_author_books} "
+            f"{'book' if total_author_books == 1 else 'books'}"
+        )
+
+        with st.expander(
+            author_label,
+            expanded=False,
+        ):
+            series_data = author_data[
+                "series"
+            ]
 
             for (
                 series_name,
                 books,
-            ) in data["series"].items():
+            ) in series_data.items():
 
-                series_active = (
-                    series_name
-                    == active_series
+                series_label = (
+                    f"❧  {series_name}  ·  "
+                    f"{len(books)} "
+                    f"{'book' if len(books) == 1 else 'books'}"
                 )
 
-                if series_active:
-                    series_url = (
-                        f"?author="
-                        f"{quote_plus(author)}"
-                    )
-                else:
-                    series_url = (
-                        f"?author="
-                        f"{quote_plus(author)}"
-                        f"&series="
-                        f"{quote_plus(series_name)}"
-                    )
-
-                count = len(books)
-
-                parts.append(
-                    '<div class="bt-series-row">'
-                )
-
-                parts.append(
-                    f'<a class="bt-series-node '
-                    f'{"active" if series_active else ""}" '
-                    f'href="{series_url}">'
-
-                    f'<span class="bt-series-name">'
-                    f'{html.escape(series_name)}'
-                    "</span>"
-
-                    f'<span class="bt-series-count">'
-                    f'{count} '
-                    f'{"book" if count == 1 else "books"}'
-                    "</span>"
-
-                    "</a>"
-                )
-
-                if series_active:
-                    parts.append(
-                        '<div class="bt-books">'
-                    )
-
+                with st.expander(
+                    series_label,
+                    expanded=False,
+                ):
                     for book in books:
-                        parts.append(
-                            book_html(book)
+                        render_book(
+                            book
                         )
 
-                    parts.append(
-                        "</div>"
-                    )
+            standalone = author_data[
+                "standalone"
+            ]
 
-                parts.append(
-                    "</div>"
-                )
-
-            if data["standalone"]:
-                standalone_active = (
-                    active_series
-                    == "__standalone__"
-                )
-
-                if standalone_active:
-                    standalone_url = (
-                        f"?author="
-                        f"{quote_plus(author)}"
-                    )
-                else:
-                    standalone_url = (
-                        f"?author="
-                        f"{quote_plus(author)}"
-                        "&series=__standalone__"
-                    )
-
-                parts.append(
-                    '<div class="bt-standalone-row">'
-                )
-
-                parts.append(
-                    f'<a class="bt-standalone-node '
-                    f'{"active" if standalone_active else ""}" '
-                    f'href="{standalone_url}">'
-
-                    '<span class="bt-series-name">'
-                    "Standalone Books"
-                    "</span>"
-
-                    '<span class="bt-series-count">'
-                    f'{len(data["standalone"])} '
-                    f'{"book" if len(data["standalone"]) == 1 else "books"}'
-                    "</span>"
-
-                    "</a>"
-                )
-
-                if standalone_active:
-                    parts.append(
-                        '<div class="bt-books">'
-                    )
-
-                    for book in data[
-                        "standalone"
-                    ]:
-                        parts.append(
-                            book_html(book)
+            if standalone:
+                with st.expander(
+                    (
+                        f"❦  Standalone Books  ·  "
+                        f"{len(standalone)} "
+                        f"{'book' if len(standalone) == 1 else 'books'}"
+                    ),
+                    expanded=False,
+                ):
+                    for book in standalone:
+                        render_book(
+                            book
                         )
 
-                    parts.append(
-                        "</div>"
-                    )
 
-                parts.append(
-                    "</div>"
-                )
+# ============================================================
+# HEADER
+# ============================================================
 
-            parts.append(
-                "</div>"
-            )
+def render_header(
+    dataframe: pd.DataFrame,
+):
+    total = len(dataframe)
 
-        parts.append(
-            "</div>"
+    authors = (
+        dataframe["author"]
+        .nunique()
+        if not dataframe.empty
+        else 0
+    )
+
+    series = (
+        dataframe[
+            dataframe["series"]
+            .astype(str)
+            .str.strip()
+            != ""
+        ]["series"]
+        .nunique()
+        if not dataframe.empty
+        else 0
+    )
+
+    read = (
+        int(
+            (
+                dataframe["status"]
+                == "Read"
+            ).sum()
         )
-
-    parts.append(
-        "</div>"
+        if not dataframe.empty
+        else 0
     )
 
     st.markdown(
-        "".join(parts),
+        """
+        <div class="book-tree-header">
+
+            <div class="book-tree-eyebrow">
+                A Literary Family Tree
+            </div>
+
+            <div class="book-tree-title">
+                My Book Tree
+            </div>
+
+            <div class="book-tree-subtitle">
+                Authors · Series · Stories
+            </div>
+
+            <div class="vine"></div>
+
+        </div>
+        """,
+        unsafe_allow_html=True,
+    )
+
+    st.markdown(
+        f"""
+        <div class="stats">
+
+            <div class="stat">
+                <span class="stat-number">
+                    {total}
+                </span>
+                <span class="stat-label">
+                    Books
+                </span>
+            </div>
+
+            <div class="stat">
+                <span class="stat-number">
+                    {authors}
+                </span>
+                <span class="stat-label">
+                    Authors
+                </span>
+            </div>
+
+            <div class="stat">
+                <span class="stat-number">
+                    {series}
+                </span>
+                <span class="stat-label">
+                    Series
+                </span>
+            </div>
+
+            <div class="stat">
+                <span class="stat-number">
+                    {read}
+                </span>
+                <span class="stat-label">
+                    Read
+                </span>
+            </div>
+
+        </div>
+        """,
         unsafe_allow_html=True,
     )
 
 
-def load_uploaded_csv(
-    uploaded_file,
-):
-    raw = uploaded_file.getvalue()
+# ============================================================
+# CONTROLS
+# ============================================================
 
-    try:
-        df = pd.read_csv(
-            io.BytesIO(raw)
-        )
-    except UnicodeDecodeError:
-        df = pd.read_csv(
-            io.BytesIO(raw),
-            encoding="latin-1",
-        )
+def render_controls(
+    dataframe: pd.DataFrame,
+) -> pd.DataFrame:
 
-    return normalize_goodreads_dataframe(
-        df
+    if dataframe.empty:
+        return dataframe
+
+    genres = sorted(
+        [
+            safe_text(value)
+            for value
+            in dataframe["genre"]
+            .dropna()
+            .unique()
+            if safe_text(value)
+        ],
+        key=str.lower,
     )
 
+    genre_options = (
+        ["All Genres"]
+        + genres
+    )
 
-def render_sidebar():
-    with st.sidebar:
-        st.markdown(
-            "## My Book Tree"
-        )
+    status_options = [
+        "All Statuses",
+        "Read",
+        "Currently Reading",
+        "Want to Read",
+    ]
 
-        st.caption(
-            "Build the tree from your "
-            "Goodreads library."
-        )
+    sort_options = [
+        "Author A–Z",
+        "Author Z–A",
+        "Title A–Z",
+        "Title Z–A",
+        "Highest Rated",
+        "Lowest Rated",
+        "Newest",
+        "Oldest",
+        "Read",
+        "Currently Reading",
+        "Want to Read",
+    ]
 
-        uploaded = st.file_uploader(
-            "Import Goodreads CSV",
-            type=["csv"],
-            help=(
-                "Export your Goodreads library "
-                "as a CSV and upload it here."
+    st.markdown(
+        "### Find a Book"
+    )
+
+    c1, c2, c3, c4 = st.columns(
+        [2.2, 1, 1, 1.4]
+    )
+
+    with c1:
+        search = st.text_input(
+            "Search",
+            placeholder=(
+                "Title, author, series, genre..."
             ),
         )
 
-        if uploaded is not None:
-            file_signature = hashlib.sha1(
-                uploaded.getvalue()
-            ).hexdigest()
+    with c2:
+        genre = st.selectbox(
+            "Genre",
+            genre_options,
+        )
 
-            if (
-                st.session_state.get(
-                    "uploaded_signature"
-                )
-                != file_signature
-            ):
-                books = load_uploaded_csv(
-                    uploaded
-                )
+    with c3:
+        status = st.selectbox(
+            "Status",
+            status_options,
+        )
 
-                if not books.empty:
-                    with st.spinner(
-                        "Bringing in missing covers, "
-                        "genres, and series information…"
-                    ):
-                        books = enrich_missing_books(
-                            books,
-                            limit=60,
-                        )
+    with c4:
+        sort_by = st.selectbox(
+            "Sort",
+            sort_options,
+        )
 
-                    st.session_state.books = (
-                        books
-                    )
+    return filter_books(
+        dataframe,
+        search,
+        genre,
+        status,
+        sort_by,
+    )
 
-                    st.session_state.loaded_source = (
-                        uploaded.name
-                    )
 
-                    st.session_state.uploaded_signature = (
-                        file_signature
-                    )
+# ============================================================
+# SIDEBAR
+# ============================================================
 
-                    st.session_state.active_author = (
-                        None
-                    )
+def render_sidebar():
+    with st.sidebar:
 
-                    st.session_state.active_series = (
-                        None
-                    )
+        st.markdown(
+            "# 🌿 My Book Tree"
+        )
 
-                    st.query_params.clear()
+        st.markdown(
+            "Your library, arranged like "
+            "a literary family tree."
+        )
 
-                    st.success(
-                        f"Loaded {len(books):,} books."
-                    )
+        st.divider()
 
-                else:
-                    st.error(
-                        "That CSV did not contain "
-                        "recognizable book rows."
-                    )
-
-        st.markdown("---")
+        st.markdown(
+            "### Appearance"
+        )
 
         theme_names = list(
             THEMES.keys()
@@ -2340,22 +1969,16 @@ def render_sidebar():
             )
         )
 
-        if current_theme not in THEMES:
-            current_theme = (
-                theme_names[0]
-            )
-
-            st.session_state.theme = (
-                current_theme
-            )
+        if current_theme not in theme_names:
+            current_theme = theme_names[0]
 
         selected_theme = st.selectbox(
-            "Theme",
+            "Choose a bookish theme",
             theme_names,
             index=theme_names.index(
                 current_theme
             ),
-            key="theme_selector",
+            key="theme_choice",
         )
 
         if (
@@ -2365,214 +1988,144 @@ def render_sidebar():
             st.session_state.theme = (
                 selected_theme
             )
-
             st.rerun()
 
-        if st.button(
-            "Enrich missing covers & genres",
-            use_container_width=True,
-        ):
-            with st.spinner(
-                "Looking up missing book information…"
-            ):
-                st.session_state.books = (
-                    enrich_missing_books(
-                        st.session_state.books
+        st.divider()
+
+        st.markdown(
+            "### Your Library"
+        )
+
+        uploaded = st.file_uploader(
+            "Import Goodreads CSV",
+            type=["csv"],
+        )
+
+        if uploaded is not None:
+
+            file_hash = hashlib.sha1(
+                uploaded.getvalue()
+            ).hexdigest()
+
+            previous_hash = (
+                st.session_state.get(
+                    "upload_hash"
+                )
+            )
+
+            if file_hash != previous_hash:
+
+                try:
+                    uploaded_df = pd.read_csv(
+                        io.BytesIO(
+                            uploaded.getvalue()
+                        )
                     )
+
+                    normalized = (
+                        normalize_goodreads_csv(
+                            uploaded_df
+                        )
+                    )
+
+                    if normalized.empty:
+                        st.error(
+                            "I couldn't find any "
+                            "recognizable books in "
+                            "that CSV."
+                        )
+                    else:
+                        st.session_state.books = (
+                            normalized
+                        )
+
+                        st.session_state.library_loaded = (
+                            True
+                        )
+
+                        st.session_state.library_source = (
+                            uploaded.name
+                        )
+
+                        st.session_state.upload_hash = (
+                            file_hash
+                        )
+
+                        st.session_state.enrichment_done = (
+                            False
+                        )
+
+                        st.rerun()
+
+                except Exception as error:
+                    st.error(
+                        f"Could not read CSV: {error}"
+                    )
+
+        if st.session_state.library_loaded:
+
+            st.caption(
+                f"Loaded from: "
+                f"{st.session_state.library_source}"
+            )
+
+            if st.button(
+                "Find missing covers & genres",
+                use_container_width=True,
+            ):
+                with st.spinner(
+                    "Looking up book information..."
+                ):
+                    st.session_state.books = (
+                        enrich_books(
+                            st.session_state.books
+                        )
+                    )
+
+                st.session_state.enrichment_done = (
+                    True
                 )
 
-            st.success(
-                "Finished checking missing information."
+                st.success(
+                    "Finished checking the library."
+                )
+
+        else:
+            st.caption(
+                "A small sample library is shown "
+                "until you import your Goodreads CSV."
             )
+
+        st.divider()
 
         if st.button(
-            "Return to full tree",
+            "Use sample library",
             use_container_width=True,
         ):
-            st.query_params.clear()
-
-            st.session_state.active_author = (
-                None
+            st.session_state.books = (
+                create_demo_library()
             )
 
-            st.session_state.active_series = (
+            st.session_state.library_loaded = (
+                False
+            )
+
+            st.session_state.library_source = (
+                "Sample library"
+            )
+
+            st.session_state.upload_hash = (
                 None
             )
 
             st.rerun()
 
-        st.markdown("---")
 
-        source = st.session_state.get(
-            "loaded_source",
-            "demo",
-        )
-
-        st.caption(
-            f"Library source: {source}"
-        )
-
-        st.caption(
-            f"App version {APP_VERSION}"
-        )
-
-
-def render_controls(df):
-    if df.empty:
-        return df
-
-    genres = sorted(
-        [
-            genre
-            for genre in df[
-                "genre"
-            ].dropna().unique()
-            if safe_text(genre)
-        ],
-        key=str.lower,
-    )
-
-    genre_options = [
-        "All genres"
-    ] + genres
-
-    st.markdown(
-        '<div class="bt-controls">',
-        unsafe_allow_html=True,
-    )
-
-    c1, c2, c3, c4 = st.columns(
-        [
-            2.2,
-            1.2,
-            1.2,
-            1.5,
-        ]
-    )
-
-    with c1:
-        search = st.text_input(
-            "Search",
-            value=st.session_state.get(
-                "search",
-                "",
-            ),
-            placeholder=(
-                "Search title, author, "
-                "series, or genre…"
-            ),
-            label_visibility="collapsed",
-            key="search_box",
-        )
-
-        st.session_state.search = (
-            search
-        )
-
-    with c2:
-        current_genre = (
-            st.session_state.get(
-                "genre_filter",
-                "All genres",
-            )
-        )
-
-        genre = st.selectbox(
-            "Genre",
-            genre_options,
-            index=(
-                genre_options.index(
-                    current_genre
-                )
-                if current_genre
-                in genre_options
-                else 0
-            ),
-            label_visibility="collapsed",
-            key="genre_box",
-        )
-
-        st.session_state.genre_filter = (
-            genre
-        )
-
-    with c3:
-        statuses = [
-            "All statuses",
-            "Read",
-            "Currently Reading",
-            "Want to Read",
-        ]
-
-        current_status = (
-            st.session_state.get(
-                "status_filter",
-                "All statuses",
-            )
-        )
-
-        status = st.selectbox(
-            "Status",
-            statuses,
-            index=(
-                statuses.index(
-                    current_status
-                )
-                if current_status
-                in statuses
-                else 0
-            ),
-            label_visibility="collapsed",
-            key="status_box",
-        )
-
-        st.session_state.status_filter = (
-            status
-        )
-
-    with c4:
-        current_sort = (
-            st.session_state.get(
-                "sort",
-                "Author A–Z",
-            )
-        )
-
-        sort = st.selectbox(
-            "Sort",
-            SORT_OPTIONS,
-            index=(
-                SORT_OPTIONS.index(
-                    current_sort
-                )
-                if current_sort
-                in SORT_OPTIONS
-                else 0
-            ),
-            label_visibility="collapsed",
-            key="sort_box",
-        )
-
-        st.session_state.sort = (
-            sort
-        )
-
-    st.markdown(
-        "</div>",
-        unsafe_allow_html=True,
-    )
-
-    return apply_filters(
-        df,
-        search,
-        genre,
-        status,
-        sort,
-    )
-
+# ============================================================
+# MAIN
+# ============================================================
 
 def main():
-    initialize_state()
 
     theme_name = st.session_state.get(
         "theme",
@@ -2583,7 +2136,6 @@ def main():
         theme_name = (
             "Velvet Conservatory"
         )
-
         st.session_state.theme = (
             theme_name
         )
@@ -2592,41 +2144,50 @@ def main():
         theme_name
     ]
 
-    render_global_css(
-        theme
-    )
+    apply_theme(theme)
 
     render_sidebar()
 
-    df = st.session_state.get(
-        "books",
-        pd.DataFrame(),
+    books = st.session_state.get(
+        "books"
     )
 
     if not isinstance(
-        df,
+        books,
         pd.DataFrame,
-    ):
-        df = get_demo_books()
-        st.session_state.books = df
+    ) or books.empty:
 
-    filtered = render_controls(
-        df
-    )
+        books = create_demo_library()
+
+        if not st.session_state.library_loaded:
+            st.session_state.books = books
 
     render_header(
-        filtered
+        books
     )
 
+    filtered_books = render_controls(
+        books
+    )
+
+    st.divider()
+
     render_tree(
-        filtered
+        filtered_books
     )
 
     st.markdown(
-        '<div class="bt-footer">'
-        "My Book Tree · an ancestry-style "
-        "library for the books you keep"
-        "</div>",
+        """
+        <div style="
+            text-align:center;
+            color:var(--muted);
+            margin-top:3rem;
+            font-size:.75rem;
+            letter-spacing:.08em;
+        ">
+            ❦  My Book Tree  ❦
+        </div>
+        """,
         unsafe_allow_html=True,
     )
 
