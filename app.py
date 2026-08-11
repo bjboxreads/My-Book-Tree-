@@ -1,5 +1,4 @@
 import streamlit as st
-py
 
 def display_ancestry_tree(df):
     # 1. Clean data: Fill empty Series with 'Standalone'
