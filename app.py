@@ -16,12 +16,12 @@ st.set_page_config(
 )
 
 # ============================================================
-# DISTINCT BOOKISH THEMES
+# BOOKISH THEMES
 # ============================================================
 
 THEMES = {
 
-    "Emerald Library": {
+    "Enchanted Library": {
         "page": "#071B18",
         "surface": "#0E2924",
         "surface2": "#164239",
@@ -35,7 +35,7 @@ THEMES = {
         "button_text": "#FFF7DE",
     },
 
-    "Sapphire & Gold": {
+    "Midnight & Gold": {
         "page": "#071426",
         "surface": "#0D2340",
         "surface2": "#15365D",
@@ -49,7 +49,7 @@ THEMES = {
         "button_text": "#FFF7E1",
     },
 
-    "Gothic Rose": {
+    "Victorian Rose": {
         "page": "#180B16",
         "surface": "#2A1024",
         "surface2": "#421735",
@@ -63,7 +63,7 @@ THEMES = {
         "button_text": "#FFF4F5",
     },
 
-    "Autumn Library": {
+    "Autumn Manor": {
         "page": "#24130A",
         "surface": "#38200F",
         "surface2": "#5A3015",
@@ -77,7 +77,7 @@ THEMES = {
         "button_text": "#FFF1D5",
     },
 
-    "Midnight Fantasy": {
+    "Moonlit Library": {
         "page": "#0C0A20",
         "surface": "#151235",
         "surface2": "#211C51",
@@ -91,7 +91,7 @@ THEMES = {
         "button_text": "#FFF8E7",
     },
 
-    "Teal & Coral Bookshop": {
+    "Secret Garden": {
         "page": "#08252A",
         "surface": "#0E3B42",
         "surface2": "#14565D",
@@ -105,7 +105,7 @@ THEMES = {
         "button_text": "#FFF6DF",
     },
 
-    "Vintage Reader": {
+    "Old World Library": {
         "page": "#172322",
         "surface": "#243633",
         "surface2": "#36504A",
@@ -119,7 +119,7 @@ THEMES = {
         "button_text": "#FFF3D8",
     },
 
-    "Electric Bookstore": {
+    "Spellbound": {
         "page": "#111225",
         "surface": "#1B1E3A",
         "surface2": "#292E59",
@@ -133,7 +133,7 @@ THEMES = {
         "button_text": "#FFFFFF",
     },
 
-    "Classic Crimson": {
+    "Velvet & Crimson": {
         "page": "#210D0D",
         "surface": "#351313",
         "surface2": "#531B1B",
@@ -156,7 +156,7 @@ if (
     "theme" not in st.session_state
     or st.session_state.theme not in THEMES
 ):
-    st.session_state.theme = "Emerald Library"
+    st.session_state.theme = "Enchanted Library"
 
 if "library" not in st.session_state:
     st.session_state.library = pd.DataFrame(
@@ -191,638 +191,817 @@ theme = THEMES[st.session_state.theme]
 
 st.html(
     f"""
-    <style>
+<style>
 
-    @import url('https://fonts.googleapis.com/css2?family=Berkshire+Swash&family=Libre+Baskerville:wght@400;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Berkshire+Swash&family=Libre+Baskerville:wght@400;700&display=swap');
 
-    :root {{
-        --page: {theme["page"]};
-        --surface: {theme["surface"]};
-        --surface2: {theme["surface2"]};
-        --card: {theme["card"]};
-        --text: {theme["text"]};
-        --muted: {theme["muted"]};
-        --accent: {theme["accent"]};
-        --accent2: {theme["accent2"]};
-        --line: {theme["line"]};
-    }}
+:root {{
+    --page: {theme["page"]};
+    --surface: {theme["surface"]};
+    --surface2: {theme["surface2"]};
+    --card: {theme["card"]};
+    --text: {theme["text"]};
+    --muted: {theme["muted"]};
+    --accent: {theme["accent"]};
+    --accent2: {theme["accent2"]};
+    --line: {theme["line"]};
+}}
 
-    .stApp {{
-        background:
-            radial-gradient(
-                circle at 15% 0%,
-                var(--surface2) 0%,
-                var(--page) 55%
-            );
-        color: var(--text);
-    }}
+.stApp {{
+    background:
+        radial-gradient(
+            ellipse at 50% -10%,
+            var(--surface2) 0%,
+            var(--page) 62%
+        ) !important;
+    color: var(--text) !important;
+}}
 
-    .block-container {{
-        max-width: 1400px;
-        padding-top: 1rem;
-    }}
+.block-container {{
+    max-width: 1400px;
+    padding-top: 1rem;
+    padding-bottom: 4rem;
+}}
 
-    h1, h2, h3, h4 {{
-        font-family:
-            "Berkshire Swash",
-            Georgia,
-            serif !important;
-        color: var(--text) !important;
-    }}
+/* =========================================================
+   GENERAL TYPOGRAPHY
+   ========================================================= */
 
-    p, label, span, div {{
-        color: var(--text);
-    }}
+h1, h2, h3, h4 {{
+    font-family:
+        "Berkshire Swash",
+        Georgia,
+        serif !important;
+    color: var(--text) !important;
+}}
 
-    /* ========================================================
-       HEADER
-       ======================================================== */
+p, label {{
+    color: var(--text);
+}}
 
-    .book-header {{
-        text-align: center;
-        padding: 20px 0 0;
-    }}
+.stMarkdown {{
+    color: var(--text);
+}}
 
-    .book-header-title {{
-        font-family:
-            "Berkshire Swash",
-            cursive !important;
-        font-size: 72px;
-        line-height: 1;
-        font-weight: 400;
-        color: var(--text) !important;
-        text-shadow:
-            0 3px 4px rgba(0, 0, 0, .35);
-    }}
+/* =========================================================
+   HEADER
+   ========================================================= */
 
-    .willow-logo {{
-        width: 100%;
-        height: 330px;
-        margin: 0 auto 10px;
-        overflow: hidden;
-    }}
+.book-header {{
+    text-align: center;
+    padding: 18px 0 0;
+}}
 
-    .willow-logo svg {{
-        width: 100%;
-        height: 100%;
-        display: block;
-    }}
+.book-header-title {{
+    font-family:
+        "Berkshire Swash",
+        Georgia,
+        serif !important;
+    font-size: 70px;
+    line-height: 1;
+    font-weight: 400;
+    color: var(--text) !important;
+    text-shadow:
+        0 3px 12px rgba(0,0,0,.35);
+}}
 
-    /* ========================================================
-       THEME SELECTOR
-       ======================================================== */
+/* =========================================================
+   DECORATIVE WILLOW
+   ========================================================= */
 
-    .theme-heading {{
-        font-family:
-            "Berkshire Swash",
-            cursive;
-        font-size: 23px;
-        font-weight: 400;
-        color: var(--text);
-        margin-bottom: 4px;
-    }}
+.willow-logo {{
+    width: 100%;
+    max-width: 980px;
+    height: 250px;
+    margin: 0 auto 8px;
+    display: block;
+}}
 
-    /* Closed selector */
+.willow-logo svg {{
+    width: 100%;
+    height: 100%;
+    overflow: visible;
+}}
 
-    div[data-baseweb="select"] > div {{
-        background: #171717 !important;
-        border: 2px solid var(--accent) !important;
-        border-radius: 10px !important;
-        min-height: 48px !important;
-    }}
+.willow-trunk {{
+    fill: none;
+    stroke: #4A3028;
+    stroke-width: 27;
+    stroke-linecap: round;
+}}
 
-    div[data-baseweb="select"] span {{
-        color: #FFFFFF !important;
-        font-weight: 600 !important;
-    }}
+.willow-trunk-highlight {{
+    fill: none;
+    stroke: #765044;
+    stroke-width: 7;
+    stroke-linecap: round;
+}}
 
-    div[data-baseweb="select"] input {{
-        color: #FFFFFF !important;
-    }}
+.willow-main-branch {{
+    fill: none;
+    stroke: #54372E;
+    stroke-linecap: round;
+}}
 
-    /* Open selector */
+.willow-hanging {{
+    fill: none;
+    stroke: #657452;
+    stroke-width: 4;
+    stroke-linecap: round;
+}}
 
-    div[role="listbox"] {{
-        background: #171717 !important;
-        border: 2px solid #D7A83A !important;
-        border-radius: 10px !important;
-        padding: 5px !important;
-        box-shadow:
-            0 15px 40px rgba(0,0,0,.6) !important;
-    }}
+.willow-leaf {{
+    fill: #74835D;
+}}
 
-    div[role="option"] {{
-        background: #171717 !important;
-        color: #FFFFFF !important;
-        padding: 12px 14px !important;
-        border-radius: 7px !important;
-        font-family:
-            "Libre Baskerville",
-            Georgia,
-            serif !important;
-        font-size: 14px !important;
-    }}
+.willow-leaf-light {{
+    fill: #89966B;
+}}
 
-    div[role="option"] *,
-    div[role="option"] span {{
-        color: #FFFFFF !important;
-    }}
+.willow-leaf-deep {{
+    fill: #536346;
+}}
 
-    div[role="option"]:hover {{
-        background: #3C3C3C !important;
-    }}
+.willow-flower {{
+    fill: #B87587;
+}}
 
-    div[role="option"][aria-selected="true"] {{
-        background: #8A641E !important;
-    }}
+.willow-flower-center {{
+    fill: #E2B35E;
+}}
 
-    div[role="option"][aria-selected="true"] * {{
-        color: #FFFFFF !important;
-    }}
+/* =========================================================
+   THEME SELECTOR
+   ========================================================= */
 
-    /* ========================================================
-       STATS
-       ======================================================== */
+.theme-heading {{
+    font-family:
+        "Berkshire Swash",
+        Georgia,
+        serif;
+    font-size: 25px;
+    color: var(--text);
+    margin: 4px 0 7px;
+}}
 
-    .stat-card {{
-        background: var(--surface);
-        border: 1px solid var(--accent);
-        border-radius: 12px;
-        padding: 14px 8px;
-        text-align: center;
-    }}
+/* Closed selector */
 
-    .stat-number {{
-        font-family:
-            "Berkshire Swash",
-            cursive;
-        font-size: 34px;
-        font-weight: 400;
-        color: var(--accent);
-    }}
+div[data-baseweb="select"] > div {{
+    background: #171717 !important;
+    border: 2px solid var(--accent) !important;
+    border-radius: 10px !important;
+    min-height: 48px !important;
+}}
 
-    .stat-label {{
-        color: var(--muted);
-        font-family:
-            "Libre Baskerville",
-            Georgia,
-            serif;
-        font-size: 10px;
-        text-transform: uppercase;
-        letter-spacing: .12em;
-    }}
+div[data-baseweb="select"] span {{
+    color: #FFFFFF !important;
+    font-weight: 600 !important;
+}}
 
-    /* ========================================================
-       TREE AREA
-       ======================================================== */
+div[data-baseweb="select"] input {{
+    color: #FFFFFF !important;
+}}
 
-    .tree-area {{
-        margin-top: 25px;
-        padding: 30px;
-        background: rgba(0,0,0,.12);
-        border: 1px solid var(--line);
-        border-radius: 18px;
-    }}
+/* Open selector */
 
-    .root-node {{
-        width: 300px;
-        margin: 0 auto 38px;
-        padding: 18px 25px;
-        background: var(--accent);
-        color: {theme["page"]};
-        border-radius: 50px;
-        text-align: center;
-        box-shadow:
-            0 8px 25px rgba(0,0,0,.3);
-    }}
+div[role="listbox"] {{
+    background: #171717 !important;
+    border: 2px solid #D7A83A !important;
+    border-radius: 10px !important;
+    padding: 5px !important;
+    box-shadow:
+        0 15px 40px rgba(0,0,0,.6) !important;
+}}
 
-    .root-node-title {{
-        color: {theme["page"]};
-        font-family:
-            "Berkshire Swash",
-            cursive;
-        font-size: 32px;
-        font-weight: 400;
-    }}
+div[role="option"] {{
+    background: #171717 !important;
+    color: #FFFFFF !important;
+    padding: 12px 14px !important;
+    border-radius: 7px !important;
+    font-family:
+        "Libre Baskerville",
+        Georgia,
+        serif !important;
+    font-size: 14px !important;
+}}
 
-    .root-node-small {{
-        color: {theme["page"]};
-        font-size: 11px;
-        font-weight: 700;
-        opacity: .8;
-    }}
+div[role="option"] *,
+div[role="option"] span {{
+    color: #FFFFFF !important;
+}}
 
-    /* ========================================================
-       AUTHOR BRANCH
-       ======================================================== */
+div[role="option"]:hover {{
+    background: #3C3C3C !important;
+}}
 
-    .author-info {{
-        padding: 10px 15px;
-        margin: 8px 0;
-        border-left: 4px solid var(--accent);
-        background: var(--surface);
-        border-radius: 0 12px 12px 0;
-    }}
+div[role="option"][aria-selected="true"] {{
+    background: #8A641E !important;
+}}
 
-    .author-name {{
-        font-family:
-            "Berkshire Swash",
-            cursive;
-        font-size: 27px;
-        font-weight: 400;
-    }}
+div[role="option"][aria-selected="true"] * {{
+    color: #FFFFFF !important;
+}}
 
-    .author-count {{
-        color: var(--muted);
-        font-size: 11px;
-    }}
+/* =========================================================
+   STATS
+   ========================================================= */
 
-    /* ========================================================
-       SERIES BRANCH
-       ======================================================== */
+.stat-card {{
+    position: relative;
+    background:
+        linear-gradient(
+            145deg,
+            rgba(255,255,255,.045),
+            rgba(0,0,0,.12)
+        );
+    border: none;
+    border-bottom: 2px solid var(--line);
+    border-radius: 4px 18px 4px 18px;
+    padding: 16px 8px 13px;
+    text-align: center;
+    box-shadow:
+        0 8px 25px rgba(0,0,0,.14);
+}}
 
-    .series-info {{
-        margin-left: 48px;
-        padding: 10px 15px;
-        border-left: 3px solid var(--accent2);
-        background: var(--surface2);
-        border-radius: 0 10px 10px 0;
-    }}
+.stat-number {{
+    font-family:
+        "Berkshire Swash",
+        Georgia,
+        serif;
+    font-size: 36px;
+    font-weight: 400;
+    color: var(--accent);
+}}
 
-    .series-name {{
-        font-family:
-            "Berkshire Swash",
-            cursive;
-        font-size: 23px;
-        font-weight: 400;
-    }}
+.stat-label {{
+    color: var(--muted);
+    font-family:
+        "Libre Baskerville",
+        Georgia,
+        serif;
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: .12em;
+}}
 
-    .series-count {{
-        color: var(--muted);
-        font-size: 11px;
-    }}
+/* =========================================================
+   TREE AREA
+   ========================================================= */
 
-    /* ========================================================
-       BOOK BRANCH
-       ======================================================== */
+.tree-area {{
+    margin-top: 25px;
+    padding: 35px 25px;
+    background:
+        radial-gradient(
+            ellipse at top,
+            rgba(255,255,255,.035),
+            transparent 65%
+        );
+    border: none;
+    border-top: 1px solid rgba(255,255,255,.10);
+    border-bottom: 1px solid rgba(255,255,255,.08);
+}}
 
-    .book-info {{
-        margin-left: 100px;
-        margin-top: 8px;
-        padding: 10px 14px;
-        background: var(--card);
-        border-left: 2px solid var(--line);
-        border-radius: 0 10px 10px 0;
-    }}
+.root-node {{
+    width: 300px;
+    margin: 0 auto 38px;
+    padding: 17px 25px;
+    background: var(--accent);
+    color: {theme["page"]};
+    border-radius: 4px 28px 4px 28px;
+    text-align: center;
+    box-shadow:
+        0 10px 28px rgba(0,0,0,.25);
+}}
 
-    .book-title {{
-        font-family:
-            "Berkshire Swash",
-            cursive;
-        font-size: 21px;
-        font-weight: 400;
-    }}
+.root-node-title {{
+    color: {theme["page"]};
+    font-family:
+        "Berkshire Swash",
+        Georgia,
+        serif;
+    font-size: 34px;
+    font-weight: 400;
+}}
 
-    .book-meta {{
-        color: var(--muted);
-        font-size: 11px;
-        margin-top: 3px;
-    }}
+.root-node-small {{
+    color: {theme["page"]};
+    font-family:
+        "Libre Baskerville",
+        Georgia,
+        serif;
+    font-size: 10px;
+    font-weight: 700;
+    opacity: .78;
+}}
 
-    .book-cover {{
-        width: 55px;
-        height: 80px;
-        object-fit: cover;
-        border-radius: 4px;
-        border: 1px solid var(--accent);
-    }}
+/* =========================================================
+   AUTHOR BRANCH
+   ========================================================= */
 
-    /* ========================================================
-       STREAMLIT BUTTONS
-       ======================================================== */
+.author-info {{
+    padding: 11px 17px;
+    margin: 9px 0;
+    border-left: 3px solid var(--accent);
+    background:
+        linear-gradient(
+            90deg,
+            var(--surface),
+            transparent
+        );
+    border-radius: 0 18px 0 0;
+}}
 
-    .stButton > button {{
-        background: var(--surface) !important;
-        color: var(--text) !important;
-        border: 1px solid var(--line) !important;
-        border-radius: 9px !important;
-        font-weight: 600 !important;
-    }}
+.author-name {{
+    font-family:
+        "Berkshire Swash",
+        Georgia,
+        serif;
+    font-size: 28px;
+    font-weight: 400;
+}}
 
-    .stButton > button:hover {{
-        background: var(--surface2) !important;
-        border-color: var(--accent) !important;
-        color: var(--text) !important;
-    }}
+.author-count {{
+    color: var(--muted);
+    font-family:
+        "Libre Baskerville",
+        Georgia,
+        serif;
+    font-size: 10px;
+}}
 
-    /* ========================================================
-       INPUTS
-       ======================================================== */
+/* =========================================================
+   SERIES BRANCH
+   ========================================================= */
 
-    div[data-baseweb="input"] > div {{
-        background: var(--surface) !important;
-        border-color: var(--line) !important;
-    }}
+.series-info {{
+    margin-left: 48px;
+    padding: 10px 15px;
+    border-left: 2px solid var(--accent2);
+    background:
+        linear-gradient(
+            90deg,
+            var(--surface2),
+            transparent
+        );
+    border-radius: 0 15px 0 0;
+}}
 
-    div[data-baseweb="input"] input {{
-        color: var(--text) !important;
-    }}
+.series-name {{
+    font-family:
+        "Berkshire Swash",
+        Georgia,
+        serif;
+    font-size: 24px;
+    font-weight: 400;
+}}
 
-    textarea {{
-        background: var(--surface) !important;
-        color: var(--text) !important;
-    }}
+.series-count {{
+    color: var(--muted);
+    font-family:
+        "Libre Baskerville",
+        Georgia,
+        serif;
+    font-size: 10px;
+}}
 
-    </style>
-    """
+/* =========================================================
+   BOOK BRANCH
+   ========================================================= */
+
+.book-info {{
+    margin-left: 100px;
+    margin-top: 8px;
+    padding: 11px 14px;
+    background:
+        linear-gradient(
+            90deg,
+            var(--card),
+            transparent
+        );
+    border-left: 2px solid var(--line);
+    border-radius: 0 14px 0 0;
+}}
+
+.book-title {{
+    font-family:
+        "Berkshire Swash",
+        Georgia,
+        serif;
+    font-size: 22px;
+    font-weight: 400;
+}}
+
+.book-meta {{
+    color: var(--muted);
+    font-family:
+        "Libre Baskerville",
+        Georgia,
+        serif;
+    font-size: 10px;
+    margin-top: 4px;
+}}
+
+.book-cover {{
+    width: 55px;
+    height: 80px;
+    object-fit: cover;
+    border-radius: 3px 10px 3px 10px;
+    border: 1px solid var(--accent);
+    box-shadow:
+        3px 5px 12px rgba(0,0,0,.3);
+}}
+
+/* =========================================================
+   BUTTONS
+   ========================================================= */
+
+.stButton > button {{
+    background:
+        linear-gradient(
+            90deg,
+            var(--surface),
+            rgba(255,255,255,.025)
+        ) !important;
+    color: var(--text) !important;
+    border: none !important;
+    border-left: 2px solid var(--line) !important;
+    border-radius: 0 14px 0 14px !important;
+    font-family:
+        "Libre Baskerville",
+        Georgia,
+        serif !important;
+    font-weight: 600 !important;
+    transition: all .2s ease !important;
+}}
+
+.stButton > button:hover {{
+    background: var(--surface2) !important;
+    border-left-color: var(--accent) !important;
+    color: var(--text) !important;
+    transform: translateX(3px);
+}}
+
+/* =========================================================
+   INPUTS
+   ========================================================= */
+
+div[data-baseweb="input"] > div {{
+    background: var(--surface) !important;
+    border-color: var(--line) !important;
+    border-radius: 4px 12px 4px 12px !important;
+}}
+
+div[data-baseweb="input"] input {{
+    color: var(--text) !important;
+}}
+
+textarea {{
+    background: var(--surface) !important;
+    color: var(--text) !important;
+    border-radius: 4px 12px 4px 12px !important;
+}}
+
+/* =========================================================
+   TABS
+   ========================================================= */
+
+button[data-baseweb="tab"] {{
+    font-family:
+        "Berkshire Swash",
+        Georgia,
+        serif !important;
+    font-size: 17px !important;
+    color: var(--muted) !important;
+}}
+
+button[data-baseweb="tab"][aria-selected="true"] {{
+    color: var(--accent) !important;
+}}
+
+div[data-baseweb="tab-highlight"] {{
+    background-color: var(--accent) !important;
+}}
+
+/* =========================================================
+   FILE UPLOADER
+   ========================================================= */
+
+section[data-testid="stFileUploaderDropzone"] {{
+    background: var(--surface) !important;
+    border: 1px dashed var(--line) !important;
+    border-radius: 4px 18px 4px 18px !important;
+}}
+
+</style>
+"""
 )
 
 # ============================================================
-# HEADER + WILLOW LOGO
+# HEADER + WILLOW
 # ============================================================
 
 st.html(
     """
-    <div class="book-header">
+<div class="book-header">
 
-        <div class="book-header-title">
-            My Book Tree
-        </div>
-
-        <div class="willow-logo">
-
-            <svg
-                viewBox="0 0 1000 360"
-                xmlns="http://www.w3.org/2000/svg"
-            >
-
-                <!-- TRUNK -->
-
-                <path
-                    d="
-                        M500 360
-                        C488 300 485 235 495 175
-                        C500 125 515 75 535 35
-                    "
-                    fill="none"
-                    stroke="#4A3028"
-                    stroke-width="28"
-                    stroke-linecap="round"
-                />
-
-                <path
-                    d="
-                        M504 355
-                        C496 295 495 235 505 178
-                        C510 125 522 78 538 38
-                    "
-                    fill="none"
-                    stroke="#765044"
-                    stroke-width="7"
-                    stroke-linecap="round"
-                />
-
-                <!-- MAIN BRANCHES -->
-
-                <g
-                    fill="none"
-                    stroke="#54372E"
-                    stroke-linecap="round"
-                >
-
-                    <path
-                        d="M500 175 C420 125 340 90 250 78"
-                        stroke-width="13"
-                    />
-
-                    <path
-                        d="M510 165 C590 115 675 82 765 72"
-                        stroke-width="13"
-                    />
-
-                    <path
-                        d="M495 205 C405 170 315 155 215 160"
-                        stroke-width="10"
-                    />
-
-                    <path
-                        d="M515 198 C600 165 690 155 790 165"
-                        stroke-width="10"
-                    />
-
-                    <path
-                        d="M500 140 C445 92 410 52 390 18"
-                        stroke-width="8"
-                    />
-
-                    <path
-                        d="M530 132 C585 82 620 45 640 12"
-                        stroke-width="8"
-                    />
-
-                </g>
-
-                <!-- WEEPING BRANCHES -->
-
-                <g
-                    fill="none"
-                    stroke="#657452"
-                    stroke-width="4"
-                    stroke-linecap="round"
-                >
-
-                    <path d="M250 78 C235 135 245 205 265 285"/>
-                    <path d="M295 82 C282 145 295 220 310 305"/>
-                    <path d="M340 88 C328 150 340 225 357 315"/>
-                    <path d="M385 95 C372 160 385 230 402 300"/>
-                    <path d="M430 108 C418 165 430 225 445 285"/>
-
-                    <path d="M215 160 C208 215 215 265 228 325"/>
-
-                    <path d="M765 72 C780 135 770 205 750 285"/>
-                    <path d="M720 80 C735 145 720 220 705 305"/>
-                    <path d="M675 88 C688 150 675 225 658 315"/>
-                    <path d="M630 95 C643 160 630 230 613 300"/>
-                    <path d="M585 108 C598 165 585 225 570 285"/>
-
-                    <path d="M790 165 C797 215 790 265 777 325"/>
-
-                </g>
-
-                <!-- LEAVES -->
-
-                <g>
-
-                    <!-- LEFT -->
-
-                    <ellipse
-                        cx="250"
-                        cy="115"
-                        rx="7"
-                        ry="21"
-                        fill="#74835D"
-                        transform="rotate(-20 250 115)"
-                    />
-
-                    <ellipse
-                        cx="270"
-                        cy="155"
-                        rx="7"
-                        ry="22"
-                        fill="#89996D"
-                        transform="rotate(18 270 155)"
-                    />
-
-                    <ellipse
-                        cx="290"
-                        cy="205"
-                        rx="7"
-                        ry="21"
-                        fill="#596846"
-                        transform="rotate(-15 290 205)"
-                    />
-
-                    <ellipse
-                        cx="310"
-                        cy="255"
-                        rx="7"
-                        ry="23"
-                        fill="#74835D"
-                        transform="rotate(17 310 255)"
-                    />
-
-                    <ellipse
-                        cx="335"
-                        cy="135"
-                        rx="7"
-                        ry="22"
-                        fill="#89996D"
-                        transform="rotate(-18 335 135)"
-                    />
-
-                    <ellipse
-                        cx="355"
-                        cy="195"
-                        rx="7"
-                        ry="23"
-                        fill="#74835D"
-                        transform="rotate(16 355 195)"
-                    />
-
-                    <ellipse
-                        cx="380"
-                        cy="250"
-                        rx="7"
-                        ry="21"
-                        fill="#596846"
-                        transform="rotate(-18 380 250)"
-                    />
-
-                    <ellipse
-                        cx="410"
-                        cy="175"
-                        rx="7"
-                        ry="22"
-                        fill="#89996D"
-                        transform="rotate(20 410 175)"
-                    />
-
-                    <!-- RIGHT -->
-
-                    <ellipse
-                        cx="750"
-                        cy="112"
-                        rx="7"
-                        ry="21"
-                        fill="#74835D"
-                        transform="rotate(20 750 112)"
-                    />
-
-                    <ellipse
-                        cx="730"
-                        cy="155"
-                        rx="7"
-                        ry="22"
-                        fill="#89996D"
-                        transform="rotate(-18 730 155)"
-                    />
-
-                    <ellipse
-                        cx="710"
-                        cy="205"
-                        rx="7"
-                        ry="21"
-                        fill="#596846"
-                        transform="rotate(15 710 205)"
-                    />
-
-                    <ellipse
-                        cx="690"
-                        cy="255"
-                        rx="7"
-                        ry="23"
-                        fill="#74835D"
-                        transform="rotate(-17 690 255)"
-                    />
-
-                    <ellipse
-                        cx="665"
-                        cy="135"
-                        rx="7"
-                        ry="22"
-                        fill="#89996D"
-                        transform="rotate(18 665 135)"
-                    />
-
-                    <ellipse
-                        cx="645"
-                        cy="195"
-                        rx="7"
-                        ry="23"
-                        fill="#74835D"
-                        transform="rotate(-16 645 195)"
-                    />
-
-                    <ellipse
-                        cx="620"
-                        cy="250"
-                        rx="7"
-                        ry="21"
-                        fill="#596846"
-                        transform="rotate(18 620 250)"
-                    />
-
-                    <ellipse
-                        cx="590"
-                        cy="175"
-                        rx="7"
-                        ry="22"
-                        fill="#89996D"
-                        transform="rotate(-20 590 175)"
-                    />
-
-                </g>
-
-                <!-- SMALL ROSE BLOSSOMS -->
-
-                <g fill="#B87587">
-
-                    <circle cx="295" cy="120" r="4"/>
-                    <circle cx="350" cy="170" r="4"/>
-                    <circle cx="405" cy="215" r="4"/>
-
-                    <circle cx="705" cy="120" r="4"/>
-                    <circle cx="650" cy="170" r="4"/>
-                    <circle cx="595" cy="215" r="4"/>
-
-                </g>
-
-            </svg>
-
-        </div>
-
+    <div class="book-header-title">
+        My Book Tree
     </div>
-    """
+
+</div>
+
+<div class="willow-logo">
+
+<svg viewBox="0 0 1200 310"
+     xmlns="http://www.w3.org/2000/svg"
+     aria-label="Decorative willow tree">
+
+    <!-- MAIN TRUNK -->
+
+    <path
+        class="willow-trunk"
+        d="
+        M600 305
+        C592 260 585 215 592 170
+        C598 125 608 82 625 38
+        "
+    />
+
+    <path
+        class="willow-trunk-highlight"
+        d="
+        M605 300
+        C598 250 596 210 602 168
+        C608 120 618 78 630 42
+        "
+    />
+
+    <!-- LEFT MAIN BRANCHES -->
+
+    <path
+        class="willow-main-branch"
+        stroke-width="13"
+        d="M602 155 C535 120 458 82 360 70"
+    />
+
+    <path
+        class="willow-main-branch"
+        stroke-width="10"
+        d="M600 180 C520 150 430 145 320 155"
+    />
+
+    <path
+        class="willow-main-branch"
+        stroke-width="9"
+        d="M602 125 C550 82 520 52 492 18"
+    />
+
+    <!-- RIGHT MAIN BRANCHES -->
+
+    <path
+        class="willow-main-branch"
+        stroke-width="13"
+        d="M612 150 C680 112 760 78 850 68"
+    />
+
+    <path
+        class="willow-main-branch"
+        stroke-width="10"
+        d="M612 178 C690 148 780 140 875 150"
+    />
+
+    <path
+        class="willow-main-branch"
+        stroke-width="9"
+        d="M620 118 C680 78 715 45 742 12"
+    />
+
+    <!-- LEFT HANGING BRANCHES -->
+
+    <path class="willow-hanging"
+        d="M360 70 C348 125 355 190 372 255"/>
+
+    <path class="willow-hanging"
+        d="M405 75 C394 135 404 205 422 275"/>
+
+    <path class="willow-hanging"
+        d="M450 80 C440 145 450 215 470 280"/>
+
+    <path class="willow-hanging"
+        d="M495 87 C485 145 498 205 515 270"/>
+
+    <path class="willow-hanging"
+        d="M535 105 C530 155 538 205 550 250"/>
+
+    <path class="willow-hanging"
+        d="M320 155 C315 200 322 240 338 282"/>
+
+    <!-- RIGHT HANGING BRANCHES -->
+
+    <path class="willow-hanging"
+        d="M680 90 C690 150 682 215 665 275"/>
+
+    <path class="willow-hanging"
+        d="M725 78 C738 140 730 210 712 280"/>
+
+    <path class="willow-hanging"
+        d="M770 72 C785 130 778 200 758 265"/>
+
+    <path class="willow-hanging"
+        d="M815 68 C830 125 822 190 805 250"/>
+
+    <path class="willow-hanging"
+        d="M850 150 C860 195 853 240 838 282"/>
+
+    <!-- LEFT LEAVES -->
+
+    <g>
+        <ellipse class="willow-leaf-light"
+            cx="360" cy="108" rx="7" ry="22"
+            transform="rotate(-24 360 108)"/>
+
+        <ellipse class="willow-leaf"
+            cx="370" cy="158" rx="7" ry="23"
+            transform="rotate(18 370 158)"/>
+
+        <ellipse class="willow-leaf-deep"
+            cx="380" cy="205" rx="7" ry="21"
+            transform="rotate(-18 380 205)"/>
+
+        <ellipse class="willow-leaf-light"
+            cx="405" cy="135" rx="7" ry="22"
+            transform="rotate(20 405 135)"/>
+
+        <ellipse class="willow-leaf"
+            cx="420" cy="185" rx="7" ry="23"
+            transform="rotate(-15 420 185)"/>
+
+        <ellipse class="willow-leaf-deep"
+            cx="425" cy="235" rx="7" ry="22"
+            transform="rotate(18 425 235)"/>
+
+        <ellipse class="willow-leaf"
+            cx="450" cy="120" rx="7" ry="22"
+            transform="rotate(-20 450 120)"/>
+
+        <ellipse class="willow-leaf-light"
+            cx="465" cy="170" rx="7" ry="23"
+            transform="rotate(16 465 170)"/>
+
+        <ellipse class="willow-leaf"
+            cx="480" cy="225" rx="7" ry="22"
+            transform="rotate(-18 480 225)"/>
+
+        <ellipse class="willow-leaf-deep"
+            cx="500" cy="145" rx="7" ry="21"
+            transform="rotate(19 500 145)"/>
+
+        <ellipse class="willow-leaf-light"
+            cx="515" cy="195" rx="7" ry="23"
+            transform="rotate(-15 515 195)"/>
+
+        <ellipse class="willow-leaf"
+            cx="525" cy="235" rx="7" ry="21"
+            transform="rotate(16 525 235)"/>
+
+        <ellipse class="willow-leaf"
+            cx="340" cy="205" rx="7" ry="22"
+            transform="rotate(-15 340 205)"/>
+
+        <ellipse class="willow-leaf-light"
+            cx="350" cy="255" rx="7" ry="22"
+            transform="rotate(17 350 255)"/>
+    </g>
+
+    <!-- RIGHT LEAVES -->
+
+    <g>
+        <ellipse class="willow-leaf-light"
+            cx="840" cy="108" rx="7" ry="22"
+            transform="rotate(23 840 108)"/>
+
+        <ellipse class="willow-leaf"
+            cx="830" cy="158" rx="7" ry="23"
+            transform="rotate(-18 830 158)"/>
+
+        <ellipse class="willow-leaf-deep"
+            cx="820" cy="205" rx="7" ry="21"
+            transform="rotate(18 820 205)"/>
+
+        <ellipse class="willow-leaf-light"
+            cx="795" cy="135" rx="7" ry="22"
+            transform="rotate(-20 795 135)"/>
+
+        <ellipse class="willow-leaf"
+            cx="780" cy="185" rx="7" ry="23"
+            transform="rotate(15 780 185)"/>
+
+        <ellipse class="willow-leaf-deep"
+            cx="775" cy="235" rx="7" ry="22"
+            transform="rotate(-18 775 235)"/>
+
+        <ellipse class="willow-leaf"
+            cx="750" cy="120" rx="7" ry="22"
+            transform="rotate(20 750 120)"/>
+
+        <ellipse class="willow-leaf-light"
+            cx="735" cy="170" rx="7" ry="23"
+            transform="rotate(-16 735 170)"/>
+
+        <ellipse class="willow-leaf"
+            cx="720" cy="225" rx="7" ry="22"
+            transform="rotate(18 720 225)"/>
+
+        <ellipse class="willow-leaf-deep"
+            cx="700" cy="145" rx="7" ry="21"
+            transform="rotate(-19 700 145)"/>
+
+        <ellipse class="willow-leaf-light"
+            cx="685" cy="195" rx="7" ry="23"
+            transform="rotate(15 685 195)"/>
+
+        <ellipse class="willow-leaf"
+            cx="675" cy="235" rx="7" ry="21"
+            transform="rotate(-16 675 235)"/>
+
+        <ellipse class="willow-leaf"
+            cx="860" cy="205" rx="7" ry="22"
+            transform="rotate(15 860 205)"/>
+
+        <ellipse class="willow-leaf-light"
+            cx="850" cy="255" rx="7" ry="22"
+            transform="rotate(-17 850 255)"/>
+    </g>
+
+    <!-- SMALL ROSE BLOSSOMS -->
+
+    <g>
+        <g class="willow-flower">
+            <circle cx="405" cy="104" r="5"/>
+            <circle cx="414" cy="108" r="5"/>
+            <circle cx="410" cy="99" r="5"/>
+            <circle cx="401" cy="101" r="5"/>
+        </g>
+
+        <circle class="willow-flower-center"
+            cx="407" cy="104" r="2"/>
+
+        <g class="willow-flower">
+            <circle cx="478" cy="143" r="5"/>
+            <circle cx="487" cy="147" r="5"/>
+            <circle cx="483" cy="138" r="5"/>
+            <circle cx="474" cy="140" r="5"/>
+        </g>
+
+        <circle class="willow-flower-center"
+            cx="480" cy="143" r="2"/>
+
+        <g class="willow-flower">
+            <circle cx="520" cy="176" r="5"/>
+            <circle cx="529" cy="180" r="5"/>
+            <circle cx="525" cy="171" r="5"/>
+            <circle cx="516" cy="173" r="5"/>
+        </g>
+
+        <circle class="willow-flower-center"
+            cx="522" cy="176" r="2"/>
+
+        <g class="willow-flower">
+            <circle cx="795" cy="143" r="5"/>
+            <circle cx="804" cy="147" r="5"/>
+            <circle cx="800" cy="138" r="5"/>
+            <circle cx="791" cy="140" r="5"/>
+        </g>
+
+        <circle class="willow-flower-center"
+            cx="797" cy="143" r="2"/>
+
+        <g class="willow-flower">
+            <circle cx="735" cy="105" r="5"/>
+            <circle cx="744" cy="109" r="5"/>
+            <circle cx="740" cy="100" r="5"/>
+            <circle cx="731" cy="102" r="5"/>
+        </g>
+
+        <circle class="willow-flower-center"
+            cx="737" cy="105" r="2"/>
+
+        <g class="willow-flower">
+            <circle cx="690" cy="175" r="5"/>
+            <circle cx="699" cy="179" r="5"/>
+            <circle cx="695" cy="170" r="5"/>
+            <circle cx="686" cy="172" r="5"/>
+        </g>
+
+        <circle class="willow-flower-center"
+            cx="692" cy="175" r="2"/>
+    </g>
+
+</svg>
+
+</div>
+"""
 )
 
 # ============================================================
@@ -1030,7 +1209,6 @@ def detect_series_number(title):
                 return float(
                     match.group(1)
                 )
-
             except Exception:
                 pass
 
