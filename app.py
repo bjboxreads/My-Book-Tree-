@@ -1,90 +1,65 @@
-import streamlit as st
-
-st.set_page_config(
-    page_title="My Book Tree",
-    page_icon="🌿",
-    layout="wide",
-    initial_sidebar_state="collapsed"
-)
-
-# ============================================================
-# MY BOOK TREE — FOUNDATION
-# ============================================================
-
 st.markdown("""
 <style>
 
-@import url('https://fonts.googleapis.com/css2?family=Libre+Baskerville:wght@400;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Berkshire+Swash&family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;1,400;1,500&display=swap');
 
 :root {
-    --background: #872657;
-    --text: #F27D33;
-    --accent: #FFECD1;
-    --gold: #C8A46A;
+    --background: #160D13;
+    --cream: #F5E8D8;
+    --rose: #C98A9D;
+    --gold: #C9A66B;
 }
 
-/* Main application */
+/* PAGE */
 
 .stApp {
     background: var(--background);
-    color: var(--text);
+    color: var(--cream);
 }
-
-/* Remove Streamlit's default top spacing */
 
 .block-container {
     max-width: 1500px;
-    padding-top: 35px;
-    padding-left: 50px;
-    padding-right: 50px;
+    padding: 40px 50px 80px;
 }
 
-/* Main typography */
-
-html,
-body,
-.stApp,
-.stApp * {
-    font-family: "Libre Baskerville", Georgia, serif;
-}
-
-/* Hide Streamlit branding */
-
-#MainMenu {
-    visibility: hidden;
-}
-
-footer {
-    visibility: hidden;
-}
-
-header {
-    visibility: hidden;
-}
-
-/* Title */
+/* MAIN TITLE */
 
 .book-tree-title {
     text-align: center;
-    margin-top: 20px;
+    margin-top: 45px;
+    position: relative;
+    z-index: 10;
 }
 
 .book-tree-title h1 {
     margin: 0;
     padding: 0;
-    color: var(--text);
-    font-size: 76px;
+
+    font-family: "Berkshire Swash", cursive;
+
+    font-size: 86px;
     font-weight: 400;
     letter-spacing: 1px;
-    line-height: 1.05;
+    line-height: 1.1;
+
+    color: var(--cream);
+
+    text-shadow:
+        0 3px 10px rgba(0,0,0,.7),
+        0 0 28px rgba(201,138,157,.18);
 }
 
 .book-tree-title p {
-    margin-top: 14px;
-    color: var(--accent);
-    font-size: 18px;
+    margin: 15px 0 0;
+
+    font-family: "Cormorant Garamond", serif;
+
+    font-size: 22px;
     font-style: italic;
-    letter-spacing: 3px;
+    font-weight: 500;
+    letter-spacing: 4px;
+
+    color: var(--rose);
 }
 
 </style>
@@ -94,5 +69,6 @@ header {
 st.markdown("""
 <div class="book-tree-title">
     <h1>My Book Tree</h1>
+    <p>where every story has a branch</p>
 </div>
 """, unsafe_allow_html=True)
