@@ -269,52 +269,54 @@ div[data-baseweb="input"] input {{
 py
 st.markdown
     """
-<style>
- .stat-card {{
-     background: var(--card) !important;
-     border: 2px solid var(--accent) !important;
-     padding: 25px 15px !important;
-     text-align: center;
-     position: relative;
-     transition: all 0.4s ease;
-     display: flex;
-     flex-direction: column;
-     align-items: center;
-     justify-content: center;
-     box-shadow: 0 8px 20px rgba(0,0,0,0.5);
-     border-radius: 15px 45px 15px 45px !important; 
-     min-height: 140px !important;
-     min-width: 130px !important;
-     margin: 5px;
- }}
+py
+st.markdown(
+    """
+    <style>
+    /* Aggressive Victorian Styles */
+    .stat-card {{
+        background: var(--card) !important;
+        border: 2px solid var(--accent) !important;
+        border-radius: 30% 70% 30% 70% / 70% 30% 70% 30% !important;
+        padding: 30px 20px !important;
+        text-align: center !important;
+        position: relative !important;
+        box-shadow: 0 10px 25px rgba(0,0,0,0.5) !important;
+        display: flex !important;
+        flex-direction: column !important;
+        align-items: center !important;
+        justify-content: center !important;
+        min-height: 140px !important;
+    }}
 
- .stat-card::before {{
-     content: '❦'; 
-     position: absolute;
-     top: -15px;
-     left: 50%;
-     transform: translateX(-50%);
-     color: var(--accent);
-     background: var(--card) !important;
-     padding: 0 10px;
-     z-index: 3;
-}}
+    .stat-card::before {{
+        content: '❦' !important;
+        position: absolute !important;
+        top: -15px !important;
+        left: 50% !important;
+        transform: translateX(-50%) !important;
+        color: var(--accent) !important;
+        background: var(--card) !important;
+        padding: 0 10px !important;
+    }}
 
- .stat-number {{
-     font-family: "Berkshire Swash", serif !important;
-     font-size: 42px !important;
-     color: var(--accent) !important;
-     margin: 0 !important;
-     line-height: 1 !important;
-}}
+    .stat-number {{
+        font-family: "Berkshire Swash", serif !important;
+        font-size: 42px !important;
+        color: var(--accent) !important;
+    }}
 
-.stat-label {{
-    font-family: "Berkshire Swash", serif !important;
-    color: var(--text) !important;
-    font-size: 14px !important; 
-    margin-top: 5px;
-}}
-
+    .stat-label {{
+        font-family: "Berkshire Swash", serif !important;
+        color: var(--text) !important;
+        font-size: 14px !important; 
+        text-align: center !important;
+        width: 100% !important;
+    }}
+    </style>
+    """, 
+    unsafe_allow_html=True
+)
 
  .tree-container {{
     margin-top: 20px;
