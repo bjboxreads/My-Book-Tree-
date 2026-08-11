@@ -324,7 +324,7 @@ div[data-baseweb="input"] input {{
 }
 
     .stat-label {{
-        font-family: "Libre Baskerville", Georgia, serif !important;
+        font-family: "Berkshire Swash", serif !important;
         color: var(--text) !important;
         font-size: 11px !important;
         text-transform: uppercase;
