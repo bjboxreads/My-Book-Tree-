@@ -699,7 +699,7 @@ def import_books(uploaded_file):
                 low_memory=False,
             )
 
-    except Exception:
+        except Exception:
 
         try:
 
@@ -711,7 +711,7 @@ def import_books(uploaded_file):
                 low_memory=False,
             )
 
-        except Exception as error:
+       except Exception as error:
 
             st.error(
                 f"Could not read this CSV file: {error}"
