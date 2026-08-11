@@ -268,8 +268,9 @@ div[data-baseweb="input"] input {{
     border-color: var(--accent) !important;
 }}
 .stat-card {{
-    background: var(--surface) !important;
-    border: 2px solid var(--accent) !important;
+    /* Uses the standard Streamlit background variable */
+    background: var(--background-secondary-color, #1a1a1a) !important;
+    border: 2px solid var(--primary-color, #d8a93a) !important;
     padding: 25px 15px !important;
     text-align: center;
     position: relative;
@@ -279,50 +280,41 @@ div[data-baseweb="input"] input {{
     align-items: center;
     justify-content: center;
     box-shadow: 0 8px 20px rgba(0,0,0,0.5);
-    
-    /* SYMMETRICAL CORNERS: Makes every box identical */
     border-radius: 15px 45px 15px 45px !important; 
-    
-    /* FIXED SIZE: Ensures they are the same dimensions */
     min-height: 140px !important;
     min-width: 130px !important;
-    margin: 5px;
 }}
 
-/* Floral Ornament - centered correctly */
 .stat-card::before {{
     content: '❦'; 
     position: absolute;
     top: -15px;
     left: 50%;
     transform: translateX(-50%);
-    color: var(--accent);
-    font-size: 24px;
-    background: var(--surface);
+    /* Uses primary accent color */
+    color: var(--primary-color, #d8a93a);
+    background: var(--background-secondary-color, #1a1a1a);
     padding: 0 10px;
     z-index: 3;
-}}
-
-.stat-card:hover {{
-    transform: translateY(-5px);
-    box-shadow: 0 12px 30px rgba(0,0,0,0.6);
 }}
 
 .stat-number {{
     font-family: "Berkshire Swash", serif !important;
     font-size: 42px !important;
-    color: var(--accent) !important;
+    /* Uses primary accent color */
+    color: var(--primary-color, #d8a93a) !important;
     margin: 0 !important;
     line-height: 1 !important;
 }}
 
 .stat-label {{
     font-family: "Berkshire Swash", serif !important;
-    color: var(--text) !important;
+    /* Uses the standard text color variable */
+    color: var(--text-color, #ffffff) !important;
     font-size: 14px !important; 
     margin-top: 5px;
     width: 100%;
- }}
+}}
 
 .tree-container {{
     margin-top: 20px;
