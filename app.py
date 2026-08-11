@@ -268,26 +268,59 @@ div[data-baseweb="input"] input {{
     border-color: var(--accent) !important;
 }}
 
-.stat-card {{
-    background: var(--surface);
-    border-bottom: 2px solid var(--line);
-    border-radius: 5px 18px 5px 18px;
-    padding: 15px;
+.stat-card {
+    position: relative;
+    background: var(--surface2) !important;
+    border-radius: 20px !important;
+    padding: 30px 15px !important;
+    border: 1px solid var(--accent) !important;
+    overflow: hidden;
     text-align: center;
+    transition: all 0.5s cubic-bezier(0.23, 1, 0.32, 1);
+    box-shadow: 0 10px 30px rgba(0,0,0,0.4);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
 }}
 
-.stat-number {{
-    font-family: "Berkshire Swash", Georgia, serif;
-    font-size: 36px;
-    color: var(--accent);
+.stat-card::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 5px;
+    background: linear-gradient(90deg, transparent, var(--accent), transparent);
+    opacity: 0.8;
 }}
 
-.stat-label {{
-    color: var(--muted);
-    font-family: "Libre Baskerville", Georgia, serif;
-    font-size: 10px;
+.stat-card:hover {
+    transform: translateY(-8px) scale(1.02);
+    border-color: var(--accent);
+}}
+
+.stat-number {
+    font-family: "Berkshire Swash", serif !important;
+    font-size: 56px !important;
+    background: linear-gradient(180deg, var(--text) 30%, var(--accent) 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    font-weight: 700 !important;
+    margin: 0 !important;
+    line-height: 1 !important;
+}}
+
+.stat-label {
+    font-family: "Libre Baskerville", serif !important;
+    color: var(--text) !important;
+    font-size: 10px !important;
     text-transform: uppercase;
-    letter-spacing: .12em;
+    letter-spacing: 5px !important;
+    font-weight: 600 !important;
+    margin-top: 20px;
+    opacity: 0.6;
+}}
 }}
 
 .tree-container {{
