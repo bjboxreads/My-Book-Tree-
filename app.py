@@ -1640,92 +1640,24 @@ with books_tab:
                 == choice
             ]
 
-        for index, book in (
-            books.iterrows()
-        ):
+     py
+with books_tab:
+    if library.empty:
+        st.info("No books yet.")
+    else:
+        # Keep your radio buttons if you want to filter the tree!
+        choice = st.radio("Show", ["All", "Favorites", "Read", "Currently Reading", "Want to Read"], horizontal=True)
+        
+        books = library.copy()
+        if choice == "Favorites":
+            books = books[books["Favorite"] == True]
+        elif choice != "All":
+            books = books[books["Status"] == choice]
 
-            col1, col2, col3 = (
-                st.columns(
-                    [1, 6, 1]
-                )
-            )
-
-            with col1:
-
-                if book.get(
-                    "Cover"
-                ):
-
-                    st.image(
-                        book["Cover"],
-                        width=70,
-                    )
-
-            with col2:
-
-                st.html(
-                    f"""
-                    <div class="book-title">
-                        {html.escape(
-                            str(
-                                book["Title"]
-                            )
-                        )}
-                    </div>
-
-                    <div class="book-meta">
-                        {html.escape(
-                            str(
-                                book["Author"]
-                            )
-                        )}
-                        <br>
-                        {html.escape(
-                            str(
-                                book["Series"]
-                            )
-                        )}
-                        <br>
-                        {html.escape(
-                            str(
-                                book.get(
-                                    "Genre",
-                                    "",
-                                )
-                            )
-                        )}
-                    </div>
-                    """
-                )
-
-            with col3:
-
-                current_favorite = bool(
-                    book.get(
-                        "Favorite",
-                        False,
-                    )
-                )
-
-                favorite = st.checkbox(
-                    "♥",
-                    value=current_favorite,
-                    key=f"fav_{index}",
-                )
-
-                if (
-                    favorite
-                    != current_favorite
-                ):
-
-                    st.session_state.library.loc[
-                        index,
-                        "Favorite",
-                    ] = favorite
-
-                    st.rerun()
-
-
+        # DELETE the for index, book... loop
+        # AND PASTE THIS:
+        display_ancestry_tree(books)
+        
 # ============================================================
 # ADD BOOK
 # ============================================================
