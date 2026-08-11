@@ -323,15 +323,18 @@ div[data-baseweb="input"] input {{
     line-height: 1 !important;
 }
 
-.stat-label {{
-    font-family: "Berkshire Swash", serif !important;
-    color: var(--text) !important;
-    font-size: 11px !important;
-    text-transform: uppercase;
-    letter-spacing: 2px !important;
-    margin-top: 10px;
-    font-style: italic;
-}}
+    .stat-label {{
+        font-family: "Libre Baskerville", Georgia, serif !important;
+        color: var(--text) !important;
+        font-size: 11px !important;
+        text-transform: uppercase;
+        letter-spacing: 2px !important;
+        margin-right: -2px !important; 
+        margin-top: 10px;
+        font-style: italic;
+        width: 100%;
+        text-align: center;
+    }}
 
 .tree-container {{
     margin-top: 20px;
