@@ -1,3 +1,4 @@
+```python
 import streamlit as st
 import pandas as pd
 import requests
@@ -125,6 +126,10 @@ THEMES = {
 if "theme" not in st.session_state:
     st.session_state.theme = "Midnight Library"
 
+# Prevent the old KeyError from surviving a code update
+if st.session_state.theme not in THEMES:
+    st.session_state.theme = "Midnight Library"
+
 if "library" not in st.session_state:
     st.session_state.library = pd.DataFrame()
 
@@ -140,10 +145,10 @@ if "open_series" not in st.session_state:
 theme = THEMES[st.session_state.theme]
 
 # ============================================================
-# GLOBAL CSS
+# CSS
 # ============================================================
 
-st.html(
+st.markdown(
     f"""
 <style>
 
@@ -182,57 +187,43 @@ body,
     box-sizing: border-box;
 }}
 
-h1,
-h2,
-h3,
-h4,
-h5,
-h6 {{
+h1, h2, h3, h4, h5, h6 {{
     font-family: "Cormorant Garamond", Georgia, serif !important;
     color: var(--text) !important;
 }}
 
-p,
-label,
-span {{
+p, label, span {{
     font-family: "EB Garamond", Georgia, serif;
     color: var(--text);
 }}
 
-/* ============================================================
-   TITLE
-============================================================ */
+/* TITLE */
 
 .title-area {{
     text-align: center;
-    margin: 12px auto 35px;
+    margin: 15px auto 30px;
 }}
 
 .title {{
     font-family: "Cormorant Garamond", Georgia, serif;
-    font-size: 62px;
+    font-size: 64px;
     line-height: .9;
     font-weight: 600;
-    letter-spacing: .015em;
     color: var(--text);
 }}
 
 .subtitle {{
     margin-top: 12px;
     font-family: "Libre Baskerville", Georgia, serif;
-    font-size: 11px;
+    font-size: 10px;
     letter-spacing: .22em;
     text-transform: uppercase;
     color: var(--soft);
 }}
 
-/* ============================================================
-   ORNAMENT
-============================================================ */
-
 .ornament {{
-    width: 250px;
-    height: 22px;
+    width: 270px;
+    height: 25px;
     margin: 20px auto 0;
     position: relative;
 }}
@@ -242,7 +233,7 @@ span {{
     position: absolute;
     left: 0;
     right: 0;
-    top: 10px;
+    top: 12px;
     height: 1px;
     background: var(--gold);
 }}
@@ -252,17 +243,14 @@ span {{
     position: absolute;
     left: 50%;
     transform: translateX(-50%);
-    top: -2px;
-    padding: 0 13px;
+    top: -1px;
+    padding: 0 14px;
     background: var(--bg);
     color: var(--gold);
-    font-size: 18px;
-    white-space: nowrap;
+    font-size: 19px;
 }}
 
-/* ============================================================
-   LOADING VINE
-============================================================ */
+/* LOADING SCREEN */
 
 .loading {{
     position: fixed;
@@ -282,7 +270,7 @@ span {{
 
 .loading-word {{
     font-family: "Cormorant Garamond", Georgia, serif;
-    font-size: 42px;
+    font-size: 44px;
     font-style: italic;
     color: var(--text);
     margin-bottom: 25px;
@@ -302,17 +290,12 @@ span {{
     height: 5px;
     background: var(--branch);
     border-radius: 100%;
-    transform-origin: left center;
     animation: grow 2.4s ease-out forwards;
 }}
 
 @keyframes grow {{
-    from {{
-        transform: scaleX(0) rotate(-2deg);
-    }}
-    to {{
-        transform: scaleX(1) rotate(-2deg);
-    }}
+    from {{ transform: scaleX(0); }}
+    to {{ transform: scaleX(1); }}
 }}
 
 .vine-leaf {{
@@ -325,56 +308,16 @@ span {{
     animation: leafappear .45s ease forwards;
 }}
 
-.leaf1 {{
-    left: 12%;
-    top: 35px;
-    transform: rotate(-38deg);
-    animation-delay: .45s;
-}}
-
-.leaf2 {{
-    left: 25%;
-    top: 66px;
-    transform: rotate(42deg);
-    animation-delay: .75s;
-}}
-
-.leaf3 {{
-    left: 40%;
-    top: 31px;
-    transform: rotate(-34deg);
-    animation-delay: 1s;
-}}
-
-.leaf4 {{
-    right: 39%;
-    top: 68px;
-    transform: rotate(40deg);
-    animation-delay: 1.3s;
-}}
-
-.leaf5 {{
-    right: 24%;
-    top: 30px;
-    transform: rotate(-37deg);
-    animation-delay: 1.6s;
-}}
-
-.leaf6 {{
-    right: 11%;
-    top: 65px;
-    transform: rotate(43deg);
-    animation-delay: 1.9s;
-}}
+.leaf1 {{ left: 12%; top: 35px; transform: rotate(-38deg); animation-delay: .45s; }}
+.leaf2 {{ left: 25%; top: 66px; transform: rotate(42deg); animation-delay: .75s; }}
+.leaf3 {{ left: 40%; top: 31px; transform: rotate(-34deg); animation-delay: 1s; }}
+.leaf4 {{ right: 39%; top: 68px; transform: rotate(40deg); animation-delay: 1.3s; }}
+.leaf5 {{ right: 24%; top: 30px; transform: rotate(-37deg); animation-delay: 1.6s; }}
+.leaf6 {{ right: 11%; top: 65px; transform: rotate(43deg); animation-delay: 1.9s; }}
 
 @keyframes leafappear {{
-    from {{
-        opacity: 0;
-        transform: scale(.2);
-    }}
-    to {{
-        opacity: 1;
-    }}
+    from {{ opacity: 0; transform: scale(.2); }}
+    to {{ opacity: 1; }}
 }}
 
 .loading-flower {{
@@ -390,27 +333,22 @@ span {{
 }}
 
 @keyframes flowerappear {{
-    to {{
-        opacity: 1;
-    }}
+    to {{ opacity: 1; }}
 }}
 
-/* ============================================================
-   THEME CONTROL
-============================================================ */
+/* THEME SELECTOR */
 
 .theme-heading {{
     text-align: center;
     font-family: "Cormorant Garamond", Georgia, serif;
-    font-size: 22px;
-    font-weight: 600;
+    font-size: 23px;
     color: var(--gold);
-    margin-bottom: 6px;
+    margin-bottom: 7px;
 }}
 
 div[data-baseweb="select"] > div {{
     background: #181818 !important;
-    border: 1px solid var(--gold) !important;
+    border: 1px solid #D6AF58 !important;
     border-radius: 6px !important;
 }}
 
@@ -424,53 +362,47 @@ div[role="listbox"] {{
 }}
 
 div[role="option"] {{
-    color: white !important;
+    color: #FFFFFF !important;
     background: #181818 !important;
     font-family: "EB Garamond", Georgia, serif !important;
-    padding: 10px 14px !important;
 }}
 
 div[role="option"] * {{
-    color: white !important;
+    color: #FFFFFF !important;
 }}
 
 div[role="option"]:hover {{
     background: #3A3A3A !important;
 }}
 
-/* ============================================================
-   SIMPLE LIBRARY COUNTS
-============================================================ */
+/* COUNTS */
 
 .library-counts {{
     display: flex;
     justify-content: center;
-    gap: 48px;
-    margin: 30px auto 38px;
+    gap: 55px;
+    margin: 30px auto 40px;
     text-align: center;
 }}
 
 .count-number {{
     display: block;
     font-family: "Cormorant Garamond", Georgia, serif;
-    font-size: 34px;
-    line-height: 1;
+    font-size: 36px;
     color: var(--gold);
 }}
 
 .count-label {{
     display: block;
-    margin-top: 5px;
+    margin-top: 4px;
     font-family: "Libre Baskerville", Georgia, serif;
     font-size: 8px;
-    letter-spacing: .16em;
+    letter-spacing: .15em;
     text-transform: uppercase;
     color: var(--soft);
 }}
 
-/* ============================================================
-   SEARCH / FILTER AREA
-============================================================ */
+/* SEARCH */
 
 .tools {{
     border-top: 1px solid var(--branch);
@@ -502,52 +434,43 @@ div[data-baseweb="input"] input::placeholder {{
     color: var(--soft) !important;
 }}
 
-button[kind="secondary"] {{
-    font-family: "EB Garamond", Georgia, serif !important;
-}}
-
-/* ============================================================
-   TREE
-============================================================ */
+/* TREE */
 
 .tree-title {{
     text-align: center;
     font-family: "Cormorant Garamond", Georgia, serif;
-    font-size: 38px;
+    font-size: 40px;
     color: var(--text);
-    margin-bottom: 4px;
 }}
 
 .tree-subtitle {{
     text-align: center;
     font-family: "EB Garamond", Georgia, serif;
     color: var(--soft);
-    font-size: 15px;
+    font-size: 16px;
     margin-bottom: 35px;
 }}
 
 .tree-root {{
-    position: relative;
     text-align: center;
-    margin-bottom: 55px;
+    margin-bottom: 45px;
 }}
 
 .root-label {{
     display: inline-block;
-    padding: 8px 24px;
+    padding: 8px 25px;
     border-top: 1px solid var(--gold);
     border-bottom: 1px solid var(--gold);
     font-family: "Cormorant Garamond", Georgia, serif;
-    font-size: 25px;
-    font-weight: 600;
+    font-size: 26px;
     color: var(--gold);
 }}
 
-/* AUTHOR BRANCH */
+/* AUTHOR */
 
 .author-wrap {{
     position: relative;
-    margin-bottom: 22px;
+    margin: 0 0 22px 25px;
     padding-left: 30px;
 }}
 
@@ -565,7 +488,7 @@ button[kind="secondary"] {{
     content: "";
     position: absolute;
     left: 6px;
-    top: 24px;
+    top: 25px;
     width: 24px;
     height: 1px;
     background: var(--branch);
@@ -573,29 +496,26 @@ button[kind="secondary"] {{
 
 .author-name {{
     display: inline-block;
-    position: relative;
-    z-index: 2;
-    padding: 5px 13px;
+    padding: 3px 12px;
     background: var(--bg);
     font-family: "Cormorant Garamond", Georgia, serif;
-    font-size: 28px;
+    font-size: 29px;
     font-weight: 600;
     color: var(--text);
 }}
 
 .author-count {{
-    display: inline-block;
     margin-left: 8px;
     font-family: "EB Garamond", Georgia, serif;
     font-size: 14px;
     color: var(--soft);
 }}
 
-/* SERIES BRANCH */
+/* SERIES */
 
 .series-wrap {{
     position: relative;
-    margin: 7px 0 7px 58px;
+    margin: 8px 0 8px 80px;
     padding-left: 30px;
 }}
 
@@ -603,8 +523,8 @@ button[kind="secondary"] {{
     content: "";
     position: absolute;
     left: 5px;
-    top: -9px;
-    height: calc(100% + 18px);
+    top: -10px;
+    bottom: -10px;
     width: 1px;
     background: var(--branch);
 }}
@@ -613,7 +533,7 @@ button[kind="secondary"] {{
     content: "";
     position: absolute;
     left: 5px;
-    top: 22px;
+    top: 23px;
     width: 25px;
     height: 1px;
     background: var(--branch);
@@ -622,7 +542,7 @@ button[kind="secondary"] {{
 .series-name {{
     display: inline-block;
     background: var(--bg);
-    padding: 3px 10px;
+    padding: 2px 10px;
     font-family: "Cormorant Garamond", Georgia, serif;
     font-size: 24px;
     font-weight: 600;
@@ -630,20 +550,18 @@ button[kind="secondary"] {{
 }}
 
 .series-count {{
-    display: inline-block;
     margin-left: 7px;
-    color: var(--soft);
     font-family: "EB Garamond", Georgia, serif;
     font-size: 13px;
+    color: var(--soft);
 }}
 
-/* BOOK BRANCH */
+/* BOOK */
 
 .book-wrap {{
     position: relative;
-    margin: 8px 0 8px 120px;
+    margin: 8px 0 8px 145px;
     padding-left: 28px;
-    min-height: 30px;
 }}
 
 .book-wrap::before {{
@@ -660,7 +578,7 @@ button[kind="secondary"] {{
     content: "";
     position: absolute;
     left: 5px;
-    top: 20px;
+    top: 34px;
     width: 23px;
     height: 1px;
     background: var(--branch);
@@ -670,8 +588,6 @@ button[kind="secondary"] {{
     display: flex;
     align-items: center;
     gap: 13px;
-    width: fit-content;
-    max-width: 850px;
 }}
 
 .book-cover {{
@@ -690,7 +606,6 @@ button[kind="secondary"] {{
     align-items: center;
     justify-content: center;
     color: var(--soft);
-    font-size: 18px;
 }}
 
 .book-title {{
@@ -704,7 +619,6 @@ button[kind="secondary"] {{
     font-family: "EB Garamond", Georgia, serif;
     font-size: 13px;
     color: var(--soft);
-    margin-top: 2px;
 }}
 
 .status-read {{
@@ -719,21 +633,14 @@ button[kind="secondary"] {{
     color: var(--pink);
 }}
 
-/* ============================================================
-   BUTTONS USED FOR TREE NODES
-============================================================ */
-
-.tree-button {{
-    background: transparent !important;
-    border: none !important;
-    padding: 0 !important;
-}}
+/* TREE BUTTONS */
 
 .stButton > button {{
     background: transparent !important;
     border: none !important;
     color: var(--text) !important;
     font-family: "Cormorant Garamond", Georgia, serif !important;
+    font-size: 21px !important;
     box-shadow: none !important;
 }}
 
@@ -743,9 +650,7 @@ button[kind="secondary"] {{
     border: none !important;
 }}
 
-/* ============================================================
-   TABS
-============================================================ */
+/* TABS */
 
 button[data-baseweb="tab"] {{
     font-family: "Cormorant Garamond", Georgia, serif !important;
@@ -757,10 +662,6 @@ button[data-baseweb="tab"][aria-selected="true"] {{
     color: var(--gold) !important;
 }}
 
-/* ============================================================
-   MOBILE
-============================================================ */
-
 @media (max-width: 800px) {{
 
     .block-container {{
@@ -768,7 +669,7 @@ button[data-baseweb="tab"][aria-selected="true"] {{
     }}
 
     .title {{
-        font-size: 45px;
+        font-size: 46px;
     }}
 
     .library-counts {{
@@ -780,181 +681,17 @@ button[data-baseweb="tab"][aria-selected="true"] {{
     }}
 
     .series-wrap {{
-        margin-left: 35px;
+        margin-left: 40px;
     }}
 
     .author-wrap {{
-        padding-left: 18px;
+        margin-left: 10px;
     }}
 }}
 
 </style>
-"""
-)
-
-# ============================================================
-# LOADING SCREEN
-# ============================================================
-
-if not st.session_state.loading_seen:
-
-    st.html(
-        """
-        <div class="loading">
-
-            <div class="loading-inner">
-
-                <div class="loading-word">
-                    Growing your library...
-                </div>
-
-                <div class="vine">
-
-                    <div class="vine-main"></div>
-
-                    <div class="vine-leaf leaf1"></div>
-                    <div class="vine-leaf leaf2"></div>
-                    <div class="vine-leaf leaf3"></div>
-                    <div class="vine-leaf leaf4"></div>
-                    <div class="vine-leaf leaf5"></div>
-                    <div class="vine-leaf leaf6"></div>
-
-                    <div class="loading-flower">
-                        ✿
-                    </div>
-
-                </div>
-
-            </div>
-
-        </div>
-        """
-    )
-
-    time.sleep(2.4)
-
-    st.session_state.loading_seen = True
-    st.rerun()
-
-# ============================================================
-# HEADER
-# ============================================================
-
-st.html(
-    """
-    <div class="title-area">
-
-        <div class="title">
-            My Book Tree
-        </div>
-
-        <div class="subtitle">
-            Where every story has a branch
-        </div>
-
-        <div class="ornament"></div>
-
-    </div>
-    """
-)
-
-# ============================================================
-# THEME
-# ============================================================
-
-st.html(
-    '<div class="theme-heading">Choose Your Reading Room</div>'
-)
-
-selected_theme = st.selectbox(
-    "Theme",
-    list(THEMES.keys()),
-    index=list(THEMES.keys()).index(
-        st.session_state.theme
-    ),
-    label_visibility="collapsed",
-)
-
-if selected_theme != st.session_state.theme:
-
-    st.session_state.theme = selected_theme
-    st.rerun()
-
-# ============================================================
-# COUNTS
-# ============================================================
-
-library = st.session_state.library
-
-if library.empty:
-
-    total_books = 0
-    authors = 0
-    series = 0
-    read = 0
-
-else:
-
-    total_books = len(library)
-
-    authors = library[
-        "Author"
-    ].nunique()
-
-    series = library[
-        library["Series"] != "Standalone"
-    ][
-        "Series"
-    ].nunique()
-
-    read = len(
-        library[
-            library["Status"] == "Read"
-        ]
-    )
-
-st.html(
-    f"""
-    <div class="library-counts">
-
-        <div>
-            <span class="count-number">
-                {total_books}
-            </span>
-            <span class="count-label">
-                Books
-            </span>
-        </div>
-
-        <div>
-            <span class="count-number">
-                {authors}
-            </span>
-            <span class="count-label">
-                Authors
-            </span>
-        </div>
-
-        <div>
-            <span class="count-number">
-                {series}
-            </span>
-            <span class="count-label">
-                Series
-            </span>
-        </div>
-
-        <div>
-            <span class="count-number">
-                {read}
-            </span>
-            <span class="count-label">
-                Read
-            </span>
-        </div>
-
-    </div>
-    """
+""",
+    unsafe_allow_html=True,
 )
 
 # ============================================================
@@ -964,38 +701,22 @@ st.html(
 @st.cache_data(show_spinner=False)
 def find_cover(title, author, isbn):
 
-    isbn = re.sub(
-        r"\D",
-        "",
-        str(isbn)
-    )
+    isbn = re.sub(r"\D", "", str(isbn))
 
-    # ISBN first
     if isbn:
 
-        url = (
-            "https://covers.openlibrary.org/b/isbn/"
-            f"{isbn}-L.jpg"
-        )
+        url = f"https://covers.openlibrary.org/b/isbn/{isbn}-L.jpg"
 
         try:
 
-            r = requests.get(
-                url,
-                timeout=8
-            )
+            r = requests.get(url, timeout=8)
 
-            if (
-                r.status_code == 200
-                and len(r.content) > 1000
-            ):
-
+            if r.status_code == 200 and len(r.content) > 1000:
                 return url
 
         except Exception:
             pass
 
-    # Open Library
     try:
 
         r = requests.get(
@@ -1010,69 +731,24 @@ def find_cover(title, author, isbn):
 
         if r.status_code == 200:
 
-            docs = r.json().get(
-                "docs",
-                []
-            )
+            docs = r.json().get("docs", [])
 
             if docs:
 
-                cover_id = docs[0].get(
-                    "cover_i"
-                )
+                cover_id = docs[0].get("cover_i")
 
                 if cover_id:
 
-                    return (
-                        "https://covers.openlibrary.org/"
-                        f"b/id/{cover_id}-L.jpg"
-                    )
-
-    except Exception:
-        pass
-
-    # Google Books fallback
-    try:
-
-        r = requests.get(
-            "https://www.googleapis.com/books/v1/volumes",
-            params={
-                "q": f"{title} {author}",
-                "maxResults": 1,
-            },
-            timeout=10,
-        )
-
-        if r.status_code == 200:
-
-            items = r.json().get(
-                "items",
-                []
-            )
-
-            if items:
-
-                image = (
-                    items[0]
-                    .get("volumeInfo", {})
-                    .get("imageLinks", {})
-                    .get("thumbnail")
-                )
-
-                if image:
-
-                    return image.replace(
-                        "http://",
-                        "https://"
-                    )
+                    return f"https://covers.openlibrary.org/b/id/{cover_id}-L.jpg"
 
     except Exception:
         pass
 
     return ""
 
+
 # ============================================================
-# GENRE LOOKUP
+# GENRE
 # ============================================================
 
 @st.cache_data(show_spinner=False)
@@ -1091,10 +767,7 @@ def find_genre(title, author):
 
         if r.status_code == 200:
 
-            items = r.json().get(
-                "items",
-                []
-            )
+            items = r.json().get("items", [])
 
             if items:
 
@@ -1128,24 +801,15 @@ def find_genre(title, author):
                     for genre in preferred:
 
                         if genre.lower() in text.lower():
-
                             return genre
 
-                    parts = [
-                        p.strip()
-                        for p in text.split("/")
-                    ]
-
-                    return (
-                        parts[-1]
-                        if parts
-                        else "Uncategorized"
-                    )
+                    return text.split("/")[-1].strip()
 
     except Exception:
         pass
 
     return "Uncategorized"
+
 
 # ============================================================
 # SERIES HELPERS
@@ -1162,15 +826,15 @@ def get_series(title):
 
     for pattern in patterns:
 
-        m = re.search(
+        match = re.search(
             pattern,
             str(title),
             re.I
         )
 
-        if m:
+        if match:
 
-            result = m.group(1)
+            result = match.group(1)
 
             result = re.sub(
                 r"#\s*\d+(?:\.\d+)?",
@@ -1186,12 +850,9 @@ def get_series(title):
                 flags=re.I
             )
 
-            result = result.strip(
-                " ,-:"
-            )
+            result = result.strip(" ,-:")
 
             if result:
-
                 return result
 
     return "Standalone"
@@ -1207,772 +868,65 @@ def get_series_number(title):
 
     for pattern in patterns:
 
-        m = re.search(
+        match = re.search(
             pattern,
             str(title),
             re.I
         )
 
-        if m:
+        if match:
 
             try:
-                return float(
-                    m.group(1)
-                )
-            except:
+                return float(match.group(1))
+            except Exception:
                 pass
 
     return None
 
 
 # ============================================================
-# IMPORT
-# ============================================================
-
-def import_csv(uploaded):
-
-    try:
-
-        df = pd.read_csv(
-            uploaded,
-            low_memory=False
-        )
-
-    except:
-
-        df = pd.read_csv(
-            uploaded,
-            encoding="latin-1",
-            low_memory=False
-        )
-
-    lookup = {
-        str(c).lower().strip(): c
-        for c in df.columns
-    }
-
-    def column(*names):
-
-        for name in names:
-
-            if name.lower() in lookup:
-
-                return lookup[
-                    name.lower()
-                ]
-
-        return None
-
-    title_col = column(
-        "title"
-    )
-
-    author_col = column(
-        "author",
-        "authors"
-    )
-
-    isbn_col = column(
-        "isbn13",
-        "isbn"
-    )
-
-    rating_col = column(
-        "my rating",
-        "rating"
-    )
-
-    shelf_col = column(
-        "exclusive shelf",
-        "shelf"
-    )
-
-    if not title_col:
-
-        st.error(
-            "I couldn't find a Title column."
-        )
-
-        return
-
-    records = []
-
-    for _, row in df.iterrows():
-
-        title = str(
-            row.get(
-                title_col,
-                ""
-            )
-        ).strip()
-
-        if (
-            not title
-            or title.lower() == "nan"
-        ):
-            continue
-
-        author = "Unknown Author"
-
-        if author_col:
-
-            author = str(
-                row.get(
-                    author_col,
-                    ""
-                )
-            ).strip()
-
-        isbn = ""
-
-        if isbn_col:
-
-            isbn = re.sub(
-                r"\D",
-                "",
-                str(
-                    row.get(
-                        isbn_col,
-                        ""
-                    )
-                )
-            )
-
-        rating = None
-
-        if rating_col:
-
-            try:
-
-                rating = float(
-                    row.get(
-                        rating_col
-                    )
-                )
-
-            except:
-
-                pass
-
-        status = "Want to Read"
-
-        if shelf_col:
-
-            shelf = str(
-                row.get(
-                    shelf_col,
-                    ""
-                )
-            ).lower()
-
-            if "currently" in shelf:
-
-                status = "Currently Reading"
-
-            elif shelf == "read":
-
-                status = "Read"
-
-        records.append(
-            {
-                "Title": title,
-                "Author": author,
-                "Series": get_series(title),
-                "Series Number": get_series_number(title),
-                "ISBN": isbn,
-                "My Rating": rating,
-                "Status": status,
-                "Favorite": False,
-                "Cover": "",
-                "Genre": "Uncategorized",
-                "Date Read": "",
-            }
-        )
-
-    books = pd.DataFrame(
-        records
-    )
-
-    if books.empty:
-
-        st.error(
-            "No books were found."
-        )
-
-        return
-
-    progress = st.progress(0)
-
-    for i in range(
-        len(books)
-    ):
-
-        title = books.loc[
-            i,
-            "Title"
-        ]
-
-        author = books.loc[
-            i,
-            "Author"
-        ]
-
-        isbn = books.loc[
-            i,
-            "ISBN"
-        ]
-
-        books.loc[
-            i,
-            "Cover"
-        ] = find_cover(
-            title,
-            author,
-            isbn
-        )
-
-        books.loc[
-            i,
-            "Genre"
-        ] = find_genre(
-            title,
-            author
-        )
-
-        progress.progress(
-            (i + 1)
-            / len(books)
-        )
-
-    progress.empty()
-
-    st.session_state.library = books
-
-    st.session_state.open_authors = set()
-    st.session_state.open_series = set()
-
-    st.success(
-        f"Added {len(books)} books to your library."
-    )
-
-# ============================================================
-# MAIN TABS
-# ============================================================
-
-tree_tab, all_tab, import_tab, add_tab = st.tabs(
-    [
-        "🌿 Book Tree",
-        "Books",
-        "Import",
-        "Add a Book",
-    ]
-)
-
-# ============================================================
-# BOOK TREE
-# ============================================================
-
-with tree_tab:
-
-    if library.empty:
-
-        st.html(
-            """
-            <div style="
-                text-align:center;
-                padding:80px 20px;
-            ">
-
-                <div style="
-                    font-family:'Cormorant Garamond',serif;
-                    font-size:42px;
-                    color:var(--text);
-                ">
-                    Your tree is waiting.
-                </div>
-
-                <div style="
-                    font-family:'EB Garamond',serif;
-                    font-size:18px;
-                    color:var(--soft);
-                    margin-top:10px;
-                ">
-                    Import your Goodreads library
-                    to begin growing it.
-                </div>
-
-            </div>
-            """
-        )
-
-    else:
-
-        # ----------------------------------------------------
-        # FIND / SORT
-        # ----------------------------------------------------
-
-        st.html(
-            """
-            <div class="tools">
-
-                <div class="tool-title">
-                    Find something in your library
-                </div>
-
-            </div>
-            """
-        )
-
-        c1, c2, c3 = st.columns(
-            [2, 1, 1]
-        )
-
-        with c1:
-
-            search = st.text_input(
-                "Search",
-                placeholder=(
-                    "Title, author, series or genre..."
-                ),
-                label_visibility="collapsed",
-            )
-
-        with c2:
-
-            status = st.selectbox(
-                "Status",
-                [
-                    "All",
-                    "Read",
-                    "Currently Reading",
-                    "Want to Read",
-                ],
-                label_visibility="collapsed",
-            )
-
-        with c3:
-
-            sort = st.selectbox(
-                "Sort",
-                [
-                    "Author A–Z",
-                    "Author Z–A",
-                    "Title A–Z",
-                    "Title Z–A",
-                    "Highest Rated",
-                    "Lowest Rated",
-                    "Newest",
-                    "Oldest",
-                ],
-                label_visibility="collapsed",
-            )
-
-        filtered = library.copy()
-
-        if search:
-
-            q = search.lower()
-
-            mask = (
-                filtered[
-                    "Title"
-                ]
-                .astype(str)
-                .str.lower()
-                .str.contains(
-                    q,
-                    na=False
-                )
-                |
-                filtered[
-                    "Author"
-                ]
-                .astype(str)
-                .str.lower()
-                .str.contains(
-                    q,
-                    na=False
-                )
-                |
-                filtered[
-                    "Series"
-                ]
-                .astype(str)
-                .str.lower()
-                .str.contains(
-                    q,
-                    na=False
-                )
-                |
-                filtered[
-                    "Genre"
-                ]
-                .astype(str)
-                .str.lower()
-                .str.contains(
-                    q,
-                    na=False
-                )
-            )
-
-            filtered = filtered[
-                mask
-            ]
-
-        if status != "All":
-
-            filtered = filtered[
-                filtered["Status"]
-                == status
-            ]
-
-        if sort == "Author A–Z":
-
-            filtered = filtered.sort_values(
-                "Author",
-                key=lambda x:
-                    x.astype(str).str.lower()
-            )
-
-        elif sort == "Author Z–A":
-
-            filtered = filtered.sort_values(
-                "Author",
-                ascending=False,
-                key=lambda x:
-                    x.astype(str).str.lower()
-            )
-
-        elif sort == "Title A–Z":
-
-            filtered = filtered.sort_values(
-                "Title",
-                key=lambda x:
-                    x.astype(str).str.lower()
-            )
-
-        elif sort == "Title Z–A":
-
-            filtered = filtered.sort_values(
-                "Title",
-                ascending=False,
-                key=lambda x:
-                    x.astype(str).str.lower()
-            )
-
-        elif sort == "Highest Rated":
-
-            filtered = filtered.sort_values(
-                "My Rating",
-                ascending=False,
-                na_position="last"
-            )
-
-        elif sort == "Lowest Rated":
-
-            filtered = filtered.sort_values(
-                "My Rating",
-                ascending=True,
-                na_position="last"
-            )
-
-        # ----------------------------------------------------
-        # TREE TITLE
-        # ----------------------------------------------------
-
-        st.html(
-            """
-            <div class="tree-title">
-                Your Library
-            </div>
-
-            <div class="tree-subtitle">
-                Author → Series → Books
-            </div>
-
-            <div class="tree-root">
-                <div class="root-label">
-                    The Beginning
-                </div>
-            </div>
-            """
-        )
-
-        # ----------------------------------------------------
-        # AUTHORS
-        # ----------------------------------------------------
-
-        authors_list = sorted(
-            filtered["Author"]
-            .fillna("Unknown Author")
-            .astype(str)
-            .unique(),
-            key=lambda x:
-                x.lower()
-        )
-
-        for author in authors_list:
-
-            author_books = filtered[
-                filtered["Author"]
-                .fillna("Unknown Author")
-                .astype(str)
-                == author
-            ]
-
-            author_id = re.sub(
-                r"[^a-zA-Z0-9]",
-                "_",
-                author
-            )
-
-            is_open = (
-                author_id
-                in st.session_state.open_authors
-            )
-
-            # Author click
-            clicked = st.button(
-                (
-                    "⌄  "
-                    if is_open
-                    else "›  "
-                )
-                + author,
-                key=f"a_{author_id}",
-                use_container_width=False,
-            )
-
-            if clicked:
-
-                if is_open:
-
-                    st.session_state.open_authors.remove(
-                        author_id
-                    )
-
-                else:
-
-                    st.session_state.open_authors.add(
-                        author_id
-                    )
-
-                st.rerun()
-
-            st.html(
-                f"""
-                <div class="author-wrap">
-
-                    <span class="author-name">
-                        {html.escape(author)}
-                    </span>
-
-                    <span class="author-count">
-                        {len(author_books)}
-                        {"book" if len(author_books) == 1 else "books"}
-                    </span>
-
-                </div>
-                """
-            )
-
-            if not is_open:
-                continue
-
-            # ------------------------------------------------
-            # SERIES
-            # ------------------------------------------------
-
-            series_names = sorted(
-                author_books[
-                    "Series"
-                ]
-                .fillna("Standalone")
-                .astype(str)
-                .unique(),
-                key=lambda x:
-                    x.lower()
-            )
-
-            for series_name in series_names:
-
-                series_books = author_books[
-                    author_books["Series"]
-                    .fillna("Standalone")
-                    .astype(str)
-                    == series_name
-                ].copy()
-
-                # Standalones
-                if series_name == "Standalone":
-
-                    st.html(
-                        f"""
-                        <div class="series-wrap">
-
-                            <span class="series-name">
-                                Standalone Books
-                            </span>
-
-                            <span class="series-count">
-                                {len(series_books)}
-                            </span>
-
-                        </div>
-                        """
-                    )
-
-                    for _, book in series_books.iterrows():
-
-                        render_book(book, False)
-
-                    continue
-
-                series_id = (
-                    author_id
-                    + "_"
-                    + re.sub(
-                        r"[^a-zA-Z0-9]",
-                        "_",
-                        series_name
-                    )
-                )
-
-                series_open = (
-                    series_id
-                    in st.session_state.open_series
-                )
-
-                clicked = st.button(
-                    (
-                        "⌄  "
-                        if series_open
-                        else "›  "
-                    )
-                    + series_name,
-                    key=f"s_{series_id}",
-                    use_container_width=False,
-                )
-
-                if clicked:
-
-                    if series_open:
-
-                        st.session_state.open_series.remove(
-                            series_id
-                        )
-
-                    else:
-
-                        st.session_state.open_series.add(
-                            series_id
-                        )
-
-                    st.rerun()
-
-                st.html(
-                    f"""
-                    <div class="series-wrap">
-
-                        <span class="series-name">
-                            {html.escape(series_name)}
-                        </span>
-
-                        <span class="series-count">
-                            {len(series_books)}
-                            {"book" if len(series_books) == 1 else "books"}
-                        </span>
-
-                    </div>
-                    """
-                )
-
-                if not series_open:
-                    continue
-
-                series_books = series_books.sort_values(
-                    [
-                        "Series Number",
-                        "Title"
-                    ],
-                    na_position="last"
-                )
-
-                for _, book in series_books.iterrows():
-
-                    render_book(book, True)
-
-# ============================================================
-# BOOK RENDERER
+# RENDER BOOK
+# IMPORTANT: THIS IS DEFINED BEFORE IT IS CALLED
 # ============================================================
 
 def render_book(book, numbered=False):
 
-    number = book.get(
-        "Series Number"
-    )
+    number = book.get("Series Number")
+
+    prefix = ""
 
     if numbered and pd.notna(number):
 
         try:
 
             if float(number).is_integer():
-
                 prefix = f"{int(number)}. "
-
             else:
-
                 prefix = f"{number}. "
 
-        except:
-
-            prefix = ""
-
-    else:
-
-        prefix = ""
+        except Exception:
+            pass
 
     title = html.escape(
-        str(
-            book.get(
-                "Title",
-                ""
-            )
-        )
+        str(book.get("Title", ""))
     )
 
     genre = html.escape(
-        str(
-            book.get(
-                "Genre",
-                ""
-            )
-        )
+        str(book.get("Genre", ""))
     )
 
     status = str(
-        book.get(
-            "Status",
-            ""
-        )
+        book.get("Status", "")
     )
 
     if status == "Read":
-
         status_class = "status-read"
-
     elif status == "Currently Reading":
-
         status_class = "status-current"
-
     else:
-
         status_class = "status-want"
 
-    rating = book.get(
-        "My Rating"
-    )
-
+    rating = book.get("My Rating")
     rating_text = ""
 
     if pd.notna(rating):
@@ -1983,21 +937,14 @@ def render_book(book, numbered=False):
 
                 rating_text = (
                     " · "
-                    + "★" * int(
-                        float(rating)
-                    )
+                    + "★" * int(float(rating))
                 )
 
-        except:
-
+        except Exception:
             pass
 
     cover = str(
-        book.get(
-            "Cover",
-            ""
-        )
-        or ""
+        book.get("Cover", "") or ""
     )
 
     if cover:
@@ -2010,12 +957,10 @@ def render_book(book, numbered=False):
     else:
 
         image_html = (
-            '<div class="book-cover-placeholder">'
-            '✦'
-            '</div>'
+            '<div class="book-cover-placeholder">✦</div>'
         )
 
-    st.html(
+    st.markdown(
         f"""
         <div class="book-wrap">
 
@@ -2048,8 +993,738 @@ def render_book(book, numbered=False):
             </div>
 
         </div>
-        """
+        """,
+        unsafe_allow_html=True,
     )
+
+
+# ============================================================
+# IMPORT CSV
+# ============================================================
+
+def import_csv(uploaded):
+
+    try:
+
+        df = pd.read_csv(
+            uploaded,
+            low_memory=False
+        )
+
+    except Exception:
+
+        df = pd.read_csv(
+            uploaded,
+            encoding="latin-1",
+            low_memory=False
+        )
+
+    lookup = {
+        str(c).lower().strip(): c
+        for c in df.columns
+    }
+
+    def column(*names):
+
+        for name in names:
+
+            if name.lower() in lookup:
+                return lookup[name.lower()]
+
+        return None
+
+    title_col = column("title")
+    author_col = column("author", "authors")
+    isbn_col = column("isbn13", "isbn")
+    rating_col = column("my rating", "rating")
+    shelf_col = column("exclusive shelf", "shelf")
+
+    if not title_col:
+
+        st.error(
+            "I couldn't find a Title column in this CSV."
+        )
+
+        return False
+
+    records = []
+
+    for _, row in df.iterrows():
+
+        title = str(
+            row.get(title_col, "")
+        ).strip()
+
+        if not title or title.lower() == "nan":
+            continue
+
+        author = "Unknown Author"
+
+        if author_col:
+
+            author = str(
+                row.get(author_col, "")
+            ).strip()
+
+        isbn = ""
+
+        if isbn_col:
+
+            isbn = re.sub(
+                r"\D",
+                "",
+                str(row.get(isbn_col, ""))
+            )
+
+        rating = None
+
+        if rating_col:
+
+            try:
+                rating = float(
+                    row.get(rating_col)
+                )
+            except Exception:
+                pass
+
+        status = "Want to Read"
+
+        if shelf_col:
+
+            shelf = str(
+                row.get(shelf_col, "")
+            ).lower()
+
+            if "currently" in shelf:
+                status = "Currently Reading"
+
+            elif shelf == "read":
+                status = "Read"
+
+        records.append(
+            {
+                "Title": title,
+                "Author": author,
+                "Series": get_series(title),
+                "Series Number": get_series_number(title),
+                "ISBN": isbn,
+                "My Rating": rating,
+                "Status": status,
+                "Favorite": False,
+                "Cover": "",
+                "Genre": "Uncategorized",
+                "Date Read": "",
+            }
+        )
+
+    books = pd.DataFrame(records)
+
+    if books.empty:
+
+        st.error(
+            "No books were found in the file."
+        )
+
+        return False
+
+    progress = st.progress(0)
+
+    for i in range(len(books)):
+
+        title = books.loc[i, "Title"]
+        author = books.loc[i, "Author"]
+        isbn = books.loc[i, "ISBN"]
+
+        books.loc[i, "Cover"] = find_cover(
+            title,
+            author,
+            isbn
+        )
+
+        books.loc[i, "Genre"] = find_genre(
+            title,
+            author
+        )
+
+        progress.progress(
+            (i + 1) / len(books)
+        )
+
+    progress.empty()
+
+    st.session_state.library = books
+    st.session_state.open_authors = set()
+    st.session_state.open_series = set()
+
+    return True
+
+
+# ============================================================
+# LOADING SCREEN
+# ============================================================
+
+if not st.session_state.loading_seen:
+
+    st.markdown(
+        """
+        <div class="loading">
+
+            <div class="loading-inner">
+
+                <div class="loading-word">
+                    Growing your library...
+                </div>
+
+                <div class="vine">
+
+                    <div class="vine-main"></div>
+
+                    <div class="vine-leaf leaf1"></div>
+                    <div class="vine-leaf leaf2"></div>
+                    <div class="vine-leaf leaf3"></div>
+                    <div class="vine-leaf leaf4"></div>
+                    <div class="vine-leaf leaf5"></div>
+                    <div class="vine-leaf leaf6"></div>
+
+                    <div class="loading-flower">
+                        ✿
+                    </div>
+
+                </div>
+
+            </div>
+
+        </div>
+        """,
+        unsafe_allow_html=True,
+    )
+
+    time.sleep(2.4)
+
+    st.session_state.loading_seen = True
+    st.rerun()
+
+
+# ============================================================
+# HEADER
+# ============================================================
+
+st.markdown(
+    """
+    <div class="title-area">
+
+        <div class="title">
+            My Book Tree
+        </div>
+
+        <div class="subtitle">
+            Where every story has a branch
+        </div>
+
+        <div class="ornament"></div>
+
+    </div>
+    """,
+    unsafe_allow_html=True,
+)
+
+
+# ============================================================
+# THEME SELECTOR
+# ============================================================
+
+st.markdown(
+    '<div class="theme-heading">Choose Your Reading Room</div>',
+    unsafe_allow_html=True,
+)
+
+selected_theme = st.selectbox(
+    "Theme",
+    list(THEMES.keys()),
+    index=list(THEMES.keys()).index(
+        st.session_state.theme
+    ),
+    label_visibility="collapsed",
+)
+
+if selected_theme != st.session_state.theme:
+
+    st.session_state.theme = selected_theme
+    st.rerun()
+
+
+# ============================================================
+# LIBRARY
+# ============================================================
+
+library = st.session_state.library
+
+total_books = len(library)
+
+authors_count = (
+    library["Author"].nunique()
+    if not library.empty
+    else 0
+)
+
+series_count = (
+    library[
+        library["Series"] != "Standalone"
+    ]["Series"].nunique()
+    if not library.empty
+    else 0
+)
+
+read_count = (
+    len(
+        library[
+            library["Status"] == "Read"
+        ]
+    )
+    if not library.empty
+    else 0
+)
+
+st.markdown(
+    f"""
+    <div class="library-counts">
+
+        <div>
+            <span class="count-number">
+                {total_books}
+            </span>
+            <span class="count-label">
+                Books
+            </span>
+        </div>
+
+        <div>
+            <span class="count-number">
+                {authors_count}
+            </span>
+            <span class="count-label">
+                Authors
+            </span>
+        </div>
+
+        <div>
+            <span class="count-number">
+                {series_count}
+            </span>
+            <span class="count-label">
+                Series
+            </span>
+        </div>
+
+        <div>
+            <span class="count-number">
+                {read_count}
+            </span>
+            <span class="count-label">
+                Read
+            </span>
+        </div>
+
+    </div>
+    """,
+    unsafe_allow_html=True,
+)
+
+
+# ============================================================
+# TABS
+# ============================================================
+
+tree_tab, all_tab, import_tab, add_tab = st.tabs(
+    [
+        "🌿 Book Tree",
+        "Books",
+        "Import",
+        "Add a Book",
+    ]
+)
+
+
+# ============================================================
+# TREE
+# ============================================================
+
+with tree_tab:
+
+    if library.empty:
+
+        st.markdown(
+            """
+            <div style="
+                text-align:center;
+                padding:80px 20px;
+            ">
+
+                <div style="
+                    font-family:'Cormorant Garamond',serif;
+                    font-size:42px;
+                    color:var(--text);
+                ">
+                    Your tree is waiting.
+                </div>
+
+                <div style="
+                    font-family:'EB Garamond',serif;
+                    font-size:18px;
+                    color:var(--soft);
+                    margin-top:10px;
+                ">
+                    Import your Goodreads library
+                    to begin growing it.
+                </div>
+
+            </div>
+            """,
+            unsafe_allow_html=True,
+        )
+
+    else:
+
+        # SEARCH AND FILTERS
+
+        st.markdown(
+            """
+            <div class="tools">
+
+                <div class="tool-title">
+                    Find something in your library
+                </div>
+
+            </div>
+            """,
+            unsafe_allow_html=True,
+        )
+
+        c1, c2, c3 = st.columns([2, 1, 1])
+
+        with c1:
+
+            search = st.text_input(
+                "Search",
+                placeholder="Title, author, series or genre...",
+                label_visibility="collapsed",
+            )
+
+        with c2:
+
+            status = st.selectbox(
+                "Status",
+                [
+                    "All",
+                    "Read",
+                    "Currently Reading",
+                    "Want to Read",
+                ],
+                label_visibility="collapsed",
+            )
+
+        with c3:
+
+            sort = st.selectbox(
+                "Sort",
+                [
+                    "Author A–Z",
+                    "Author Z–A",
+                    "Title A–Z",
+                    "Title Z–A",
+                    "Highest Rated",
+                    "Lowest Rated",
+                ],
+                label_visibility="collapsed",
+            )
+
+        filtered = library.copy()
+
+        if search:
+
+            q = search.lower()
+
+            mask = (
+                filtered["Title"]
+                .astype(str)
+                .str.lower()
+                .str.contains(q, na=False)
+                |
+                filtered["Author"]
+                .astype(str)
+                .str.lower()
+                .str.contains(q, na=False)
+                |
+                filtered["Series"]
+                .astype(str)
+                .str.lower()
+                .str.contains(q, na=False)
+                |
+                filtered["Genre"]
+                .astype(str)
+                .str.lower()
+                .str.contains(q, na=False)
+            )
+
+            filtered = filtered[mask]
+
+        if status != "All":
+
+            filtered = filtered[
+                filtered["Status"] == status
+            ]
+
+        if sort == "Author A–Z":
+
+            filtered = filtered.sort_values(
+                "Author",
+                key=lambda x:
+                x.astype(str).str.lower()
+            )
+
+        elif sort == "Author Z–A":
+
+            filtered = filtered.sort_values(
+                "Author",
+                ascending=False,
+                key=lambda x:
+                x.astype(str).str.lower()
+            )
+
+        elif sort == "Title A–Z":
+
+            filtered = filtered.sort_values(
+                "Title",
+                key=lambda x:
+                x.astype(str).str.lower()
+            )
+
+        elif sort == "Title Z–A":
+
+            filtered = filtered.sort_values(
+                "Title",
+                ascending=False,
+                key=lambda x:
+                x.astype(str).str.lower()
+            )
+
+        elif sort == "Highest Rated":
+
+            filtered = filtered.sort_values(
+                "My Rating",
+                ascending=False,
+                na_position="last"
+            )
+
+        elif sort == "Lowest Rated":
+
+            filtered = filtered.sort_values(
+                "My Rating",
+                na_position="last"
+            )
+
+        # TREE TITLE
+
+        st.markdown(
+            """
+            <div class="tree-title">
+                Your Library
+            </div>
+
+            <div class="tree-subtitle">
+                Author → Series → Books
+            </div>
+
+            <div class="tree-root">
+                <div class="root-label">
+                    The Beginning
+                </div>
+            </div>
+            """,
+            unsafe_allow_html=True,
+        )
+
+        # AUTHORS
+
+        authors = sorted(
+            filtered["Author"]
+            .fillna("Unknown Author")
+            .astype(str)
+            .unique(),
+            key=lambda x: x.lower()
+        )
+
+        for author in authors:
+
+            author_books = filtered[
+                filtered["Author"]
+                .fillna("Unknown Author")
+                .astype(str)
+                == author
+            ]
+
+            author_id = re.sub(
+                r"[^a-zA-Z0-9]",
+                "_",
+                author
+            )
+
+            is_open = (
+                author_id
+                in st.session_state.open_authors
+            )
+
+            clicked = st.button(
+                ("⌄  " if is_open else "›  ")
+                + author,
+                key=f"author_{author_id}",
+            )
+
+            if clicked:
+
+                if is_open:
+
+                    st.session_state.open_authors.remove(
+                        author_id
+                    )
+
+                else:
+
+                    st.session_state.open_authors.add(
+                        author_id
+                    )
+
+                st.rerun()
+
+            st.markdown(
+                f"""
+                <div class="author-wrap">
+
+                    <span class="author-name">
+                        {html.escape(author)}
+                    </span>
+
+                    <span class="author-count">
+                        {len(author_books)}
+                        {"book" if len(author_books) == 1 else "books"}
+                    </span>
+
+                </div>
+                """,
+                unsafe_allow_html=True,
+            )
+
+            if not is_open:
+                continue
+
+            # SERIES
+
+            series_names = sorted(
+                author_books["Series"]
+                .fillna("Standalone")
+                .astype(str)
+                .unique(),
+                key=lambda x: x.lower()
+            )
+
+            for series_name in series_names:
+
+                series_books = author_books[
+                    author_books["Series"]
+                    .fillna("Standalone")
+                    .astype(str)
+                    == series_name
+                ].copy()
+
+                if series_name == "Standalone":
+
+                    st.markdown(
+                        f"""
+                        <div class="series-wrap">
+
+                            <span class="series-name">
+                                Standalone Books
+                            </span>
+
+                            <span class="series-count">
+                                {len(series_books)}
+                            </span>
+
+                        </div>
+                        """,
+                        unsafe_allow_html=True,
+                    )
+
+                    for _, book in series_books.iterrows():
+                        render_book(book, False)
+
+                    continue
+
+                series_id = (
+                    author_id
+                    + "_"
+                    + re.sub(
+                        r"[^a-zA-Z0-9]",
+                        "_",
+                        series_name
+                    )
+                )
+
+                series_open = (
+                    series_id
+                    in st.session_state.open_series
+                )
+
+                clicked = st.button(
+                    ("⌄  " if series_open else "›  ")
+                    + series_name,
+                    key=f"series_{series_id}",
+                )
+
+                if clicked:
+
+                    if series_open:
+
+                        st.session_state.open_series.remove(
+                            series_id
+                        )
+
+                    else:
+
+                        st.session_state.open_series.add(
+                            series_id
+                        )
+
+                    st.rerun()
+
+                st.markdown(
+                    f"""
+                    <div class="series-wrap">
+
+                        <span class="series-name">
+                            {html.escape(series_name)}
+                        </span>
+
+                        <span class="series-count">
+                            {len(series_books)}
+                            {"book" if len(series_books) == 1 else "books"}
+                        </span>
+
+                    </div>
+                    """,
+                    unsafe_allow_html=True,
+                )
+
+                if not series_open:
+                    continue
+
+                series_books = series_books.sort_values(
+                    ["Series Number", "Title"],
+                    na_position="last"
+                )
+
+                for _, book in series_books.iterrows():
+                    render_book(book, True)
 
 
 # ============================================================
@@ -2058,17 +1733,13 @@ def render_book(book, numbered=False):
 
 with all_tab:
 
+    st.header("All Books")
+
     if library.empty:
 
-        st.write(
-            "Your library is empty."
-        )
+        st.write("Your library is empty.")
 
     else:
-
-        st.header(
-            "All Books"
-        )
 
         view = st.radio(
             "Show",
@@ -2086,14 +1757,13 @@ with all_tab:
         if view != "All":
 
             books = books[
-                books["Status"]
-                == view
+                books["Status"] == view
             ]
 
         books = books.sort_values(
             "Title",
             key=lambda x:
-                x.astype(str).str.lower()
+            x.astype(str).str.lower()
         )
 
         for _, book in books.iterrows():
@@ -2103,15 +1773,14 @@ with all_tab:
                 False
             )
 
+
 # ============================================================
 # IMPORT
 # ============================================================
 
 with import_tab:
 
-    st.header(
-        "Import Your Library"
-    )
+    st.header("Import Your Library")
 
     st.write(
         "Upload your Goodreads CSV or another compatible book-list CSV."
@@ -2137,11 +1806,16 @@ with import_tab:
                 "Finding your books, covers and genres..."
             ):
 
-                import_csv(
-                    uploaded
+                success = import_csv(uploaded)
+
+            if success:
+
+                st.success(
+                    f"Added {len(st.session_state.library)} books to your library."
                 )
 
-            st.rerun()
+                st.rerun()
+
 
 # ============================================================
 # ADD BOOK
@@ -2149,21 +1823,12 @@ with import_tab:
 
 with add_tab:
 
-    st.header(
-        "Add a Book"
-    )
+    st.header("Add a Book")
 
-    with st.form(
-        "new_book"
-    ):
+    with st.form("new_book"):
 
-        title = st.text_input(
-            "Title"
-        )
-
-        author = st.text_input(
-            "Author"
-        )
+        title = st.text_input("Title")
+        author = st.text_input("Author")
 
         series = st.text_input(
             "Series",
@@ -2174,12 +1839,10 @@ with add_tab:
             "Series number",
             min_value=0.0,
             value=0.0,
-            step=.5
+            step=0.5
         )
 
-        genre = st.text_input(
-            "Genre"
-        )
+        genre = st.text_input("Genre")
 
         status = st.selectbox(
             "Status",
@@ -2197,9 +1860,7 @@ with add_tab:
             0
         )
 
-        isbn = st.text_input(
-            "ISBN"
-        )
+        isbn = st.text_input("ISBN")
 
         favorite = st.checkbox(
             "Favorite"
@@ -2220,7 +1881,6 @@ with add_tab:
             else:
 
                 if not genre:
-
                     genre = find_genre(
                         title,
                         author
@@ -2256,9 +1916,7 @@ with add_tab:
                 st.session_state.library = pd.concat(
                     [
                         st.session_state.library,
-                        pd.DataFrame(
-                            [new_book]
-                        ),
+                        pd.DataFrame([new_book]),
                     ],
                     ignore_index=True
                 )
@@ -2268,3 +1926,4 @@ with add_tab:
                 )
 
                 st.rerun()
+```
