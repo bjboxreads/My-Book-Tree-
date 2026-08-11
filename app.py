@@ -316,13 +316,25 @@ st.markdown(
     </style>
     """, 
     unsafe_allow_html=True
-)
+))
 
- .tree-container {{
-    margin-top: 20px;
-    padding: 35px 20px;
-    border-top: 1px solid rgba(255,255,255,.12);
-    border-bottom: 1px solid rgba(255,255,255,.12);
+st.markdown(f"""
+    <style>
+    .stat-label {{
+        font-family: "Berkshire Swash", serif !important;
+        color: var(--text) !important;
+        font-size: 14px !important; 
+        margin-top: 20px !important; 
+        text-align: center !important;
+        width: 100% !important;
+    }}
+    </style>
+    
+    <div class="stat-card">
+        <div class="stat-number">{your_python_variable}</div>
+        <div class="stat-label">Favorites</div>
+    </div>
+""", unsafe_allow_html=True)
 }}
 
 .tree-root {{
