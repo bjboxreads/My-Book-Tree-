@@ -202,8 +202,7 @@ p, label {{
 
 .book-header {{
     text-align: center;
-    padding-top: 95px;
-    padding-bottom: 30px;
+    margin-top: 72px !important;
 }}
 
 .book-header-title {{
@@ -216,14 +215,6 @@ p, label {{
     /* Keep the shadow to ensure it pops on light themes too */
     text-shadow: 0 3px 12px rgba(0,0,0,0.35);
 }}
-
-.willow-logo {{
-    width: 100%;
-    max-width: 1000px;
-    height: 300px;
-    margin: 0 auto 5px;
-}}
-
 .willow-logo svg {{
     width: 100%;
     height: 100%;
@@ -267,6 +258,59 @@ div[data-baseweb="input"] input {{
 .stButton > button:hover {{
     background: var(--surface2) !important;
     border-color: var(--accent) !important;
+    background: var(--surface2) !important;
+    border-color: var(--accent) !important;
+}}
+
+/* Victorian-inspired buttons: decorative, not pill-shaped */
+.stButton > button {{
+    background: linear-gradient(135deg, var(--surface), var(--surface2)) !important;
+    color: var(--text) !important;
+    border: 1px solid var(--accent) !important;
+    border-radius: 18px 5px 18px 5px !important;
+    font-family: "Libre Baskerville", Georgia, serif !important;
+    box-shadow: 0 3px 10px rgba(0,0,0,.18) !important;
+    transition: all .15s ease !important;
+}}
+
+.stButton > button:hover {{
+    background: linear-gradient(135deg, var(--surface2), var(--card)) !important;
+    border-color: var(--accent) !important;
+    box-shadow: 0 4px 14px rgba(0,0,0,.25) !important;
+}}
+
+/* Decorative stat cards */
+.stat-card {{
+    background: var(--card);
+    border: 1px solid var(--accent);
+    border-radius: 24px 7px 24px 7px;
+    padding: 18px 10px;
+    text-align: center;
+    position: relative;
+    box-shadow: 0 6px 18px rgba(0,0,0,.18);
+}}
+
+.stat-card::before {{
+    content: "❧  ❦  ❧";
+    display: block;
+    color: var(--accent);
+    font-size: 18px;
+    line-height: 1;
+    margin-bottom: 4px;
+}}
+
+.stat-number {{
+    font-family: "Berkshire Swash", Georgia, serif;
+    font-size: 38px;
+    color: var(--accent);
+}}
+
+.stat-label {{
+    font-family: "Libre Baskerville", Georgia, serif;
+    color: var(--text);
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: .08em;
 }}
 
 .tree-root {{
@@ -380,6 +424,27 @@ div[data-baseweb="input"] input {{
     color: var(--text) !important;
 }}
 
+
+/* Victorian ornamental accents — preserves existing theme colors */
+.victorian-frame {
+    position: relative;
+    border: 1px solid var(--accent);
+    border-radius: 18px 5px 18px 5px;
+    box-shadow:
+        inset 0 0 0 1px var(--line),
+        0 4px 14px rgba(0,0,0,.10);
+}
+.victorian-frame::before,
+.victorian-frame::after {
+    content: "❧";
+    position: absolute;
+    color: var(--accent);
+    font-size: 16px;
+    line-height: 1;
+}
+.victorian-frame::before { left: 7px; top: 5px; }
+.victorian-frame::after { right: 7px; bottom: 5px; transform: rotate(180deg); }
+
 </style>
 """)
 
@@ -390,124 +455,6 @@ div[data-baseweb="input"] input {{
 st.html("""
 <div class="book-header">
     <div class="book-header-title">My Book Tree</div>
-</div>
-""")
-
-# ============================================================
-# WILLOW TREE
-# ============================================================
-
-st.html("""
-<div class="willow-logo">
-<svg viewBox="0 0 1000 300" xmlns="http://www.w3.org/2000/svg">
-
-<path d="M500 300 C490 245 490 200 500 155 C510 110 525 70 540 35"
-fill="none" stroke="#54382E" stroke-width="30" stroke-linecap="round"/>
-
-<path d="M505 295 C497 240 498 195 508 150 C518 105 530 70 542 38"
-fill="none" stroke="#765044" stroke-width="7" stroke-linecap="round"/>
-
-<g fill="none" stroke="#54382E" stroke-linecap="round">
-
-<path d="M505 175 C440 135 365 105 275 95" stroke-width="14"/>
-<path d="M500 195 C420 165 330 165 235 180" stroke-width="11"/>
-<path d="M510 140 C465 95 430 60 400 20" stroke-width="10"/>
-
-<path d="M515 170 C580 130 655 100 745 95" stroke-width="14"/>
-<path d="M515 195 C595 165 680 165 765 180" stroke-width="11"/>
-<path d="M520 135 C565 90 600 55 635 15" stroke-width="10"/>
-
-</g>
-
-<g fill="none" stroke="#72805C" stroke-width="4" stroke-linecap="round">
-
-<path d="M275 95 C260 155 270 225 290 295"/>
-<path d="M320 105 C305 170 315 240 335 300"/>
-<path d="M365 115 C350 180 360 245 380 290"/>
-<path d="M410 130 C395 185 405 240 425 280"/>
-<path d="M455 145 C445 195 455 240 470 270"/>
-<path d="M235 180 C225 225 235 265 250 295"/>
-
-<path d="M745 95 C760 155 750 225 730 295"/>
-<path d="M700 105 C715 170 705 240 685 300"/>
-<path d="M655 115 C670 180 660 245 640 290"/>
-<path d="M610 130 C625 185 615 240 595 280"/>
-<path d="M565 145 C575 195 565 240 550 270"/>
-<path d="M765 180 C775 225 765 265 750 295"/>
-
-</g>
-
-<g fill="#7D8C65">
-
-<ellipse cx="275" cy="135" rx="7" ry="23" transform="rotate(-20 275 135)"/>
-<ellipse cx="290" cy="195" rx="7" ry="24" transform="rotate(18 290 195)"/>
-<ellipse cx="295" cy="250" rx="7" ry="23" transform="rotate(-15 295 250)"/>
-
-<ellipse cx="320" cy="145" rx="7" ry="23" transform="rotate(18 320 145)"/>
-<ellipse cx="335" cy="210" rx="7" ry="24" transform="rotate(-15 335 210)"/>
-<ellipse cx="340" cy="265" rx="7" ry="22" transform="rotate(15 340 265)"/>
-
-<ellipse cx="365" cy="155" rx="7" ry="23" transform="rotate(-18 365 155)"/>
-<ellipse cx="380" cy="215" rx="7" ry="24" transform="rotate(15 380 215)"/>
-
-<ellipse cx="410" cy="165" rx="7" ry="23" transform="rotate(16 410 165)"/>
-<ellipse cx="425" cy="220" rx="7" ry="23" transform="rotate(-16 425 220)"/>
-
-<ellipse cx="745" cy="135" rx="7" ry="23" transform="rotate(20 745 135)"/>
-<ellipse cx="730" cy="195" rx="7" ry="24" transform="rotate(-18 730 195)"/>
-<ellipse cx="725" cy="250" rx="7" ry="23" transform="rotate(15 725 250)"/>
-
-<ellipse cx="700" cy="145" rx="7" ry="23" transform="rotate(-18 700 145)"/>
-<ellipse cx="685" cy="210" rx="7" ry="24" transform="rotate(15 685 210)"/>
-<ellipse cx="680" cy="265" rx="7" ry="22" transform="rotate(-15 680 265)"/>
-
-<ellipse cx="655" cy="155" rx="7" ry="23" transform="rotate(18 655 155)"/>
-<ellipse cx="640" cy="215" rx="7" ry="24" transform="rotate(-15 640 215)"/>
-
-<ellipse cx="610" cy="165" rx="7" ry="23" transform="rotate(-16 610 165)"/>
-<ellipse cx="595" cy="220" rx="7" ry="23" transform="rotate(16 595 220)"/>
-
-</g>
-
-<g fill="#95A574">
-<ellipse cx="310" cy="125" rx="6" ry="21"/>
-<ellipse cx="355" cy="190" rx="6" ry="22"/>
-<ellipse cx="400" cy="140" rx="6" ry="21"/>
-<ellipse cx="690" cy="125" rx="6" ry="21"/>
-<ellipse cx="645" cy="190" rx="6" ry="22"/>
-<ellipse cx="600" cy="140" rx="6" ry="21"/>
-</g>
-
-<g fill="#B87587">
-<circle cx="310" cy="115" r="6"/>
-<circle cx="320" cy="120" r="6"/>
-<circle cx="315" cy="108" r="6"/>
-<circle cx="305" cy="110" r="6"/>
-
-<circle cx="400" cy="145" r="6"/>
-<circle cx="410" cy="150" r="6"/>
-<circle cx="405" cy="138" r="6"/>
-<circle cx="395" cy="140" r="6"/>
-
-<circle cx="690" cy="115" r="6"/>
-<circle cx="700" cy="120" r="6"/>
-<circle cx="695" cy="108" r="6"/>
-<circle cx="685" cy="110" r="6"/>
-
-<circle cx="600" cy="145" r="6"/>
-<circle cx="610" cy="150" r="6"/>
-<circle cx="605" cy="138" r="6"/>
-<circle cx="595" cy="140" r="6"/>
-</g>
-
-<g fill="#E2B35E">
-<circle cx="312" cy="115" r="3"/>
-<circle cx="402" cy="145" r="3"/>
-<circle cx="692" cy="115" r="3"/>
-<circle cx="602" cy="145" r="3"/>
-</g>
-
-</svg>
 </div>
 """)
 
@@ -700,11 +647,6 @@ def safe_id(text):
 # ============================================================
 
 def import_books(uploaded):
-
-    try:
-        uploaded.seek(0)
-    except Exception:
-        pass
 
     try:
         df = pd.read_csv(
