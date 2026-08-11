@@ -686,18 +686,18 @@ def safe_id(text):
 
 def import_books(uploaded_file):
 
-    # --------------------------------------------------------
-    # READ CSV
-    # --------------------------------------------------------
+# --------------------------------------------------------
+# READ CSV
+# --------------------------------------------------------
 
-    try:
+try:
 
-        uploaded_file.seek(0)
+    uploaded_file.seek(0)
 
-        df = pd.read_csv(
-            uploaded_file,
-            low_memory=False,
-        )
+    df = pd.read_csv(
+        uploaded_file,
+        low_memory=False,
+    )
 
     except Exception:
 
