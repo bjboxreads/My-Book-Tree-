@@ -1602,13 +1602,15 @@ with tree_tab:
 # BOOKS TAB
 # ============================================================
 
+# ============================================================
+# BOOKS TAB
+# ============================================================
+
 with books_tab:
 
     if library.empty:
 
-        st.info(
-            "No books yet."
-        )
+        st.info("No books yet.")
 
     else:
 
@@ -1622,6 +1624,7 @@ with books_tab:
                 "Want to Read",
             ],
             horizontal=True,
+            key="unique_books_radio",
         )
 
         books = library.copy()
@@ -1629,34 +1632,21 @@ with books_tab:
         if choice == "Favorites":
 
             books = books[
-                books["Favorite"]
-                == True
+                books["Favorite"] == True
             ]
 
         elif choice != "All":
 
             books = books[
-                books["Status"]
-                == choice
+                books["Status"] == choice
             ]
 
-with books_tab:
-        if library.empty:
-            st.info("No books yet.")
-        else:
-            # Keep your radio buttons if you want to filter the tree!
-             choice = st.radio("Show", ["All", "Favorites", "Read", "Currently Reading", "Want to Read"], horizontal=True, key="unique_books_radio")
-       
-        books = library.copy()
-       
-        if choice == "Favorites":
-            books = books[books["Favorite"] == True]
-        elif choice != "All":
-            books = books[books["Status"] == choice]
-
-        # DELETE the for index, book... loop
-        # AND PASTE THIS:
         display_ancestry_tree(books)
+
+
+# ============================================================
+# ADD BOOK
+# ============================================================
         
 # ============================================================
 # ADD BOOK
