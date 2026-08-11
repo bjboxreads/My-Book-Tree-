@@ -1,9 +1,9 @@
+```python
 import streamlit as st
 import pandas as pd
 import requests
 import re
 import html
-
 
 # ============================================================
 # PAGE
@@ -15,7 +15,6 @@ st.set_page_config(
     layout="wide",
     initial_sidebar_state="collapsed",
 )
-
 
 # ============================================================
 # BOOKISH THEMES
@@ -32,8 +31,6 @@ THEMES = {
         "accent": "#D8A93A",
         "accent2": "#6FB39A",
         "line": "#B9822C",
-        "button": "#163D35",
-        "button_text": "#FFF7DE",
     },
 
     "Midnight & Gold": {
@@ -46,8 +43,6 @@ THEMES = {
         "accent": "#E5B94D",
         "accent2": "#75B5D4",
         "line": "#B8862F",
-        "button": "#16365A",
-        "button_text": "#FFF7E1",
     },
 
     "Victorian Rose": {
@@ -60,8 +55,6 @@ THEMES = {
         "accent": "#E36A83",
         "accent2": "#C79AD7",
         "line": "#A83F5C",
-        "button": "#3A1730",
-        "button_text": "#FFF4F5",
     },
 
     "Autumn Manor": {
@@ -74,8 +67,6 @@ THEMES = {
         "accent": "#E2A33D",
         "accent2": "#C9663C",
         "line": "#A84F2B",
-        "button": "#4B2914",
-        "button_text": "#FFF1D5",
     },
 
     "Moonlit Library": {
@@ -88,8 +79,6 @@ THEMES = {
         "accent": "#E8C34D",
         "accent2": "#8B73D1",
         "line": "#6851A8",
-        "button": "#211C4C",
-        "button_text": "#FFF8E7",
     },
 
     "Secret Garden": {
@@ -102,11 +91,9 @@ THEMES = {
         "accent": "#F0BD4D",
         "accent2": "#F27A63",
         "line": "#D65D4B",
-        "button": "#14515A",
-        "button_text": "#FFF6DF",
     },
 
-    "Old Bookshop": {
+    "Old World Library": {
         "page": "#172322",
         "surface": "#243633",
         "surface2": "#36504A",
@@ -116,8 +103,6 @@ THEMES = {
         "accent": "#D8A84A",
         "accent2": "#A9B86B",
         "line": "#B47B31",
-        "button": "#304943",
-        "button_text": "#FFF3D8",
     },
 
     "Spellbound": {
@@ -130,8 +115,6 @@ THEMES = {
         "accent": "#F4C84D",
         "accent2": "#6AD6D0",
         "line": "#A66CDB",
-        "button": "#24284D",
-        "button_text": "#FFFFFF",
     },
 
     "Velvet & Crimson": {
@@ -144,11 +127,8 @@ THEMES = {
         "accent": "#E3B34B",
         "accent2": "#D57958",
         "line": "#A83E32",
-        "button": "#461717",
-        "button_text": "#FFF4DF",
     },
 }
-
 
 # ============================================================
 # SESSION STATE
@@ -159,7 +139,6 @@ if (
     or st.session_state.theme not in THEMES
 ):
     st.session_state.theme = "Enchanted Library"
-
 
 if "library" not in st.session_state:
     st.session_state.library = pd.DataFrame(
@@ -180,543 +159,508 @@ if "library" not in st.session_state:
         ]
     )
 
-
 if "open_authors" not in st.session_state:
     st.session_state.open_authors = set()
-
 
 if "open_series" not in st.session_state:
     st.session_state.open_series = set()
 
-
 theme = THEMES[st.session_state.theme]
-
 
 # ============================================================
 # CSS
 # ============================================================
 
-css = f"""
-<style>
-
-@import url('https://fonts.googleapis.com/css2?family=Berkshire+Swash&family=Libre+Baskerville:wght@400;700&display=swap');
-
-:root {{
-    --page: {theme["page"]};
-    --surface: {theme["surface"]};
-    --surface2: {theme["surface2"]};
-    --card: {theme["card"]};
-    --text: {theme["text"]};
-    --muted: {theme["muted"]};
-    --accent: {theme["accent"]};
-    --accent2: {theme["accent2"]};
-    --line: {theme["line"]};
-}}
-
-.stApp {{
-    background:
-        radial-gradient(
-            ellipse at 50% -10%,
-            var(--surface2) 0%,
-            var(--page) 62%
-        ) !important;
-    color: var(--text) !important;
-}}
-
-.block-container {{
-    max-width: 1400px;
-    padding-top: 1rem;
-    padding-bottom: 4rem;
-}}
-
-/* GENERAL TYPOGRAPHY */
-
-h1, h2, h3, h4 {{
-    font-family:
-        "Berkshire Swash",
-        Georgia,
-        serif !important;
-    color: var(--text) !important;
-}}
-
-p, label {{
-    color: var(--text) !important;
-}}
-
-.stMarkdown {{
-    color: var(--text) !important;
-}}
-
-/* HEADER */
-
-.book-header {{
-    text-align: center;
-    padding: 18px 0 0;
-}}
-
-.book-header-title {{
-    font-family:
-        "Berkshire Swash",
-        Georgia,
-        serif !important;
-    font-size: 70px;
-    line-height: 1;
-    font-weight: 400;
-    color: var(--text) !important;
-    text-shadow:
-        0 3px 12px rgba(0,0,0,.35);
-}}
-
-/* WILLOW */
-
-.willow-logo {{
-    width: 100%;
-    max-width: 980px;
-    height: 250px;
-    margin: 0 auto 8px;
-    display: block;
-}}
-
-.willow-logo svg {{
-    width: 100%;
-    height: 100%;
-    overflow: visible;
-}}
-
-.willow-trunk {{
-    fill: none;
-    stroke: #4A3028;
-    stroke-width: 27;
-    stroke-linecap: round;
-}}
-
-.willow-trunk-highlight {{
-    fill: none;
-    stroke: #765044;
-    stroke-width: 7;
-    stroke-linecap: round;
-}}
-
-.willow-main-branch {{
-    fill: none;
-    stroke: #54372E;
-    stroke-linecap: round;
-}}
-
-.willow-hanging {{
-    fill: none;
-    stroke: #657452;
-    stroke-width: 4;
-    stroke-linecap: round;
-}}
-
-.willow-leaf {{
-    fill: #74835D;
-}}
-
-.willow-leaf-light {{
-    fill: #89966B;
-}}
-
-.willow-leaf-deep {{
-    fill: #536346;
-}}
-
-.willow-flower {{
-    fill: #B87587;
-}}
-
-.willow-flower-center {{
-    fill: #E2B35E;
-}}
-
-/* THEME SELECTOR */
-
-.theme-heading {{
-    font-family:
-        "Berkshire Swash",
-        Georgia,
-        serif;
-    font-size: 25px;
-    color: var(--text);
-    margin: 4px 0 7px;
-}}
-
-div[data-baseweb="select"] > div {{
-    background: #171717 !important;
-    border: 2px solid var(--accent) !important;
-    border-radius: 10px !important;
-    min-height: 48px !important;
-}}
-
-div[data-baseweb="select"] span {{
-    color: #FFFFFF !important;
-    font-weight: 600 !important;
-}}
-
-div[data-baseweb="select"] input {{
-    color: #FFFFFF !important;
-}}
-
-div[role="listbox"] {{
-    background: #171717 !important;
-    border: 2px solid #D7A83A !important;
-    border-radius: 10px !important;
-    padding: 5px !important;
-    box-shadow:
-        0 15px 40px rgba(0,0,0,.6) !important;
-}}
-
-div[role="option"] {{
-    background: #171717 !important;
-    color: #FFFFFF !important;
-    padding: 12px 14px !important;
-    border-radius: 7px !important;
-    font-family:
-        "Libre Baskerville",
-        Georgia,
-        serif !important;
-    font-size: 14px !important;
-}}
-
-div[role="option"] *,
-div[role="option"] span {{
-    color: #FFFFFF !important;
-}}
-
-div[role="option"]:hover {{
-    background: #3C3C3C !important;
-}}
-
-div[role="option"][aria-selected="true"] {{
-    background: #8A641E !important;
-}}
-
-div[role="option"][aria-selected="true"] * {{
-    color: #FFFFFF !important;
-}}
-
-/* STATS */
-
-.stat-card {{
-    position: relative;
-    background:
-        linear-gradient(
-            145deg,
-            rgba(255,255,255,.045),
-            rgba(0,0,0,.12)
-        );
-    border: none;
-    border-bottom: 2px solid var(--line);
-    border-radius: 4px 18px 4px 18px;
-    padding: 16px 8px 13px;
-    text-align: center;
-    box-shadow:
-        0 8px 25px rgba(0,0,0,.14);
-}}
-
-.stat-number {{
-    font-family:
-        "Berkshire Swash",
-        Georgia,
-        serif;
-    font-size: 36px;
-    font-weight: 400;
-    color: var(--accent);
-}}
-
-.stat-label {{
-    color: var(--muted);
-    font-family:
-        "Libre Baskerville",
-        Georgia,
-        serif;
-    font-size: 10px;
-    text-transform: uppercase;
-    letter-spacing: .12em;
-}}
-
-/* TREE */
-
-.tree-area {{
-    margin-top: 25px;
-    padding: 35px 25px;
-    background:
-        radial-gradient(
-            ellipse at top,
-            rgba(255,255,255,.035),
-            transparent 65%
-        );
-    border: none;
-    border-top: 1px solid rgba(255,255,255,.10);
-    border-bottom: 1px solid rgba(255,255,255,.08);
-}}
-
-.root-node {{
-    width: 300px;
-    margin: 0 auto 38px;
-    padding: 17px 25px;
-    background: var(--accent);
-    color: {theme["page"]};
-    border-radius: 4px 28px 4px 28px;
-    text-align: center;
-    box-shadow:
-        0 10px 28px rgba(0,0,0,.25);
-}}
-
-.root-node-title {{
-    color: {theme["page"]};
-    font-family:
-        "Berkshire Swash",
-        Georgia,
-        serif;
-    font-size: 34px;
-    font-weight: 400;
-}}
-
-.root-node-small {{
-    color: {theme["page"]};
-    font-family:
-        "Libre Baskerville",
-        Georgia,
-        serif;
-    font-size: 10px;
-    font-weight: 700;
-    opacity: .78;
-}}
-
-/* AUTHOR */
-
-.author-info {{
-    padding: 11px 17px;
-    margin: 9px 0;
-    border-left: 3px solid var(--accent);
-    background:
-        linear-gradient(
-            90deg,
-            var(--surface),
-            transparent
-        );
-    border-radius: 0 18px 0 0;
-}}
-
-.author-name {{
-    font-family:
-        "Berkshire Swash",
-        Georgia,
-        serif;
-    font-size: 28px;
-    font-weight: 400;
-}}
-
-.author-count {{
-    color: var(--muted);
-    font-family:
-        "Libre Baskerville",
-        Georgia,
-        serif;
-    font-size: 10px;
-}}
-
-/* SERIES */
-
-.series-info {{
-    margin-left: 48px;
-    padding: 10px 15px;
-    border-left: 2px solid var(--accent2);
-    background:
-        linear-gradient(
-            90deg,
-            var(--surface2),
-            transparent
-        );
-    border-radius: 0 15px 0 0;
-}}
-
-.series-name {{
-    font-family:
-        "Berkshire Swash",
-        Georgia,
-        serif;
-    font-size: 24px;
-    font-weight: 400;
-}}
-
-.series-count {{
-    color: var(--muted);
-    font-family:
-        "Libre Baskerville",
-        Georgia,
-        serif;
-    font-size: 10px;
-}}
-
-/* BOOK */
-
-.book-info {{
-    margin-left: 100px;
-    margin-top: 8px;
-    padding: 11px 14px;
-    background:
-        linear-gradient(
-            90deg,
-            var(--card),
-            transparent
-        );
-    border-left: 2px solid var(--line);
-    border-radius: 0 14px 0 0;
-}}
-
-.book-title {{
-    font-family:
-        "Berkshire Swash",
-        Georgia,
-        serif;
-    font-size: 22px;
-    font-weight: 400;
-    color: var(--text);
-}}
-
-.book-meta {{
-    color: var(--muted);
-    font-family:
-        "Libre Baskerville",
-        Georgia,
-        serif;
-    font-size: 10px;
-    margin-top: 4px;
-}}
-
-.book-cover {{
-    width: 55px;
-    height: 80px;
-    object-fit: cover;
-    border-radius: 3px 10px 3px 10px;
-    border: 1px solid var(--accent);
-    box-shadow:
-        3px 5px 12px rgba(0,0,0,.3);
-}}
-
-/* BUTTONS */
-
-.stButton > button {{
-    background:
-        linear-gradient(
-            90deg,
-            var(--surface),
-            rgba(255,255,255,.025)
-        ) !important;
-    color: var(--text) !important;
-    border: none !important;
-    border-left: 2px solid var(--line) !important;
-    border-radius: 0 14px 0 14px !important;
-    font-family:
-        "Libre Baskerville",
-        Georgia,
-        serif !important;
-    font-weight: 600 !important;
-    transition: all .2s ease !important;
-}}
-
-.stButton > button:hover {{
-    background: var(--surface2) !important;
-    border-left-color: var(--accent) !important;
-    color: var(--text) !important;
-    transform: translateX(3px);
-}}
-
-/* INPUTS */
-
-div[data-baseweb="input"] > div {{
-    background: var(--surface) !important;
-    border-color: var(--line) !important;
-    border-radius: 4px 12px 4px 12px !important;
-}}
-
-div[data-baseweb="input"] input {{
-    color: var(--text) !important;
-}}
-
-textarea {{
-    background: var(--surface) !important;
-    color: var(--text) !important;
-    border-radius: 4px 12px 4px 12px !important;
-}}
-
-/* TABS */
-
-button[data-baseweb="tab"] {{
-    font-family:
-        "Berkshire Swash",
-        Georgia,
-        serif !important;
-    font-size: 17px !important;
-    color: var(--muted) !important;
-}}
-
-button[data-baseweb="tab"][aria-selected="true"] {{
-    color: var(--accent) !important;
-}}
-
-div[data-baseweb="tab-highlight"] {{
-    background-color: var(--accent) !important;
-}}
-
-/* FILE UPLOADER */
-
-section[data-testid="stFileUploaderDropzone"] {{
-    background: var(--surface) !important;
-    border: 1px dashed var(--line) !important;
-    border-radius: 4px 18px 4px 18px !important;
-}}
-
-</style>
-"""
-
-st.html(css)
-
-
-# ============================================================
-# HEADER + WILLOW TREE
-# ============================================================
-
-st.markdown(
+st.html(
+    f"""
+    <style>
+
+    @import url('https://fonts.googleapis.com/css2?family=Berkshire+Swash&family=Libre+Baskerville:wght@400;700&display=swap');
+
+    :root {{
+        --page: {theme["page"]};
+        --surface: {theme["surface"]};
+        --surface2: {theme["surface2"]};
+        --card: {theme["card"]};
+        --text: {theme["text"]};
+        --muted: {theme["muted"]};
+        --accent: {theme["accent"]};
+        --accent2: {theme["accent2"]};
+        --line: {theme["line"]};
+    }}
+
+    .stApp {{
+        background:
+            radial-gradient(
+                ellipse at 50% -10%,
+                var(--surface2) 0%,
+                var(--page) 62%
+            ) !important;
+        color: var(--text) !important;
+    }}
+
+    .block-container {{
+        max-width: 1400px;
+        padding-top: 2.5rem !important;
+        padding-bottom: 4rem;
+    }}
+
+    h1, h2, h3, h4 {{
+        font-family:
+            "Berkshire Swash",
+            Georgia,
+            serif !important;
+        color: var(--text) !important;
+    }}
+
+    p, label {{
+        color: var(--text);
+    }}
+
+    .stMarkdown {{
+        color: var(--text);
+    }}
+
+    /* ========================================================
+       HEADER
+       ======================================================== */
+
+    .book-header {{
+        text-align: center;
+        padding: 15px 0 0;
+        position: relative;
+        z-index: 5;
+    }}
+
+    .book-header-title {{
+        font-family:
+            "Berkshire Swash",
+            Georgia,
+            serif !important;
+        font-size: clamp(52px, 6vw, 78px);
+        line-height: 1.1;
+        font-weight: 400;
+        color: var(--text) !important;
+        text-shadow:
+            0 3px 12px rgba(0,0,0,.35);
+        margin: 0;
+    }}
+
+    /* ========================================================
+       WILLOW LOGO
+       ======================================================== */
+
+    .willow-logo {{
+        width: 100%;
+        max-width: 1000px;
+        height: 300px;
+        margin: 5px auto 10px;
+        display: block;
+        overflow: visible;
+    }}
+
+    .willow-logo svg {{
+        width: 100%;
+        height: 100%;
+        display: block;
+        overflow: visible;
+    }}
+
+    /* ========================================================
+       THEME SELECTOR
+       ======================================================== */
+
+    .theme-heading {{
+        font-family:
+            "Berkshire Swash",
+            Georgia,
+            serif;
+        font-size: 25px;
+        color: var(--text);
+        margin: 4px 0 7px;
+    }}
+
+    div[data-baseweb="select"] > div {{
+        background: #171717 !important;
+        border: 2px solid var(--accent) !important;
+        border-radius: 10px !important;
+        min-height: 48px !important;
+    }}
+
+    div[data-baseweb="select"] span {{
+        color: #FFFFFF !important;
+        font-weight: 600 !important;
+    }}
+
+    div[data-baseweb="select"] input {{
+        color: #FFFFFF !important;
+    }}
+
+    div[role="listbox"] {{
+        background: #171717 !important;
+        border: 2px solid #D7A83A !important;
+        border-radius: 10px !important;
+        padding: 5px !important;
+        box-shadow:
+            0 15px 40px rgba(0,0,0,.6) !important;
+    }}
+
+    div[role="option"] {{
+        background: #171717 !important;
+        color: #FFFFFF !important;
+        padding: 12px 14px !important;
+        border-radius: 7px !important;
+        font-family:
+            "Libre Baskerville",
+            Georgia,
+            serif !important;
+        font-size: 14px !important;
+    }}
+
+    div[role="option"] *,
+    div[role="option"] span {{
+        color: #FFFFFF !important;
+    }}
+
+    div[role="option"]:hover {{
+        background: #3C3C3C !important;
+    }}
+
+    div[role="option"][aria-selected="true"] {{
+        background: #8A641E !important;
+    }}
+
+    /* ========================================================
+       STATS
+       ======================================================== */
+
+    .stat-card {{
+        background:
+            linear-gradient(
+                145deg,
+                rgba(255,255,255,.045),
+                rgba(0,0,0,.12)
+            );
+        border: none;
+        border-bottom: 2px solid var(--line);
+        border-radius: 4px 18px 4px 18px;
+        padding: 16px 8px 13px;
+        text-align: center;
+        box-shadow:
+            0 8px 25px rgba(0,0,0,.14);
+    }}
+
+    .stat-number {{
+        font-family:
+            "Berkshire Swash",
+            Georgia,
+            serif;
+        font-size: 36px;
+        font-weight: 400;
+        color: var(--accent);
+    }}
+
+    .stat-label {{
+        color: var(--muted);
+        font-family:
+            "Libre Baskerville",
+            Georgia,
+            serif;
+        font-size: 10px;
+        text-transform: uppercase;
+        letter-spacing: .12em;
+    }}
+
+    /* ========================================================
+       TREE
+       ======================================================== */
+
+    .tree-area {{
+        margin-top: 25px;
+        padding: 35px 25px;
+        background:
+            radial-gradient(
+                ellipse at top,
+                rgba(255,255,255,.035),
+                transparent 65%
+            );
+        border-top: 1px solid rgba(255,255,255,.10);
+        border-bottom: 1px solid rgba(255,255,255,.08);
+    }}
+
+    .root-node {{
+        width: 300px;
+        margin: 0 auto 38px;
+        padding: 17px 25px;
+        background: var(--accent);
+        color: {theme["page"]};
+        border-radius: 4px 28px 4px 28px;
+        text-align: center;
+        box-shadow:
+            0 10px 28px rgba(0,0,0,.25);
+    }}
+
+    .root-node-title {{
+        color: {theme["page"]};
+        font-family:
+            "Berkshire Swash",
+            Georgia,
+            serif;
+        font-size: 34px;
+        font-weight: 400;
+    }}
+
+    .root-node-small {{
+        color: {theme["page"]};
+        font-family:
+            "Libre Baskerville",
+            Georgia,
+            serif;
+        font-size: 10px;
+        font-weight: 700;
+        opacity: .78;
+    }}
+
+    .author-info {{
+        padding: 11px 17px;
+        margin: 9px 0;
+        border-left: 3px solid var(--accent);
+        background:
+            linear-gradient(
+                90deg,
+                var(--surface),
+                transparent
+            );
+        border-radius: 0 18px 0 0;
+    }}
+
+    .author-name {{
+        font-family:
+            "Berkshire Swash",
+            Georgia,
+            serif;
+        font-size: 28px;
+        font-weight: 400;
+    }}
+
+    .author-count {{
+        color: var(--muted);
+        font-family:
+            "Libre Baskerville",
+            Georgia,
+            serif;
+        font-size: 10px;
+    }}
+
+    .series-info {{
+        margin-left: 48px;
+        padding: 10px 15px;
+        border-left: 2px solid var(--accent2);
+        background:
+            linear-gradient(
+                90deg,
+                var(--surface2),
+                transparent
+            );
+        border-radius: 0 15px 0 0;
+    }}
+
+    .series-name {{
+        font-family:
+            "Berkshire Swash",
+            Georgia,
+            serif;
+        font-size: 24px;
+        font-weight: 400;
+    }}
+
+    .series-count {{
+        color: var(--muted);
+        font-family:
+            "Libre Baskerville",
+            Georgia,
+            serif;
+        font-size: 10px;
+    }}
+
+    .book-info {{
+        margin-left: 100px;
+        margin-top: 8px;
+        padding: 11px 14px;
+        background:
+            linear-gradient(
+                90deg,
+                var(--card),
+                transparent
+            );
+        border-left: 2px solid var(--line);
+        border-radius: 0 14px 0 0;
+    }}
+
+    .book-title {{
+        font-family:
+            "Berkshire Swash",
+            Georgia,
+            serif;
+        font-size: 22px;
+        font-weight: 400;
+    }}
+
+    .book-meta {{
+        color: var(--muted);
+        font-family:
+            "Libre Baskerville",
+            Georgia,
+            serif;
+        font-size: 10px;
+        margin-top: 4px;
+    }}
+
+    .book-cover {{
+        width: 55px;
+        height: 80px;
+        object-fit: cover;
+        border-radius: 3px 10px 3px 10px;
+        border: 1px solid var(--accent);
+        box-shadow:
+            3px 5px 12px rgba(0,0,0,.3);
+    }}
+
+    /* ========================================================
+       BUTTONS
+       ======================================================== */
+
+    .stButton > button {{
+        background:
+            linear-gradient(
+                90deg,
+                var(--surface),
+                rgba(255,255,255,.025)
+            ) !important;
+        color: var(--text) !important;
+        border: none !important;
+        border-left: 2px solid var(--line) !important;
+        border-radius: 0 14px 0 14px !important;
+        font-family:
+            "Libre Baskerville",
+            Georgia,
+            serif !important;
+        font-weight: 600 !important;
+        transition: all .2s ease !important;
+    }}
+
+    .stButton > button:hover {{
+        background: var(--surface2) !important;
+        border-left-color: var(--accent) !important;
+        color: var(--text) !important;
+        transform: translateX(3px);
+    }}
+
+    /* ========================================================
+       INPUTS
+       ======================================================== */
+
+    div[data-baseweb="input"] > div {{
+        background: var(--surface) !important;
+        border-color: var(--line) !important;
+        border-radius: 4px 12px 4px 12px !important;
+    }}
+
+    div[data-baseweb="input"] input {{
+        color: var(--text) !important;
+    }}
+
+    textarea {{
+        background: var(--surface) !important;
+        color: var(--text) !important;
+        border-radius: 4px 12px 4px 12px !important;
+    }}
+
+    /* ========================================================
+       TABS
+       ======================================================== */
+
+    button[data-baseweb="tab"] {{
+        font-family:
+            "Berkshire Swash",
+            Georgia,
+            serif !important;
+        font-size: 17px !important;
+        color: var(--muted) !important;
+    }}
+
+    button[data-baseweb="tab"][aria-selected="true"] {{
+        color: var(--accent) !important;
+    }}
+
+    div[data-baseweb="tab-highlight"] {{
+        background-color: var(--accent) !important;
+    }}
+
+    /* ========================================================
+       FILE UPLOADER
+       ======================================================== */
+
+    section[data-testid="stFileUploaderDropzone"] {{
+        background: var(--surface) !important;
+        border: 1px dashed var(--line) !important;
+        border-radius: 4px 18px 4px 18px !important;
+    }}
+
+    </style>
     """
-    <div style="
-        text-align:center;
-        padding-top:30px;
-    ">
+)
 
-        <div style="
-            font-family:'Berkshire Swash', Georgia, serif;
-            font-size:70px;
-            color:#FFF7DE;
-            line-height:1.15;
-            margin-bottom:5px;
-        ">
+# ============================================================
+# HEADER + WILLOW
+# ============================================================
+
+st.html(
+    """
+    <div class="book-header">
+
+        <div class="book-header-title">
             My Book Tree
         </div>
 
+    </div>
+
+    <div class="willow-logo">
+
         <svg
-            width="100%"
-            height="300"
             viewBox="0 0 1000 300"
             xmlns="http://www.w3.org/2000/svg"
-            style="display:block; margin:0 auto;"
+            aria-label="Decorative willow tree"
         >
 
             <!-- TRUNK -->
+
             <path
-                d="M500 300
-                   C490 245 490 200 500 155
-                   C510 110 525 70 540 35"
+                d="
+                    M500 300
+                    C490 245 490 200 500 155
+                    C510 110 525 70 540 35
+                "
                 fill="none"
                 stroke="#54382E"
                 stroke-width="30"
                 stroke-linecap="round"
             />
 
-            <!-- BRANCHES -->
+            <path
+                d="
+                    M505 295
+                    C498 240 500 195 510 150
+                    C518 108 530 70 542 40
+                "
+                fill="none"
+                stroke="#765044"
+                stroke-width="7"
+                stroke-linecap="round"
+            />
+
+            <!-- MAIN BRANCHES -->
+
             <g
                 fill="none"
                 stroke="#54382E"
@@ -724,44 +668,39 @@ st.markdown(
             >
 
                 <path
-                    d="M505 175
-                       C440 135 365 105 275 95"
+                    d="M505 175 C440 135 365 105 275 95"
                     stroke-width="14"
                 />
 
                 <path
-                    d="M500 195
-                       C420 165 330 165 235 180"
+                    d="M500 195 C420 165 330 165 235 180"
                     stroke-width="11"
                 />
 
                 <path
-                    d="M510 140
-                       C465 95 430 60 400 20"
+                    d="M510 140 C465 95 430 60 400 20"
                     stroke-width="10"
                 />
 
                 <path
-                    d="M515 170
-                       C580 130 655 100 745 95"
+                    d="M515 170 C580 130 655 100 745 95"
                     stroke-width="14"
                 />
 
                 <path
-                    d="M515 195
-                       C595 165 680 165 765 180"
+                    d="M515 195 C595 165 680 165 765 180"
                     stroke-width="11"
                 />
 
                 <path
-                    d="M520 135
-                       C565 90 600 55 635 15"
+                    d="M520 135 C565 90 600 55 635 15"
                     stroke-width="10"
                 />
 
             </g>
 
             <!-- HANGING WILLOW BRANCHES -->
+
             <g
                 fill="none"
                 stroke="#72805C"
@@ -786,6 +725,7 @@ st.markdown(
             </g>
 
             <!-- LEAVES -->
+
             <g fill="#7D8C65">
 
                 <ellipse cx="275" cy="135" rx="7" ry="23"
@@ -839,6 +779,7 @@ st.markdown(
             </g>
 
             <!-- LIGHTER LEAVES -->
+
             <g fill="#95A574">
 
                 <ellipse cx="310" cy="125" rx="6" ry="21"
@@ -858,6 +799,7 @@ st.markdown(
             </g>
 
             <!-- FLOWERS -->
+
             <g fill="#B87587">
 
                 <circle cx="310" cy="115" r="6"/>
@@ -883,18 +825,20 @@ st.markdown(
             </g>
 
             <!-- FLOWER CENTERS -->
+
             <g fill="#E2B35E">
+
                 <circle cx="312" cy="115" r="3"/>
                 <circle cx="402" cy="145" r="3"/>
                 <circle cx="692" cy="115" r="3"/>
                 <circle cx="602" cy="145" r="3"/>
+
             </g>
 
         </svg>
 
     </div>
-    """,
-    unsafe_allow_html=True,
+    """
 )
 
 # ============================================================
@@ -919,7 +863,6 @@ if theme_choice != st.session_state.theme:
     st.session_state.theme = theme_choice
     st.rerun()
 
-
 # ============================================================
 # COVER SEARCH
 # ============================================================
@@ -927,13 +870,8 @@ if theme_choice != st.session_state.theme:
 @st.cache_data(show_spinner=False)
 def get_cover(title, author="", isbn=""):
 
-    isbn = re.sub(
-        r"\D",
-        "",
-        str(isbn)
-    )
+    isbn = re.sub(r"\D", "", str(isbn))
 
-    # First try ISBN
     if isbn:
 
         url = (
@@ -942,24 +880,24 @@ def get_cover(title, author="", isbn=""):
         )
 
         try:
-            response = requests.get(
+
+            r = requests.get(
                 url,
                 timeout=8
             )
 
             if (
-                response.status_code == 200
-                and len(response.content) > 1000
+                r.status_code == 200
+                and len(r.content) > 1000
             ):
                 return url
 
         except Exception:
             pass
 
-    # Then Open Library search
     try:
 
-        response = requests.get(
+        r = requests.get(
             "https://openlibrary.org/search.json",
             params={
                 "title": title,
@@ -969,18 +907,16 @@ def get_cover(title, author="", isbn=""):
             timeout=10,
         )
 
-        if response.status_code == 200:
+        if r.status_code == 200:
 
-            docs = response.json().get(
+            docs = r.json().get(
                 "docs",
                 []
             )
 
             if docs:
 
-                cover_id = docs[0].get(
-                    "cover_i"
-                )
+                cover_id = docs[0].get("cover_i")
 
                 if cover_id:
 
@@ -992,10 +928,9 @@ def get_cover(title, author="", isbn=""):
     except Exception:
         pass
 
-    # Finally Google Books
     try:
 
-        response = requests.get(
+        r = requests.get(
             "https://www.googleapis.com/books/v1/volumes",
             params={
                 "q": f"{title} {author}",
@@ -1004,9 +939,9 @@ def get_cover(title, author="", isbn=""):
             timeout=10,
         )
 
-        if response.status_code == 200:
+        if r.status_code == 200:
 
-            items = response.json().get(
+            items = r.json().get(
                 "items",
                 []
             )
@@ -1039,11 +974,9 @@ def get_cover(title, author="", isbn=""):
 
 def detect_series(title):
 
-    text = str(title)
-
     patterns = [
-        r"\(([^()]*)\s*#\s*\d+(?:\.\d+)?[^()]*\)",
-        r"\[([^\[\]]*)\s*#\s*\d+(?:\.\d+)?[^\[\]]*\]",
+        r"\(([^()]*)#\s*\d+(?:\.\d+)?[^()]*\)",
+        r"\[([^\[\]]*)#\s*\d+(?:\.\d+)?[^\[\]]*\]",
         r"\(([^()]*)\bBook\s+\d+(?:\.\d+)?[^()]*\)",
         r"\[([^\[\]]*)\bBook\s+\d+(?:\.\d+)?[^\[\]]*\]",
     ]
@@ -1052,8 +985,8 @@ def detect_series(title):
 
         match = re.search(
             pattern,
-            text,
-            re.IGNORECASE
+            str(title),
+            re.I
         )
 
         if match:
@@ -1064,14 +997,14 @@ def detect_series(title):
                 r",?\s*#\s*\d+(?:\.\d+)?",
                 "",
                 series,
-                flags=re.IGNORECASE
+                flags=re.I
             )
 
             series = re.sub(
                 r"\bBook\s+\d+(?:\.\d+)?",
                 "",
                 series,
-                flags=re.IGNORECASE
+                flags=re.I
             )
 
             series = re.sub(
@@ -1088,8 +1021,6 @@ def detect_series(title):
 
 def detect_series_number(title):
 
-    text = str(title)
-
     patterns = [
         r"#\s*(\d+(?:\.\d+)?)",
         r"\bBook\s+(\d+(?:\.\d+)?)",
@@ -1100,8 +1031,8 @@ def detect_series_number(title):
 
         match = re.search(
             pattern,
-            text,
-            re.IGNORECASE
+            str(title),
+            re.I
         )
 
         if match:
@@ -1110,7 +1041,6 @@ def detect_series_number(title):
                 return float(
                     match.group(1)
                 )
-
             except Exception:
                 pass
 
@@ -1204,7 +1134,7 @@ def import_books(uploaded):
             )
         ).strip()
 
-        if not title or title.lower() == "nan":
+        if not title or title == "nan":
             continue
 
         author = "Unknown Author"
@@ -1218,7 +1148,7 @@ def import_books(uploaded):
                 )
             ).strip()
 
-        if not author or author.lower() == "nan":
+        if not author or author == "nan":
             author = "Unknown Author"
 
         isbn = ""
@@ -1241,14 +1171,11 @@ def import_books(uploaded):
         if rating_col:
 
             try:
-
-                value = row.get(
-                    rating_col
+                rating = float(
+                    row.get(
+                        rating_col
+                    )
                 )
-
-                if pd.notna(value):
-                    rating = float(value)
-
             except Exception:
                 pass
 
@@ -1279,7 +1206,8 @@ def import_books(uploaded):
                 "Title": title,
                 "Author": author,
                 "Series": detect_series(title),
-                "Series Number": detect_series_number(title),
+                "Series Number":
+                    detect_series_number(title),
                 "ISBN": isbn,
                 "My Rating": rating,
                 "Status": status,
@@ -1306,7 +1234,10 @@ def import_books(uploaded):
 
     for i in range(len(new_library)):
 
-        new_library.loc[i, "Cover"] = get_cover(
+        new_library.loc[
+            i,
+            "Cover"
+        ] = get_cover(
             new_library.loc[i, "Title"],
             new_library.loc[i, "Author"],
             new_library.loc[i, "ISBN"]
@@ -1383,7 +1314,10 @@ stats = [
     (favorites, "Favorites"),
 ]
 
-for col, (number, label) in zip(columns, stats):
+for col, (number, label) in zip(
+    columns,
+    stats
+):
 
     with col:
 
@@ -1435,7 +1369,9 @@ with tree_tab:
 
         search = st.text_input(
             "Search your tree",
-            placeholder="Search author, series, or book..."
+            placeholder=(
+                "Search author, series, or book..."
+            )
         )
 
         filtered = library.copy()
@@ -1445,29 +1381,23 @@ with tree_tab:
             q = search.lower()
 
             filtered = filtered[
-                (
-                    filtered["Title"]
-                    .fillna("")
-                    .astype(str)
-                    .str.lower()
-                    .str.contains(q, na=False)
-                )
+                filtered["Title"]
+                .fillna("")
+                .astype(str)
+                .str.lower()
+                .str.contains(q, na=False)
                 |
-                (
-                    filtered["Author"]
-                    .fillna("")
-                    .astype(str)
-                    .str.lower()
-                    .str.contains(q, na=False)
-                )
+                filtered["Author"]
+                .fillna("")
+                .astype(str)
+                .str.lower()
+                .str.contains(q, na=False)
                 |
-                (
-                    filtered["Series"]
-                    .fillna("")
-                    .astype(str)
-                    .str.lower()
-                    .str.contains(q, na=False)
-                )
+                filtered["Series"]
+                .fillna("")
+                .astype(str)
+                .str.lower()
+                .str.contains(q, na=False)
             ]
 
         st.html(
@@ -1686,7 +1616,11 @@ with tree_tab:
                     in st.session_state.open_series
                 )
 
-                arrow = "▼" if series_open else "▶"
+                arrow = (
+                    "▼"
+                    if series_open
+                    else "▶"
+                )
 
                 if st.button(
                     f"{arrow}  {series}",
@@ -1871,9 +1805,7 @@ with books_tab:
 
     if library.empty:
 
-        st.info(
-            "No books yet."
-        )
+        st.info("No books yet.")
 
     else:
 
@@ -1980,21 +1912,13 @@ with books_tab:
 
 with add_tab:
 
-    st.header(
-        "Add a Book"
-    )
+    st.header("Add a Book")
 
-    with st.form(
-        "add_book"
-    ):
+    with st.form("add_book"):
 
-        title = st.text_input(
-            "Title"
-        )
+        title = st.text_input("Title")
 
-        author = st.text_input(
-            "Author"
-        )
+        author = st.text_input("Author")
 
         series = st.text_input(
             "Series",
@@ -2005,12 +1929,10 @@ with add_tab:
             "Series number",
             min_value=0.0,
             value=0.0,
-            step=0.5
+            step=.5
         )
 
-        isbn = st.text_input(
-            "ISBN"
-        )
+        isbn = st.text_input("ISBN")
 
         status = st.selectbox(
             "Status",
@@ -2028,9 +1950,7 @@ with add_tab:
             0
         )
 
-        favorite = st.checkbox(
-            "Favorite"
-        )
+        favorite = st.checkbox("Favorite")
 
         submit = st.form_submit_button(
             "Add to My Tree"
@@ -2113,9 +2033,7 @@ with add_tab:
 
 with import_tab:
 
-    st.header(
-        "Import Your Library"
-    )
+    st.header("Import Your Library")
 
     st.write(
         "Upload a Goodreads CSV, StoryGraph export, "
@@ -2129,9 +2047,7 @@ with import_tab:
 
     if uploaded:
 
-        if st.button(
-            "Build My Book Tree"
-        ):
+        if st.button("Build My Book Tree"):
 
             with st.spinner(
                 "Finding your books and covers..."
@@ -2148,3 +2064,4 @@ with import_tab:
                 )
 
                 st.rerun()
+```
