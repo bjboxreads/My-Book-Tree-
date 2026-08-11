@@ -267,24 +267,29 @@ div[data-baseweb="input"] input {{
     background: var(--surface2) !important;
     border-color: var(--accent) !important;
 }}
+.stat-card {{
+    background: var(--surface) !important;
+    border: 2px solid var(--accent) !important;
+    padding: 25px 15px !important;
+    text-align: center;
+    position: relative;
+    transition: all 0.4s ease;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 8px 20px rgba(0,0,0,0.5);
+    
+    /* SYMMETRICAL CORNERS: Makes every box identical */
+    border-radius: 15px 45px 15px 45px !important; 
+    
+    /* FIXED SIZE: Ensures they are the same dimensions */
+    min-height: 140px !important;
+    min-width: 130px !important;
+    margin: 5px;
+}}
 
-     background: var(--surface) !important;
-     border: 2px solid var(--accent) !important;
-     padding: 30px 20px !important;
-     text-align: center;
-     position: relative;
-     transition: all 0.4s ease;
-     display: flex;
-     flex-direction: column;
-     align-items: center;
-     justify-content: center;
-     box-shadow: 0 10px 25px rgba(0,0,0,0.5), inset 0 0 10px rgba(0,0,0,0.5);
-     border-radius: 30% 70% 30% 70% / 70% 30% 70% 30% !important;
-     min-height: 140px;
- }}
-
-
-/* Floral Filigree Ornament at the Top */
+/* Floral Ornament - centered correctly */
 .stat-card::before {{
     content: '❦'; 
     position: absolute;
@@ -298,22 +303,10 @@ div[data-baseweb="input"] input {{
     z-index: 3;
 }}
 
-/* Elegant Inner "Double Frame" Line */
-.stat-card::after {{
-    content: '';
-    position: absolute;
-    inset: 6px;
-    border: 1px double var(--accent);
-    border-radius: inherit;
-    opacity: 0.3;
-    pointer-events: none;
-}}
-
 .stat-card:hover {{
-    transform: scale(1.05);
-    border-color: var(--text) !important;
-    box-shadow: 0 15px 35px rgba(0,0,0,0.6), inset 0 0 15px var(--accent);
- }}
+    transform: translateY(-5px);
+    box-shadow: 0 12px 30px rgba(0,0,0,0.6);
+}}
 
 .stat-number {{
     font-family: "Berkshire Swash", serif !important;
@@ -321,15 +314,15 @@ div[data-baseweb="input"] input {{
     color: var(--accent) !important;
     margin: 0 !important;
     line-height: 1 !important;
-   }}
+}}
 
 .stat-label {{
     font-family: "Berkshire Swash", serif !important;
     color: var(--text) !important;
     font-size: 14px !important; 
     margin-top: 5px;
-
-    }}
+    width: 100%;
+ }}
 
 .tree-container {{
     margin-top: 20px;
