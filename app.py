@@ -17,7 +17,7 @@ from concurrent.futures import ThreadPoolExecutor, as_completed
 
 LIBRARY_FILE = os.path.join(
     os.path.dirname(os.path.abspath(__file__)),
-    "book_tree_library.csv",
+    "storyspire_library.csv",
 )
 
 LIBRARY_BACKUP_FILE = LIBRARY_FILE + ".bak"
@@ -97,6 +97,28 @@ def load_library():
             pass
 
     return pd.DataFrame(columns=LIBRARY_COLUMNS)
+
+
+def clean_author_series(df):
+    """Fill blank/NaN Author and Series with consistent
+    placeholders. Used by BOTH trees (Books tab + Book Tree tab)
+    so a book with a missing author shows up the same way in
+    both places instead of silently disappearing from one of
+    them (pandas' groupby drops NaN groups by default)."""
+    df = df.copy()
+    df["Author"] = (
+        df["Author"]
+        .fillna("Unknown Author")
+        .astype(str)
+        .replace(["", "nan", "None"], "Unknown Author")
+    )
+    df["Series"] = (
+        df["Series"]
+        .fillna("Standalone")
+        .astype(str)
+        .replace(["", "nan", "None"], "Standalone")
+    )
+    return df
 
 
 # ============================================================
@@ -315,11 +337,12 @@ def book_pill_html(book):
 # ============================================================
 
 def display_ancestry_tree(df):
-    # 1. Clean data: Fill empty Series with 'Standalone'
-    df = df.copy()
-    df['Series'] = df['Series'].fillna('Standalone').astype(str).replace(
-        ['', 'nan', 'None'], 'Standalone'
-    )
+    # Clean data: fill empty Author with 'Unknown Author' and
+    # empty Series with 'Standalone' (shared helper so this
+    # matches the Book Tree tab exactly — otherwise a book with
+    # a blank author would silently vanish here, since
+    # groupby() drops NaN groups by default).
+    df = clean_author_series(df)
 
     # Build the entire tree as ONE html string instead of looping
     # st.expander / st.columns / st.write per author/series/book.
@@ -370,7 +393,7 @@ def display_ancestry_tree(df):
 # ============================================================
 
 st.set_page_config(
-    page_title="My Book Tree",
+    page_title="Storyspire",
     page_icon="📚",
     layout="wide",
     initial_sidebar_state="collapsed",
@@ -640,19 +663,20 @@ st.html(
         transform: translateY(-1px) !important;
     }}
 
-    /* ---- Clickable stat cards ---- */
-    [class*="st-key-stat_"] {{
+    /* ---- Clickable stat cards (Books / Read / Unread / Favorites) ---- */
+    [class*="st-key-statclick_"] {{
         background: var(--card);
         border: 1px solid var(--accent);
         border-radius: 16px;
         box-shadow: 0 4px 12px rgba(0,0,0,.18);
+        cursor: pointer;
         transition: transform .15s ease, box-shadow .15s ease;
     }}
-    [class*="st-key-stat_"]:hover {{
+    [class*="st-key-statclick_"]:hover {{
         transform: translateY(-2px);
         box-shadow: 0 6px 16px rgba(0,0,0,.24);
     }}
-    [class*="st-key-stat_"] button {{
+    [class*="st-key-statclick_"] button {{
         background: transparent !important;
         border: none !important;
         box-shadow: none !important;
@@ -662,19 +686,31 @@ st.html(
         line-height: 1.4 !important;
         padding: 16px 6px !important;
         width: 100%;
+        cursor: pointer;
     }}
-    [class*="st-key-stat_"] button:hover {{
+    [class*="st-key-statclick_"] button:hover {{
         background: var(--surface2) !important;
         cursor: pointer;
         transform: none !important;
     }}
-    [class*="st-key-stat_"] button p {{
+    [class*="st-key-statclick_"] button p {{
         font-size: 13px !important;
     }}
-    [class*="st-key-stat_"] button p:first-line {{
+    [class*="st-key-statclick_"] button p:first-line {{
         font-family: "Berkshire Swash", Georgia, serif !important;
         font-size: 26px !important;
         color: var(--accent) !important;
+    }}
+
+    /* ---- Static stat cards (Authors / Series) — visibly flat,
+       no pointer cursor, no hover lift, so they read as info
+       tiles rather than buttons. ---- */
+    [class*="st-key-statstatic_"] {{
+        background: var(--surface2);
+        border: 1px solid var(--line);
+        border-radius: 16px;
+        box-shadow: 0 2px 6px rgba(0,0,0,.12);
+        cursor: default;
     }}
 
     .tree-root {{
@@ -723,7 +759,7 @@ st.html(
 st.html(
     """
     <div class="book-header">
-        <div class="book-header-title">My Book Tree</div>
+        <div class="book-header-title">Storyspire</div>
         <div class="book-header-tagline">
             a cozy little library that grows as you read
         </div>
@@ -1335,6 +1371,9 @@ def import_books(uploaded_file, fetch_covers=True, merge=True):
             )
 
         # RATING
+        # Goodreads exports use 0 to mean "not yet rated", not
+        # a genuine zero-star rating — treat 0 the same as
+        # missing so unrated books don't show a rating at all.
 
         rating = None
 
@@ -1348,9 +1387,12 @@ def import_books(uploaded_file, fetch_covers=True, merge=True):
 
                 if pd.notna(value):
 
-                    rating = float(
+                    parsed_rating = float(
                         value
                     )
+
+                    if parsed_rating > 0:
+                        rating = parsed_rating
 
             except Exception:
                 pass
@@ -1684,6 +1726,12 @@ favorites = (
 # just counts (there's no single-tap filter that corresponds
 # to "show me by author" here), so they're shown as plain,
 # non-clickable cards instead of buttons that don't do anything.
+#
+# The two groups get DIFFERENT container key prefixes
+# (statclick_ vs statstatic_) so the CSS above can give only
+# the real buttons a pointer cursor and hover-lift — otherwise
+# all six cards look identical and it's impossible to tell
+# which four are actually clickable.
 # ============================================================
 
 STAT_FILTER_MAP = {
@@ -1718,9 +1766,12 @@ for col, (
 
     with col:
 
-        with st.container(key=f"stat_{safe_id(label)}"):
+        is_clickable = label not in NON_INTERACTIVE_STATS
+        key_prefix = "statclick" if is_clickable else "statstatic"
 
-            if label in NON_INTERACTIVE_STATS:
+        with st.container(key=f"{key_prefix}_{safe_id(label)}"):
+
+            if not is_clickable:
 
                 st.html(
                     f"""
@@ -2000,27 +2051,7 @@ if st.session_state.active_tab == "tree":
         # CLEAN DATA
         # ----------------------------------------------------
 
-        filtered = filtered.copy()
-
-        filtered["Author"] = (
-            filtered["Author"]
-            .fillna("Unknown Author")
-            .astype(str)
-            .replace(
-                ["", "nan", "None"],
-                "Unknown Author",
-            )
-        )
-
-        filtered["Series"] = (
-            filtered["Series"]
-            .fillna("Standalone")
-            .astype(str)
-            .replace(
-                ["", "nan", "None"],
-                "Standalone",
-            )
-        )
+        filtered = clean_author_series(filtered)
 
         # ----------------------------------------------------
         # MY LIBRARY ROOT — label reflects the active
@@ -2075,7 +2106,6 @@ elif st.session_state.active_tab == "books":
         st.session_state["unique_books_radio"] = (
             st.session_state.pop("stat_filter")
         )
-        st.session_state.pop("active_tab_hint", None)
 
     if library.empty:
 
