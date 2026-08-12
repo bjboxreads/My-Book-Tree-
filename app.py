@@ -1,9 +1,21 @@
 import streamlit as st
+import pandas as pd
+import requests
+import re
+import html
+from concurrent.futures import ThreadPoolExecutor, as_completed
+
+
+# ============================================================
+# ANCESTRY TREE (Books tab) — now with covers
+# ============================================================
 
 def display_ancestry_tree(df):
     # 1. Clean data: Fill empty Series with 'Standalone'
     df = df.copy()
-    df['Series'] = df['Series'].fillna('Standalone').replace('', 'Standalone')
+    df['Series'] = df['Series'].fillna('Standalone').astype(str).replace(
+        ['', 'nan', 'None'], 'Standalone'
+    )
 
     # Build the entire tree as ONE html string instead of looping
     # st.expander / st.columns / st.write per author/series/book.
@@ -41,14 +53,28 @@ def display_ancestry_tree(df):
                 title = html.escape(str(book.get('Title', '')))
                 status = html.escape(str(book.get('Status', '') or ''))
                 genre = html.escape(str(book.get('Genre', '') or ''))
+                cover = str(book.get('Cover', '') or '')
+
                 label = f'📖 {title}'
                 if status:
                     label += f' — {status}'
                 if genre:
                     label += f' · {genre}'
-                parts.append(
-                    f'<div class="atree-pill atree-pill-book">{label}</div>'
-                )
+
+                if cover:
+                    parts.append(
+                        f'<div class="atree-pill atree-pill-book '
+                        f'atree-pill-book-cover">'
+                        f'<img class="atree-cover" '
+                        f'src="{html.escape(cover)}" loading="lazy">'
+                        f'<span>{label}</span>'
+                        f'</div>'
+                    )
+                else:
+                    parts.append(
+                        f'<div class="atree-pill atree-pill-book">'
+                        f'{label}</div>'
+                    )
             parts.append('</div></details>')
 
         parts.append('</div></details>')
@@ -104,6 +130,19 @@ def display_ancestry_tree(df):
         .atree-pill-book {{
             margin: 6px 0;
         }}
+        .atree-pill-book-cover {{
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }}
+        .atree-cover {{
+            width: 36px;
+            height: 52px;
+            object-fit: cover;
+            border-radius: 3px 8px 3px 8px;
+            border: 1px solid var(--accent);
+            flex-shrink: 0;
+        }}
 
         .atree-series-row {{
             display: flex;
@@ -124,14 +163,6 @@ def display_ancestry_tree(df):
         """
     )
 
-# Usage:
-# if not df.empty:
-#     display_ancestry_tree(df)
-import pandas as pd
-import requests
-import re
-import html
-from concurrent.futures import ThreadPoolExecutor, as_completed
 
 # ============================================================
 # PAGE
@@ -397,37 +428,41 @@ st.html(
         box-shadow: 0 4px 14px rgba(0,0,0,.25) !important;
     }}
 
-    .stat-card {{
+    /* ---- Clickable stat cards ---- */
+    [class*="st-key-stat_"] {{
         background: var(--card);
         border: 1px solid var(--accent);
         border-radius: 24px 7px 24px 7px;
-        padding: 18px 10px;
-        text-align: center;
-        position: relative;
         box-shadow: 0 6px 18px rgba(0,0,0,.18);
+        position: relative;
+        padding-top: 6px;
     }}
-
-    .stat-card::before {{
+    [class*="st-key-stat_"]::before {{
         content: "❧  ❦  ❧";
         display: block;
         color: var(--accent);
-        font-size: 18px;
+        font-size: 16px;
         line-height: 1;
-        margin-bottom: 4px;
+        text-align: center;
+        margin-top: 8px;
     }}
-
-    .stat-number {{
-        font-family: "Berkshire Swash", Georgia, serif;
-        font-size: 38px;
-        color: var(--accent);
+    [class*="st-key-stat_"] button {{
+        background: transparent !important;
+        border: none !important;
+        box-shadow: none !important;
+        color: var(--text) !important;
+        font-family: "Libre Baskerville", Georgia, serif !important;
+        white-space: pre-line !important;
+        line-height: 1.35 !important;
+        padding: 8px 6px 14px 6px !important;
+        width: 100%;
     }}
-
-    .stat-label {{
-        font-family: "Libre Baskerville", Georgia, serif;
-        color: var(--text);
-        font-size: 10px;
-        text-transform: uppercase;
-        letter-spacing: .08em;
+    [class*="st-key-stat_"] button:hover {{
+        background: var(--surface2) !important;
+        cursor: pointer;
+    }}
+    [class*="st-key-stat_"] button p {{
+        font-size: 13px !important;
     }}
 
     .tree-root {{
@@ -599,7 +634,7 @@ def get_cover(title, author="", isbn=""):
         try:
             response = requests.get(
                 url,
-                timeout=5,
+                timeout=3,
             )
 
             if (
@@ -621,7 +656,7 @@ def get_cover(title, author="", isbn=""):
                 "author": author,
                 "limit": 1,
             },
-            timeout=6,
+            timeout=4,
         )
 
         if response.status_code == 200:
@@ -656,7 +691,7 @@ def get_cover(title, author="", isbn=""):
                 "q": f"{title} {author}",
                 "maxResults": 1,
             },
-            timeout=6,
+            timeout=4,
         )
 
         if response.status_code == 200:
@@ -779,43 +814,138 @@ def safe_id(text):
 
 
 # ============================================================
+# FILE LOADING — csv, excel, txt, pdf -> DataFrame
+# ============================================================
+
+def load_dataframe(uploaded_file):
+    """Returns a pandas DataFrame with at least a Title column,
+    or None (with st.error already shown) if it couldn't be read."""
+
+    name = uploaded_file.name.lower()
+
+    # ---------------- CSV ----------------
+    if name.endswith(".csv"):
+        try:
+            uploaded_file.seek(0)
+            return pd.read_csv(uploaded_file, low_memory=False)
+        except Exception:
+            try:
+                uploaded_file.seek(0)
+                return pd.read_csv(
+                    uploaded_file,
+                    encoding="latin-1",
+                    low_memory=False,
+                )
+            except Exception as error:
+                st.error(f"Could not read this CSV file: {error}")
+                return None
+
+    # ---------------- Excel ----------------
+    elif name.endswith((".xlsx", ".xls")):
+        try:
+            uploaded_file.seek(0)
+            return pd.read_excel(uploaded_file)
+        except Exception as error:
+            st.error(f"Could not read this Excel file: {error}")
+            return None
+
+    # ---------------- Plain text ----------------
+    # One book per line. Supports "Title" or "Title - Author"
+    # or "Title by Author".
+    elif name.endswith(".txt"):
+        try:
+            uploaded_file.seek(0)
+            raw = uploaded_file.read().decode("utf-8", errors="ignore")
+            rows = []
+            for line in raw.splitlines():
+                line = line.strip()
+                if not line:
+                    continue
+                parts = re.split(
+                    r"\s+-\s+|\s+by\s+",
+                    line,
+                    maxsplit=1,
+                    flags=re.IGNORECASE,
+                )
+                if len(parts) == 2:
+                    rows.append(
+                        {"Title": parts[0].strip(), "Author": parts[1].strip()}
+                    )
+                else:
+                    rows.append({"Title": line, "Author": ""})
+            if not rows:
+                st.error("No lines found in this text file.")
+                return None
+            return pd.DataFrame(rows)
+        except Exception as error:
+            st.error(f"Could not read this text file: {error}")
+            return None
+
+    # ---------------- PDF ----------------
+    # One book per line of extracted text, same "Title - Author"
+    # / "Title by Author" heuristic as .txt.
+    elif name.endswith(".pdf"):
+        try:
+            uploaded_file.seek(0)
+            import pypdf
+
+            reader = pypdf.PdfReader(uploaded_file)
+            lines = []
+            for page in reader.pages:
+                text = page.extract_text() or ""
+                lines.extend(text.splitlines())
+
+            rows = []
+            for line in lines:
+                line = line.strip()
+                if not line or len(line) < 3:
+                    continue
+                parts = re.split(
+                    r"\s+-\s+|\s+by\s+",
+                    line,
+                    maxsplit=1,
+                    flags=re.IGNORECASE,
+                )
+                if len(parts) == 2:
+                    rows.append(
+                        {"Title": parts[0].strip(), "Author": parts[1].strip()}
+                    )
+                else:
+                    rows.append({"Title": line, "Author": ""})
+
+            if not rows:
+                st.error("No readable text found in this PDF.")
+                return None
+            return pd.DataFrame(rows)
+        except ImportError:
+            st.error(
+                "PDF import needs the `pypdf` package — "
+                "add `pypdf` to requirements.txt."
+            )
+            return None
+        except Exception as error:
+            st.error(f"Could not read this PDF file: {error}")
+            return None
+
+    else:
+        st.error("Unsupported file type.")
+        return None
+
+
+# ============================================================
 # IMPORT BOOKS
 # ============================================================
 
-def import_books(uploaded_file):
+def import_books(uploaded_file, fetch_covers=True):
 
-# --------------------------------------------------------
-# READ CSV
-# --------------------------------------------------------
+    # --------------------------------------------------------
+    # READ FILE (csv / excel / txt / pdf)
+    # --------------------------------------------------------
 
-    try:
+    df = load_dataframe(uploaded_file)
 
-            uploaded_file.seek(0)
-
-            df = pd.read_csv(
-                uploaded_file,
-                low_memory=False,
-            )
-
-    except Exception: 
-
-        try:
-
-            uploaded_file.seek(0)
-
-            df = pd.read_csv(
-                uploaded_file,
-                encoding="latin-1",
-                low_memory=False,
-            )
-
-        except Exception as error:
-
-            st.error(
-                f"Could not read this CSV file: {error}"
-            )
-
-            return False
+    if df is None:
+        return False
 
     # --------------------------------------------------------
     # FIND COLUMNS
@@ -903,7 +1033,7 @@ def import_books(uploaded_file):
     if not title_col:
 
         st.error(
-            "I couldn't find a Title column in this CSV."
+            "I couldn't find a Title column in this file."
         )
 
         st.write(
@@ -1152,6 +1282,9 @@ def import_books(uploaded_file):
     st.session_state.open_authors = set()
     st.session_state.open_series = set()
 
+    if not fetch_covers:
+        return True
+
     # --------------------------------------------------------
     # FIND COVERS (in parallel — these are independent network
     # calls, so fetching them one at a time serially was the
@@ -1168,7 +1301,7 @@ def import_books(uploaded_file):
 
     done = 0
 
-    with ThreadPoolExecutor(max_workers=16) as executor:
+    with ThreadPoolExecutor(max_workers=40) as executor:
 
         future_to_index = {
             executor.submit(
@@ -1208,6 +1341,52 @@ def import_books(uploaded_file):
     )
 
     return True
+
+
+def fetch_missing_covers():
+    """Fetch covers only for rows that don't have one yet —
+    used by the 'Fetch missing covers' button so a fast
+    no-cover import can add covers later without re-importing."""
+
+    library = st.session_state.library
+
+    missing = library[
+        library["Cover"].fillna("") == ""
+    ]
+
+    if missing.empty:
+        st.info("Every book already has a cover.")
+        return
+
+    total = len(missing)
+    progress = st.progress(0)
+    done = 0
+
+    with ThreadPoolExecutor(max_workers=40) as executor:
+
+        future_to_index = {
+            executor.submit(
+                get_cover,
+                library.loc[i, "Title"],
+                library.loc[i, "Author"],
+                library.loc[i, "ISBN"],
+            ): i
+            for i in missing.index
+        }
+
+        for future in as_completed(future_to_index):
+            i = future_to_index[future]
+            try:
+                cover = future.result()
+            except Exception:
+                cover = ""
+            library.loc[i, "Cover"] = cover
+            done += 1
+            progress.progress(done / total)
+
+    progress.empty()
+    st.session_state.library = library
+    st.success(f"✓ Fetched covers for {total} books!")
 
 
 # ============================================================
@@ -1269,8 +1448,17 @@ favorites = (
 )
 
 # ============================================================
-# STATS
+# STATS — now clickable, filters the Books tab
 # ============================================================
+
+STAT_FILTER_MAP = {
+    "Books": "All",
+    "Authors": "All",
+    "Series": "All",
+    "Read": "Read",
+    "Unread": "Want to Read",
+    "Favorites": "Favorites",
+}
 
 columns = st.columns(
     6
@@ -1295,21 +1483,21 @@ for col, (
 
     with col:
 
-        st.html(
-            f"""
-            <div class="stat-card">
+        with st.container(key=f"stat_{safe_id(label)}"):
 
-                <div class="stat-number">
-                    {number}
-                </div>
+            if st.button(
+                f"{number}\n{label}",
+                key=f"stat_btn_{safe_id(label)}",
+                use_container_width=True,
+            ):
+                st.session_state.stat_filter = STAT_FILTER_MAP[label]
+                st.session_state.active_tab_hint = "books"
+                st.rerun()
 
-                <div class="stat-label">
-                    {label}
-                </div>
-
-            </div>
-            """
-        )
+if st.session_state.get("active_tab_hint") == "books":
+    st.caption(
+        "↳ Filter applied — open the 📚 Books tab to see the results."
+    )
 
 # ============================================================
 # TABS
@@ -1323,11 +1511,6 @@ tree_tab, books_tab, add_tab, import_tab = st.tabs(
         "📥 Import",
     ]
 )
-
-# ============================================================
-# BOOK TREE
-# ============================================================
-
 
 # ============================================================
 # BOOK TREE — AUTHOR GRID → HORIZONTAL ANCESTRY TREE
@@ -1450,325 +1633,354 @@ with tree_tab:
             """
         )
 
-    # ----------------------------------------------------
-    # AUTHOR GRID — EXACTLY 4 COLUMNS
-    # ----------------------------------------------------
+        # ----------------------------------------------------
+        # AUTHOR GRID — EXACTLY 4 COLUMNS
+        # ----------------------------------------------------
 
-    author_list = sorted(
-        filtered["Author"].unique(),
-        key=lambda x: str(x).lower(),
-    )
+        AUTHORS_PER_ROW = 4
 
-    author_cols = st.columns(4)
+        author_list = sorted(
+            filtered["Author"].unique(),
+            key=lambda x: str(x).lower(),
+        )
 
-    for author_index, author in enumerate(author_list):
+        for author_row_start in range(
+            0, len(author_list), AUTHORS_PER_ROW
+        ):
 
-        col = author_cols[author_index % 4]
+            author_row = author_list[
+                author_row_start:author_row_start + AUTHORS_PER_ROW
+            ]
 
-        with col:
+            author_cols = st.columns(AUTHORS_PER_ROW)
 
-            author_id = safe_id(author)
+            for author_index, author in enumerate(author_row):
 
-            author_books = filtered[
-                filtered["Author"] == author
-            ].copy()
+                col = author_cols[author_index]
 
-            author_open = (
-                author_id
-                in st.session_state.open_authors
-            )
+                with col:
 
-            arrow = "▼" if author_open else "▶"
+                    author_id = safe_id(author)
 
-            # --------------------------------------------
-            # AUTHOR BUTTON
-            # --------------------------------------------
+                    author_books = filtered[
+                        filtered["Author"] == author
+                    ].copy()
 
-            if st.button(
-                f"{arrow} {author} ({len(author_books)})",
-                key=f"tree_author_{author_id}",
-                use_container_width=True,
-            ):
-
-                if author_open:
-                    st.session_state.open_authors.discard(
+                    author_open = (
                         author_id
-                    )
-                else:
-                    st.session_state.open_authors.add(
-                        author_id
+                        in st.session_state.open_authors
                     )
 
-                st.rerun()
+                    arrow = "▼" if author_open else "▶"
 
-            # --------------------------------------------
-            # OPEN AUTHOR TREE
-            # --------------------------------------------
+                    # ------------------------------------
+                    # AUTHOR BUTTON
+                    # ------------------------------------
 
-            if author_open:
+                    if st.button(
+                        f"{arrow} {author} ({len(author_books)})",
+                        key=f"tree_author_{author_id}",
+                        use_container_width=True,
+                    ):
 
-                st.html(
-                    f"""
-                    <div style="
-                        margin:18px 0 8px 0;
-                        text-align:center;
-                        font-family:'Berkshire Swash',
-                            Georgia, serif;
-                        font-size:20px;
-                        color:var(--accent);
-                    ">
-                        {html.escape(author)}
-                    </div>
-                    """
-                )
+                        if author_open:
+                            st.session_state.open_authors.discard(
+                                author_id
+                            )
+                        else:
+                            st.session_state.open_authors.add(
+                                author_id
+                            )
 
-                # ----------------------------------------
-                # AUTHOR → SERIES CONNECTOR
-                # ----------------------------------------
+                        st.rerun()
 
-                st.html(
-                    """
-                    <div style="
-                        width:2px;
-                        height:20px;
-                        background:var(--accent);
-                        margin:auto;
-                    "></div>
-                    """
-                )
+                    # ------------------------------------
+                    # OPEN AUTHOR TREE
+                    # ------------------------------------
 
-                # ----------------------------------------
-                # SERIES LIST
-                # ----------------------------------------
+                    if author_open:
 
-                series_list = sorted(
-                    author_books["Series"].unique(),
-                    key=lambda x: str(x).lower(),
-                )
-
-                series_cols = st.columns(
-                    max(1, len(series_list))
-                )
-
-                for series_index, series in enumerate(
-                    series_list
-                ):
-
-                    with series_cols[series_index]:
-
-                        series_id = safe_id(
-                            f"{author}_{series}"
-                        )
-
-                        series_books = author_books[
-                            author_books["Series"] == series
-                        ].copy()
-
-                        series_open = (
-                            series_id
-                            in st.session_state.open_series
-                        )
-
-                        series_arrow = (
-                            "▼"
-                            if series_open
-                            else "▶"
-                        )
-
-                        display_series = (
-                            "STANDALONE"
-                            if series == "Standalone"
-                            else str(series)
+                        st.html(
+                            f"""
+                            <div style="
+                                margin:18px 0 8px 0;
+                                text-align:center;
+                                font-family:'Berkshire Swash',
+                                    Georgia, serif;
+                                font-size:20px;
+                                color:var(--accent);
+                            ">
+                                {html.escape(author)}
+                            </div>
+                            """
                         )
 
                         # --------------------------------
-                        # SERIES BUTTON
+                        # AUTHOR → SERIES CONNECTOR
                         # --------------------------------
-
-                        if st.button(
-                            f"{series_arrow} "
-                            f"{display_series} "
-                            f"({len(series_books)})",
-                            key=f"tree_series_{series_id}",
-                            use_container_width=True,
-                        ):
-
-                            if series_open:
-                                st.session_state.open_series.discard(
-                                    series_id
-                                )
-                            else:
-                                st.session_state.open_series.add(
-                                    series_id
-                                )
-
-                            st.rerun()
-
-                        # --------------------------------
-                        # BOOKS
-                        # --------------------------------
-
-                        if not series_open:
-                            continue
 
                         st.html(
                             """
                             <div style="
                                 width:2px;
-                                height:15px;
-                                background:var(--line);
+                                height:20px;
+                                background:var(--accent);
                                 margin:auto;
                             "></div>
                             """
                         )
 
-                        for _, book in series_books.iterrows():
+                        # --------------------------------
+                        # SERIES LIST — fixed columns per
+                        # row so every series button is the
+                        # same size, regardless of how many
+                        # series this author has.
+                        # --------------------------------
 
-                            title = html.escape(
-                                str(
-                                    book.get(
-                                        "Title",
-                                        "",
+                        SERIES_PER_ROW = 4
+
+                        series_list = sorted(
+                            author_books["Series"].unique(),
+                            key=lambda x: str(x).lower(),
+                        )
+
+                        for series_row_start in range(
+                            0, len(series_list), SERIES_PER_ROW
+                        ):
+
+                            series_row = series_list[
+                                series_row_start:series_row_start
+                                + SERIES_PER_ROW
+                            ]
+
+                            series_cols = st.columns(
+                                SERIES_PER_ROW
+                            )
+
+                            for series_index, series in enumerate(
+                                series_row
+                            ):
+
+                                with series_cols[series_index]:
+
+                                    series_id = safe_id(
+                                        f"{author}_{series}"
                                     )
-                                )
-                            )
 
-                            cover = str(
-                                book.get(
-                                    "Cover",
-                                    "",
-                                )
-                                or ""
-                            )
+                                    series_books = author_books[
+                                        author_books["Series"]
+                                        == series
+                                    ].copy()
 
-                            status = html.escape(
-                                str(
-                                    book.get(
-                                        "Status",
-                                        "",
+                                    series_open = (
+                                        series_id
+                                        in st.session_state.open_series
                                     )
-                                )
-                            )
 
-                            genre = html.escape(
-                                str(
-                                    book.get(
-                                        "Genre",
-                                        "",
+                                    series_arrow = (
+                                        "▼"
+                                        if series_open
+                                        else "▶"
                                     )
-                                    or ""
-                                )
-                            )
 
-                            meta = status
+                                    display_series = (
+                                        "STANDALONE"
+                                        if series == "Standalone"
+                                        else str(series)
+                                    )
 
-                            if genre:
-                                meta += f" · {genre}"
+                                    # ------------------------
+                                    # SERIES BUTTON
+                                    # ------------------------
 
-                            label = f"📖 {title}"
+                                    if st.button(
+                                        f"{series_arrow} "
+                                        f"{display_series} "
+                                        f"({len(series_books)})",
+                                        key=f"tree_series_{series_id}",
+                                        use_container_width=True,
+                                    ):
 
-                            if meta:
-                                label += f" — {meta}"
+                                        if series_open:
+                                            st.session_state.open_series.discard(
+                                                series_id
+                                            )
+                                        else:
+                                            st.session_state.open_series.add(
+                                                series_id
+                                            )
 
-                            # ----------------------------
-                            # BOOK — same pill shape, font,
-                            # and size as the author/series
-                            # st.button boxes above.
-                            # ----------------------------
+                                        st.rerun()
 
-                            if cover:
+                                    # ------------------------
+                                    # BOOKS
+                                    # ------------------------
 
-                                st.html(
-                                    f"""
-                                    <div style="
-                                        margin:6px 0;
-                                        padding:0.5rem 1rem;
-                                        box-sizing:border-box;
-                                        background:
-                                            linear-gradient(
-                                                135deg,
-                                                var(--surface),
-                                                var(--surface2)
-                                            );
-                                        border:
-                                            1px solid var(--accent);
-                                        border-radius:
-                                            18px 5px 18px 5px;
-                                        box-shadow:
-                                            0 3px 10px
-                                            rgba(0,0,0,.18);
-                                        display:flex;
-                                        gap:10px;
-                                        align-items:center;
-                                        font-family:
-                                            'Libre Baskerville',
-                                            Georgia,
-                                            serif;
-                                        font-size:1rem;
-                                        color:var(--text);
-                                    ">
-                                        <img
-                                            src="{html.escape(cover)}"
-                                            style="
-                                                width:36px;
-                                                height:52px;
-                                                object-fit:cover;
-                                                border-radius:
-                                                    3px 8px 3px 8px;
-                                                border:
-                                                    1px solid
-                                                    var(--accent);
-                                                flex-shrink:0;
-                                            "
-                                        >
-                                        <span>{label}</span>
-                                    </div>
-                                    """
-                                )
+                                    if not series_open:
+                                        continue
 
-                            else:
+                                    st.html(
+                                        """
+                                        <div style="
+                                            width:2px;
+                                            height:15px;
+                                            background:var(--line);
+                                            margin:auto;
+                                        "></div>
+                                        """
+                                    )
 
-                                st.html(
-                                    f"""
-                                    <div style="
-                                        margin:6px 0;
-                                        padding:0.5rem 1rem;
-                                        box-sizing:border-box;
-                                        background:
-                                            linear-gradient(
-                                                135deg,
-                                                var(--surface),
-                                                var(--surface2)
-                                            );
-                                        border:
-                                            1px solid var(--accent);
-                                        border-radius:
-                                            18px 5px 18px 5px;
-                                        box-shadow:
-                                            0 3px 10px
-                                            rgba(0,0,0,.18);
-                                        font-family:
-                                            'Libre Baskerville',
-                                            Georgia,
-                                            serif;
-                                        font-size:1rem;
-                                        color:var(--text);
-                                    ">
-                                        {label}
-                                    </div>
-                                    """
-                                )
+                                    for _, book in series_books.iterrows():
 
+                                        title = html.escape(
+                                            str(
+                                                book.get(
+                                                    "Title",
+                                                    "",
+                                                )
+                                            )
+                                        )
 
-# ============================================================
-# BOOKS TAB
-# ============================================================
+                                        cover = str(
+                                            book.get(
+                                                "Cover",
+                                                "",
+                                            )
+                                            or ""
+                                        )
+
+                                        status = html.escape(
+                                            str(
+                                                book.get(
+                                                    "Status",
+                                                    "",
+                                                )
+                                            )
+                                        )
+
+                                        genre = html.escape(
+                                            str(
+                                                book.get(
+                                                    "Genre",
+                                                    "",
+                                                )
+                                                or ""
+                                            )
+                                        )
+
+                                        meta = status
+
+                                        if genre:
+                                            meta += f" · {genre}"
+
+                                        label = f"📖 {title}"
+
+                                        if meta:
+                                            label += f" — {meta}"
+
+                                        # ----------------------------
+                                        # BOOK — same pill shape, font,
+                                        # and size as the author/series
+                                        # st.button boxes above.
+                                        # ----------------------------
+
+                                        if cover:
+
+                                            st.html(
+                                                f"""
+                                                <div style="
+                                                    margin:6px 0;
+                                                    padding:0.5rem 1rem;
+                                                    box-sizing:border-box;
+                                                    background:
+                                                        linear-gradient(
+                                                            135deg,
+                                                            var(--surface),
+                                                            var(--surface2)
+                                                        );
+                                                    border:
+                                                        1px solid var(--accent);
+                                                    border-radius:
+                                                        18px 5px 18px 5px;
+                                                    box-shadow:
+                                                        0 3px 10px
+                                                        rgba(0,0,0,.18);
+                                                    display:flex;
+                                                    gap:10px;
+                                                    align-items:center;
+                                                    font-family:
+                                                        'Libre Baskerville',
+                                                        Georgia,
+                                                        serif;
+                                                    font-size:1rem;
+                                                    color:var(--text);
+                                                ">
+                                                    <img
+                                                        src="{html.escape(cover)}"
+                                                        loading="lazy"
+                                                        style="
+                                                            width:36px;
+                                                            height:52px;
+                                                            object-fit:cover;
+                                                            border-radius:
+                                                                3px 8px 3px 8px;
+                                                            border:
+                                                                1px solid
+                                                                var(--accent);
+                                                            flex-shrink:0;
+                                                        "
+                                                    >
+                                                    <span>{label}</span>
+                                                </div>
+                                                """
+                                            )
+
+                                        else:
+
+                                            st.html(
+                                                f"""
+                                                <div style="
+                                                    margin:6px 0;
+                                                    padding:0.5rem 1rem;
+                                                    box-sizing:border-box;
+                                                    background:
+                                                        linear-gradient(
+                                                            135deg,
+                                                            var(--surface),
+                                                            var(--surface2)
+                                                        );
+                                                    border:
+                                                        1px solid var(--accent);
+                                                    border-radius:
+                                                        18px 5px 18px 5px;
+                                                    box-shadow:
+                                                        0 3px 10px
+                                                        rgba(0,0,0,.18);
+                                                    font-family:
+                                                        'Libre Baskerville',
+                                                        Georgia,
+                                                        serif;
+                                                    font-size:1rem;
+                                                    color:var(--text);
+                                                ">
+                                                    {label}
+                                                </div>
+                                                """
+                                            )
+
 
 # ============================================================
 # BOOKS TAB
 # ============================================================
 
 with books_tab:
+
+    # pick up a filter set by clicking a stat card
+    if "stat_filter" in st.session_state:
+        st.session_state["unique_books_radio"] = (
+            st.session_state.pop("stat_filter")
+        )
+        st.session_state.pop("active_tab_hint", None)
 
     if library.empty:
 
@@ -1805,11 +2017,25 @@ with books_tab:
 
         display_ancestry_tree(books)
 
+        missing_covers = len(
+            books[books["Cover"].fillna("") == ""]
+        )
 
-# ============================================================
-# ADD BOOK
-# ============================================================
-        
+        if missing_covers:
+
+            st.caption(
+                f"{missing_covers} book(s) shown here have no cover yet."
+            )
+
+            if st.button(
+                "🖼️ Fetch missing covers",
+                key="fetch_missing_covers_btn",
+            ):
+                with st.spinner("Looking up covers..."):
+                    fetch_missing_covers()
+                st.rerun()
+
+
 # ============================================================
 # ADD BOOK
 # ============================================================
@@ -1968,13 +2194,18 @@ with import_tab:
     )
 
     st.write(
-        "Upload a Goodreads CSV, StoryGraph export, "
-        "or another compatible book-list CSV."
+        "Upload a Goodreads CSV, StoryGraph export, Excel "
+        "spreadsheet, plain text list, or PDF book list."
+    )
+
+    st.caption(
+        "Text and PDF files: one book per line, formatted as "
+        "\"Title\", \"Title - Author\", or \"Title by Author\"."
     )
 
     uploaded = st.file_uploader(
-        "Choose your CSV",
-        type=["csv"],
+        "Choose a file",
+        type=["csv", "xlsx", "xls", "pdf", "txt"],
         key="book_library_uploader",
     )
 
@@ -1988,6 +2219,12 @@ with import_tab:
             f"File size: {uploaded.size:,} bytes"
         )
 
+        fetch_covers_now = st.checkbox(
+            "Fetch cover art during import (slower — you can "
+            "fetch covers later from the Books tab instead)",
+            value=False,
+        )
+
         if st.button(
             "🌳 Grow My Book Tree",
             use_container_width=True,
@@ -1999,7 +2236,8 @@ with import_tab:
             ):
 
                 success = import_books(
-                    uploaded
+                    uploaded,
+                    fetch_covers=fetch_covers_now,
                 )
 
             if success:
