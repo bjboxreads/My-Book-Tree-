@@ -4,6 +4,7 @@ import requests
 import re
 import html
 import os
+import shutil
 from concurrent.futures import ThreadPoolExecutor, as_completed
 
 
@@ -18,6 +19,8 @@ LIBRARY_FILE = os.path.join(
     os.path.dirname(os.path.abspath(__file__)),
     "book_tree_library.csv",
 )
+
+LIBRARY_BACKUP_FILE = LIBRARY_FILE + ".bak"
 
 LIBRARY_COLUMNS = [
     "Title",
@@ -37,11 +40,30 @@ LIBRARY_COLUMNS = [
 ]
 
 
+def normalize_library_columns(df):
+    """Make sure a DataFrame has exactly LIBRARY_COLUMNS, in
+    order, filling in any missing ones. Used any time a
+    DataFrame comes from somewhere that might not have every
+    column (a fresh CSV, the data editor's '+' row, etc)."""
+    df = df.copy()
+    for column in LIBRARY_COLUMNS:
+        if column not in df.columns:
+            df[column] = "" if column != "Favorite" else False
+    return df[LIBRARY_COLUMNS]
+
+
 def save_library(df):
     """Write the current library to the local CSV save file.
     Called after every add / import / edit / delete so nothing
-    is lost between sessions."""
+    is lost between sessions. Keeps a one-step-back backup of
+    the previous save, as a safety net against accidental
+    deletions or bad edits."""
     try:
+        if os.path.exists(LIBRARY_FILE):
+            try:
+                shutil.copy(LIBRARY_FILE, LIBRARY_BACKUP_FILE)
+            except Exception:
+                pass
         df.to_csv(LIBRARY_FILE, index=False)
     except Exception:
         # Saving is best-effort — a failed write (e.g. read-only
@@ -56,9 +78,7 @@ def load_library():
         try:
             df = pd.read_csv(LIBRARY_FILE)
 
-            for column in LIBRARY_COLUMNS:
-                if column not in df.columns:
-                    df[column] = "" if column != "Favorite" else False
+            df = normalize_library_columns(df)
 
             # Booleans round-trip through CSV as the strings
             # "True"/"False" — read_csv doesn't always infer
@@ -71,12 +91,14 @@ def load_library():
                 .isin(["true", "1", "1.0"])
             )
 
-            return df[LIBRARY_COLUMNS]
+            return df
 
         except Exception:
             pass
 
     return pd.DataFrame(columns=LIBRARY_COLUMNS)
+
+
 
 
 # ============================================================
@@ -1116,7 +1138,7 @@ def load_dataframe(uploaded_file):
 # IMPORT BOOKS
 # ============================================================
 
-def import_books(uploaded_file, fetch_covers=True):
+def import_books(uploaded_file, fetch_covers=True, merge=True):
 
     # --------------------------------------------------------
     # READ FILE (csv / excel / txt / pdf)
@@ -1125,7 +1147,7 @@ def import_books(uploaded_file, fetch_covers=True):
     df = load_dataframe(uploaded_file)
 
     if df is None:
-        return False
+        return {"success": False}
 
     # --------------------------------------------------------
     # FIND COLUMNS
@@ -1220,11 +1242,7 @@ def import_books(uploaded_file, fetch_covers=True):
             "Columns found in your file:"
         )
 
-        st.write(
-            list(df.columns)
-        )
-
-        return False
+        return {"success": False}
 
     # --------------------------------------------------------
     # BUILD BOOK LIST
@@ -1439,42 +1457,111 @@ def import_books(uploaded_file, fetch_covers=True):
     # MAKE DATAFRAME
     # --------------------------------------------------------
 
-    new_library = pd.DataFrame(
+    imported_df = pd.DataFrame(
         books
     )
 
-    if new_library.empty:
+    if imported_df.empty:
 
         st.error(
             "No books were found in the file."
         )
 
-        return False
+        return {"success": False}
+
+    existing = st.session_state.library.copy()
+
+    # --------------------------------------------------------
+    # MERGE vs REPLACE
+    #
+    # Merge (default): keep every book already in the library
+    # untouched — including manual edits, favorites, ratings,
+    # and fetched covers — and only add books from this file
+    # that aren't already present (matched by title + author,
+    # case-insensitively). This is what makes re-importing an
+    # updated Goodreads export safe now that the library
+    # persists across sessions.
+    #
+    # Replace: wipe the library and use only what's in this
+    # file, same as the old behavior.
+    # --------------------------------------------------------
+
+    def make_key(title, author):
+        return (
+            str(title).strip().lower(),
+            str(author).strip().lower(),
+        )
+
+    if merge and not existing.empty:
+
+        existing_keys = {
+            make_key(t, a)
+            for t, a in zip(
+                existing["Title"], existing["Author"]
+            )
+        }
+
+        is_new_mask = imported_df.apply(
+            lambda row: make_key(
+                row["Title"], row["Author"]
+            )
+            not in existing_keys,
+            axis=1,
+        )
+
+        new_rows = imported_df[is_new_mask].reset_index(
+            drop=True
+        )
+
+        skipped_count = len(imported_df) - len(new_rows)
+
+        combined = pd.concat(
+            [existing, new_rows],
+            ignore_index=True,
+        )
+
+        cover_fetch_start = len(existing)
+
+    else:
+
+        new_rows = imported_df
+        skipped_count = 0
+        combined = imported_df.reset_index(drop=True)
+        cover_fetch_start = 0
+
+    added_count = len(new_rows)
+
+    combined = normalize_library_columns(combined)
 
     # --------------------------------------------------------
     # SAVE BOOKS BEFORE COVER SEARCH
     # --------------------------------------------------------
 
-    st.session_state.library = (
-        new_library
-    )
+    st.session_state.library = combined
 
-    save_library(new_library)
+    save_library(combined)
 
     st.session_state.open_authors = set()
     st.session_state.open_series = set()
 
-    if not fetch_covers:
-        return True
+    if not fetch_covers or added_count == 0:
+        return {
+            "success": True,
+            "added": added_count,
+            "skipped": skipped_count,
+        }
 
     # --------------------------------------------------------
-    # FIND COVERS (in parallel — these are independent network
-    # calls, so fetching them one at a time serially was the
-    # main reason large imports took so long)
+    # FIND COVERS — only for the newly-added rows. Existing
+    # books already have covers (or a deliberately-empty one
+    # from before), so there's no need to re-fetch those.
     # --------------------------------------------------------
 
-    total_books = len(
-        new_library
+    cover_indices = list(
+        range(
+            cover_fetch_start,
+            cover_fetch_start + added_count,
+        )
     )
 
     progress = st.progress(
@@ -1488,11 +1575,11 @@ def import_books(uploaded_file, fetch_covers=True):
         future_to_index = {
             executor.submit(
                 get_cover,
-                new_library.loc[i, "Title"],
-                new_library.loc[i, "Author"],
-                new_library.loc[i, "ISBN"],
+                combined.loc[i, "Title"],
+                combined.loc[i, "Author"],
+                combined.loc[i, "ISBN"],
             ): i
-            for i in range(total_books)
+            for i in cover_indices
         }
 
         for future in as_completed(future_to_index):
@@ -1504,12 +1591,12 @@ def import_books(uploaded_file, fetch_covers=True):
             except Exception:
                 cover = ""
 
-            new_library.loc[i, "Cover"] = cover
+            combined.loc[i, "Cover"] = cover
 
             done += 1
 
             progress.progress(
-                done / total_books
+                done / added_count
             )
 
     progress.empty()
@@ -1518,13 +1605,15 @@ def import_books(uploaded_file, fetch_covers=True):
     # SAVE FINAL LIBRARY
     # --------------------------------------------------------
 
-    st.session_state.library = (
-        new_library
-    )
+    st.session_state.library = combined
 
-    save_library(new_library)
+    save_library(combined)
 
-    return True
+    return {
+        "success": True,
+        "added": added_count,
+        "skipped": skipped_count,
+    }
 
 
 def fetch_missing_covers():
@@ -1633,17 +1722,21 @@ favorites = (
 )
 
 # ============================================================
-# STATS — now clickable, filters the Books tab
+# STATS — Books / Read / Unread / Favorites are clickable and
+# jump to the Books tab pre-filtered. Authors and Series are
+# just counts (there's no single-tap filter that corresponds
+# to "show me by author" here), so they're shown as plain,
+# non-clickable cards instead of buttons that don't do anything.
 # ============================================================
 
 STAT_FILTER_MAP = {
     "Books": "All",
-    "Authors": "All",
-    "Series": "All",
     "Read": "Read",
     "Unread": "Want to Read",
     "Favorites": "Favorites",
 }
+
+NON_INTERACTIVE_STATS = {"Authors", "Series"}
 
 columns = st.columns(
     6
@@ -1670,7 +1763,33 @@ for col, (
 
         with st.container(key=f"stat_{safe_id(label)}"):
 
-            if st.button(
+            if label in NON_INTERACTIVE_STATS:
+
+                st.html(
+                    f"""
+                    <div style="
+                        padding:16px 6px;
+                        text-align:center;
+                        font-family:'Libre Baskerville',
+                            Georgia, serif;
+                    ">
+                        <div style="
+                            font-family:'Berkshire Swash',
+                                Georgia, serif;
+                            font-size:26px;
+                            color:var(--accent);
+                            line-height:1.2;
+                        ">{number}</div>
+                        <div style="
+                            font-size:13px;
+                            color:var(--text);
+                            margin-top:2px;
+                        ">{label}</div>
+                    </div>
+                    """
+                )
+
+            elif st.button(
                 f"{number}\n{label}",
                 key=f"stat_btn_{safe_id(label)}",
                 use_container_width=True,
@@ -2250,6 +2369,13 @@ elif st.session_state.active_tab == "books":
 
     else:
 
+        books_search = st.text_input(
+            "Search books",
+            placeholder="Search by author, title, series, genre, or ISBN...",
+            label_visibility="collapsed",
+            key="books_search_input",
+        )
+
         choice = st.radio(
             "Show",
             [
@@ -2277,25 +2403,55 @@ elif st.session_state.active_tab == "books":
                 books["Status"] == choice
             ]
 
-        display_ancestry_tree(books)
+        if books_search.strip():
 
-        missing_covers = len(
-            books[books["Cover"].fillna("") == ""]
-        )
+            q = books_search.strip().lower()
 
-        if missing_covers:
+            searchable = (
+                books["Title"].fillna("").astype(str)
+                + " "
+                + books["Author"].fillna("").astype(str)
+                + " "
+                + books["Series"].fillna("").astype(str)
+                + " "
+                + books["Genre"].fillna("").astype(str)
+                + " "
+                + books["ISBN"].fillna("").astype(str)
+            ).str.lower()
 
-            st.caption(
-                f"{missing_covers} book(s) shown here have no cover yet."
+            books = books[
+                searchable.str.contains(
+                    q,
+                    na=False,
+                    regex=False,
+                )
+            ]
+
+        if books.empty:
+
+            st.info(f'No books matched "{books_search}".')
+
+        else:
+
+            display_ancestry_tree(books)
+
+            missing_covers = len(
+                books[books["Cover"].fillna("") == ""]
             )
 
-            if st.button(
-                "🖼️ Fetch missing covers",
-                key="fetch_missing_covers_btn",
-            ):
-                with st.spinner("Looking up covers..."):
-                    fetch_missing_covers()
-                st.rerun()
+            if missing_covers:
+
+                st.caption(
+                    f"{missing_covers} book(s) shown here have no cover yet."
+                )
+
+                if st.button(
+                    "🖼️ Fetch missing covers",
+                    key="fetch_missing_covers_btn",
+                ):
+                    with st.spinner("Looking up covers..."):
+                        fetch_missing_covers()
+                    st.rerun()
 
 
 # ============================================================
@@ -2453,8 +2609,9 @@ elif st.session_state.active_tab == "add":
 # ============================================================
 # MANAGE TAB — edit any field inline, or delete rows using the
 # data editor's built-in row-delete (select a row, press the
-# trash icon / Delete key). Saves to disk whenever a change is
-# detected, so edits and deletions persist across restarts too.
+# trash icon / Delete key). Deletions require a confirm step
+# before they're saved; edits and additions save right away.
+# Every save also keeps a one-step-back backup file.
 # ============================================================
 
 elif st.session_state.active_tab == "manage":
@@ -2470,7 +2627,8 @@ elif st.session_state.active_tab == "manage":
         st.caption(
             "Edit any cell directly. To delete a book, click "
             "the row number to select it, then press the "
-            "trash icon or your Delete key."
+            "trash icon or your Delete key — you'll be asked "
+            "to confirm before anything is removed."
         )
 
         edited = st.data_editor(
@@ -2515,21 +2673,81 @@ elif st.session_state.active_tab == "manage":
             },
         )
 
-        if not edited.equals(library):
+        # A row added through the editor's own "+" row but left
+        # with no title isn't a real book yet — drop it silently
+        # rather than letting it get saved as a blank entry.
+        new_row_mask = ~edited.index.isin(library.index)
 
-            edited = edited.reset_index(drop=True)
+        blank_new_mask = new_row_mask & (
+            edited["Title"].fillna("").astype(str).str.strip()
+            == ""
+        )
 
-            # New rows added through the editor's "+" row won't
-            # have the hidden columns (Cover, Description, etc.)
-            # — fill those back in so the schema stays complete.
-            for column in LIBRARY_COLUMNS:
-                if column not in edited.columns:
-                    edited[column] = "" if column != "Favorite" else False
+        edited_clean = edited[~blank_new_mask]
 
-            edited = edited[LIBRARY_COLUMNS]
+        # Rows present in the original library but missing from
+        # the edited result were deleted via the trash icon —
+        # these need a confirmation step before they're saved.
+        removed_indices = sorted(
+            set(library.index) - set(edited_clean.index)
+        )
 
-            st.session_state.library = edited
-            save_library(edited)
+        if removed_indices:
+
+            removed_titles = library.loc[
+                removed_indices, "Title"
+            ].tolist()
+
+            st.warning(
+                "You're about to delete: "
+                + ", ".join(f'"{t}"' for t in removed_titles)
+            )
+
+            confirm_col, cancel_col = st.columns(2)
+
+            with confirm_col:
+
+                if st.button(
+                    "🗑️ Confirm delete",
+                    key="manage_confirm_delete",
+                    type="primary",
+                    use_container_width=True,
+                ):
+
+                    final = normalize_library_columns(
+                        edited_clean.reset_index(drop=True)
+                    )
+
+                    st.session_state.library = final
+                    save_library(final)
+
+                    del st.session_state["manage_library_editor"]
+
+                    st.rerun()
+
+            with cancel_col:
+
+                if st.button(
+                    "Cancel",
+                    key="manage_cancel_delete",
+                    use_container_width=True,
+                ):
+
+                    # Removing the editor's own state forces it
+                    # to reload from the untouched library on
+                    # the next run, discarding the pending delete.
+                    del st.session_state["manage_library_editor"]
+
+                    st.rerun()
+
+        elif not edited_clean.equals(library):
+
+            final = normalize_library_columns(
+                edited_clean.reset_index(drop=True)
+            )
+
+            st.session_state.library = final
+            save_library(final)
             st.rerun()
 
 
@@ -2569,6 +2787,35 @@ elif st.session_state.active_tab == "import":
             f"File size: {uploaded.size:,} bytes"
         )
 
+        import_mode = "Merge with my existing library"
+
+        if not st.session_state.library.empty:
+
+            import_mode = st.radio(
+                "How should this import be applied?",
+                [
+                    "Merge with my existing library",
+                    "Replace my entire library with this file",
+                ],
+                index=0,
+                key="import_mode_radio",
+            )
+
+            if import_mode == "Merge with my existing library":
+                st.caption(
+                    "Books already in your library (matched by "
+                    "title + author) are left untouched — "
+                    "favorites, ratings, and covers you've set "
+                    "won't be overwritten. Only new books from "
+                    "this file are added."
+                )
+            else:
+                st.caption(
+                    "⚠️ This removes every book currently in "
+                    "your library and replaces it with only "
+                    "what's in this file."
+                )
+
         fetch_covers_now = st.checkbox(
             "Fetch cover art during import (slower — you can "
             "fetch covers later from the Books tab instead)",
@@ -2581,20 +2828,37 @@ elif st.session_state.active_tab == "import":
             type="primary",
         ):
 
+            merge_choice = (
+                import_mode == "Merge with my existing library"
+            )
+
             with st.spinner(
                 "Reading your book list..."
             ):
 
-                success = import_books(
+                result = import_books(
                     uploaded,
                     fetch_covers=fetch_covers_now,
+                    merge=merge_choice,
                 )
 
-            if success:
+            if result.get("success"):
 
-                st.success(
-                    f"✓ Successfully imported "
-                    f"{len(st.session_state.library)} books!"
-                )
+                added = result.get("added", 0)
+                skipped = result.get("skipped", 0)
+
+                if merge_choice and skipped:
+
+                    st.success(
+                        f"✓ Added {added} new book(s). "
+                        f"Skipped {skipped} already in your "
+                        f"library."
+                    )
+
+                else:
+
+                    st.success(
+                        f"✓ Successfully imported {added} book(s)!"
+                    )
 
                 st.rerun()
