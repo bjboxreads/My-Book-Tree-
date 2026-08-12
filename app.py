@@ -3,7 +3,80 @@ import pandas as pd
 import requests
 import re
 import html
+import os
 from concurrent.futures import ThreadPoolExecutor, as_completed
+
+
+# ============================================================
+# LOCAL PERSISTENCE — save/load the library to a CSV file next
+# to this script, so the library survives closing the browser
+# tab or restarting the app instead of needing to be
+# re-imported every time.
+# ============================================================
+
+LIBRARY_FILE = os.path.join(
+    os.path.dirname(os.path.abspath(__file__)),
+    "book_tree_library.csv",
+)
+
+LIBRARY_COLUMNS = [
+    "Title",
+    "Author",
+    "Series",
+    "Series Number",
+    "Genre",
+    "ISBN",
+    "My Rating",
+    "Status",
+    "Favorite",
+    "Cover",
+    "Description",
+    "Publisher",
+    "Pages",
+    "Date Read",
+]
+
+
+def save_library(df):
+    """Write the current library to the local CSV save file.
+    Called after every add / import / edit / delete so nothing
+    is lost between sessions."""
+    try:
+        df.to_csv(LIBRARY_FILE, index=False)
+    except Exception:
+        # Saving is best-effort — a failed write (e.g. read-only
+        # filesystem) shouldn't crash the app.
+        pass
+
+
+def load_library():
+    """Load the saved library from disk, if it exists. Returns
+    an empty (correctly-columned) DataFrame otherwise."""
+    if os.path.exists(LIBRARY_FILE):
+        try:
+            df = pd.read_csv(LIBRARY_FILE)
+
+            for column in LIBRARY_COLUMNS:
+                if column not in df.columns:
+                    df[column] = "" if column != "Favorite" else False
+
+            # Booleans round-trip through CSV as the strings
+            # "True"/"False" — read_csv doesn't always infer
+            # that back to a real bool, so convert explicitly.
+            df["Favorite"] = (
+                df["Favorite"]
+                .astype(str)
+                .str.strip()
+                .str.lower()
+                .isin(["true", "1", "1.0"])
+            )
+
+            return df[LIBRARY_COLUMNS]
+
+        except Exception:
+            pass
+
+    return pd.DataFrame(columns=LIBRARY_COLUMNS)
 
 
 # ============================================================
@@ -310,24 +383,7 @@ if (
     st.session_state.theme = "Emerald Grimoire"
 
 if "library" not in st.session_state:
-    st.session_state.library = pd.DataFrame(
-        columns=[
-            "Title",
-            "Author",
-            "Series",
-            "Series Number",
-            "Genre",
-            "ISBN",
-            "My Rating",
-            "Status",
-            "Favorite",
-            "Cover",
-            "Description",
-            "Publisher",
-            "Pages",
-            "Date Read",
-        ]
-    )
+    st.session_state.library = load_library()
 
 if "open_authors" not in st.session_state:
     st.session_state.open_authors = set()
@@ -1403,6 +1459,8 @@ def import_books(uploaded_file, fetch_covers=True):
         new_library
     )
 
+    save_library(new_library)
+
     st.session_state.open_authors = set()
     st.session_state.open_series = set()
 
@@ -1464,6 +1522,8 @@ def import_books(uploaded_file, fetch_covers=True):
         new_library
     )
 
+    save_library(new_library)
+
     return True
 
 
@@ -1510,6 +1570,7 @@ def fetch_missing_covers():
 
     progress.empty()
     st.session_state.library = library
+    save_library(library)
     st.success(f"✓ Fetched covers for {total} books!")
 
 
@@ -1633,6 +1694,7 @@ NAV_ITEMS = [
     ("tree", "🌳 Book Tree"),
     ("books", "📚 Books"),
     ("add", "➕ Add Book"),
+    ("manage", "✏️ Edit / Delete"),
     ("import", "📥 Import"),
 ]
 
@@ -2379,11 +2441,96 @@ elif st.session_state.active_tab == "add":
                     )
                 )
 
+                save_library(st.session_state.library)
+
                 st.success(
                     f'"{title}" was added to your tree!'
                 )
 
                 st.rerun()
+
+
+# ============================================================
+# MANAGE TAB — edit any field inline, or delete rows using the
+# data editor's built-in row-delete (select a row, press the
+# trash icon / Delete key). Saves to disk whenever a change is
+# detected, so edits and deletions persist across restarts too.
+# ============================================================
+
+elif st.session_state.active_tab == "manage":
+
+    st.header("Edit / Delete Books")
+
+    if library.empty:
+
+        st.info("No books yet — add or import some first.")
+
+    else:
+
+        st.caption(
+            "Edit any cell directly. To delete a book, click "
+            "the row number to select it, then press the "
+            "trash icon or your Delete key."
+        )
+
+        edited = st.data_editor(
+            library,
+            key="manage_library_editor",
+            use_container_width=True,
+            num_rows="dynamic",
+            column_order=[
+                "Title",
+                "Author",
+                "Series",
+                "Series Number",
+                "Genre",
+                "Status",
+                "My Rating",
+                "Favorite",
+                "ISBN",
+            ],
+            column_config={
+                "Status": st.column_config.SelectboxColumn(
+                    "Status",
+                    options=[
+                        "Want to Read",
+                        "Currently Reading",
+                        "Read",
+                    ],
+                ),
+                "My Rating": st.column_config.NumberColumn(
+                    "My Rating",
+                    min_value=0,
+                    max_value=5,
+                    step=1,
+                ),
+                "Series Number": st.column_config.NumberColumn(
+                    "Series #",
+                    min_value=0,
+                    step=0.5,
+                ),
+                "Favorite": st.column_config.CheckboxColumn(
+                    "Favorite"
+                ),
+            },
+        )
+
+        if not edited.equals(library):
+
+            edited = edited.reset_index(drop=True)
+
+            # New rows added through the editor's "+" row won't
+            # have the hidden columns (Cover, Description, etc.)
+            # — fill those back in so the schema stays complete.
+            for column in LIBRARY_COLUMNS:
+                if column not in edited.columns:
+                    edited[column] = "" if column != "Favorite" else False
+
+            edited = edited[LIBRARY_COLUMNS]
+
+            st.session_state.library = edited
+            save_library(edited)
+            st.rerun()
 
 
 # ============================================================
