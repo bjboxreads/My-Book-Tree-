@@ -296,7 +296,10 @@ THEMES = {
 # SESSION STATE
 # ============================================================
 
-if "theme" not in st.session_state:
+if (
+    "theme" not in st.session_state
+    or st.session_state.theme not in THEMES
+):
     st.session_state.theme = "Emerald Grimoire"
 
 if "library" not in st.session_state:
