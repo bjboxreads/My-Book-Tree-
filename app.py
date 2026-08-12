@@ -2142,11 +2142,19 @@ if st.session_state.active_tab == "tree":
         )
 
         # ----------------------------------------------------
-        # MY LIBRARY ROOT
+        # MY LIBRARY ROOT — label reflects the active
+        # All / Read / Unread filter so it's visually clear
+        # which tree you're looking at.
         # ----------------------------------------------------
 
+        root_label = {
+            "All Books": "🌳 MY LIBRARY",
+            "Read": "🌳 MY READ BOOKS",
+            "Unread": "🌳 MY UNREAD BOOKS",
+        }[tree_status_choice]
+
         st.html(
-            """
+            f"""
             <div style="
                 text-align:center;
                 margin:20px auto 25px auto;
@@ -2161,7 +2169,7 @@ if st.session_state.active_tab == "tree":
                     font-size:24px;
                     box-shadow:0 4px 12px rgba(0,0,0,.18);
                 ">
-                    🌳 MY LIBRARY
+                    {root_label}
                 </div>
             </div>
             """
