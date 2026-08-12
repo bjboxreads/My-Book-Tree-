@@ -412,8 +412,12 @@ st.html(
         ) !important;
         color: var(--text) !important;
         border: 1px solid var(--accent) !important;
-        border-radius: 18px 5px 18px 5px !important;
+        border-radius: 14px 5px 14px 5px !important;
         font-family: "Libre Baskerville", Georgia, serif !important;
+        font-size: 0.85rem !important;
+        line-height: 1.2 !important;
+        padding: 0.35rem 0.8rem !important;
+        min-height: 0 !important;
         box-shadow: 0 3px 10px rgba(0,0,0,.18) !important;
         transition: all .15s ease !important;
     }}
@@ -811,6 +815,26 @@ def safe_id(text):
         "_",
         str(text),
     )
+
+
+# ============================================================
+# FRAGMENT COMPATIBILITY SHIM
+# ============================================================
+# st.fragment (or the older st.experimental_fragment) makes a
+# click inside it only re-render that piece of the page instead
+# of the entire app — this is what makes expanding an author or
+# series feel instant instead of re-running everything (all
+# authors, all covers, the stats row, etc.) on every click. Falls
+# back to a no-op decorator on Streamlit versions that don't have
+# fragments yet, so the app still runs, just without the speedup.
+
+if hasattr(st, "fragment"):
+    fragment = st.fragment
+elif hasattr(st, "experimental_fragment"):
+    fragment = st.experimental_fragment
+else:
+    def fragment(func):
+        return func
 
 
 # ============================================================
@@ -1516,6 +1540,307 @@ tree_tab, books_tab, add_tab, import_tab = st.tabs(
 # BOOK TREE — AUTHOR GRID → HORIZONTAL ANCESTRY TREE
 # ============================================================
 
+@fragment
+def render_author_card(author, filtered):
+
+    author_books = filtered[
+        filtered["Author"] == author
+    ].copy()
+
+    author_id = safe_id(author)
+
+    author_open = (
+        author_id
+        in st.session_state.open_authors
+    )
+
+    arrow = "▼" if author_open else "▶"
+
+    # ------------------------------------
+    # AUTHOR BUTTON
+    # ------------------------------------
+
+    if st.button(
+        f"{arrow} {author} ({len(author_books)})",
+        key=f"tree_author_{author_id}",
+        use_container_width=True,
+    ):
+
+        if author_open:
+            st.session_state.open_authors.discard(
+                author_id
+            )
+        else:
+            st.session_state.open_authors.add(
+                author_id
+            )
+
+        st.rerun()
+
+    # ------------------------------------
+    # OPEN AUTHOR TREE
+    # ------------------------------------
+
+    if author_open:
+
+        st.html(
+            f"""
+            <div style="
+                margin:18px 0 8px 0;
+                text-align:center;
+                font-family:'Berkshire Swash',
+                    Georgia, serif;
+                font-size:15px;
+                color:var(--accent);
+            ">
+                {html.escape(author)}
+            </div>
+            """
+        )
+
+        # --------------------------------
+        # AUTHOR → SERIES CONNECTOR
+        # --------------------------------
+
+        st.html(
+            """
+            <div style="
+                width:2px;
+                height:20px;
+                background:var(--accent);
+                margin:auto;
+            "></div>
+            """
+        )
+
+        # --------------------------------
+        # SERIES LIST — stacked vertically,
+        # one per row, at the FULL width of
+        # this author's column. This is what
+        # keeps every series button (and every
+        # author's series buttons) the same
+        # size — they all match the width of
+        # the author box above them, instead
+        # of being subdivided into extra
+        # columns nested inside an already
+        # narrow author column (which is what
+        # squeezed "Five Packs" into a sliver
+        # last time).
+        # --------------------------------
+
+        series_list = sorted(
+            author_books["Series"].unique(),
+            key=lambda x: str(x).lower(),
+        )
+
+        for series in series_list:
+
+            series_id = safe_id(
+                f"{author}_{series}"
+            )
+
+            series_books = author_books[
+                author_books["Series"]
+                == series
+            ].copy()
+
+            series_open = (
+                series_id
+                in st.session_state.open_series
+            )
+
+            series_arrow = (
+                "▼"
+                if series_open
+                else "▶"
+            )
+
+            display_series = (
+                "STANDALONE"
+                if series == "Standalone"
+                else str(series)
+            )
+
+            # ------------------------
+            # SERIES BUTTON
+            # ------------------------
+
+            if st.button(
+                f"{series_arrow} "
+                f"{display_series} "
+                f"({len(series_books)})",
+                key=f"tree_series_{series_id}",
+                use_container_width=True,
+            ):
+
+                if series_open:
+                    st.session_state.open_series.discard(
+                        series_id
+                    )
+                else:
+                    st.session_state.open_series.add(
+                        series_id
+                    )
+
+                st.rerun()
+
+            # ------------------------
+            # BOOKS
+            # ------------------------
+
+            if not series_open:
+                continue
+
+            st.html(
+                """
+                <div style="
+                    width:2px;
+                    height:15px;
+                    background:var(--line);
+                    margin:auto;
+                "></div>
+                """
+            )
+
+            for _, book in series_books.iterrows():
+
+                title = html.escape(
+                    str(
+                        book.get(
+                            "Title",
+                            "",
+                        )
+                    )
+                )
+
+                cover = str(
+                    book.get(
+                        "Cover",
+                        "",
+                    )
+                    or ""
+                )
+
+                status = html.escape(
+                    str(
+                        book.get(
+                            "Status",
+                            "",
+                        )
+                    )
+                )
+
+                genre = html.escape(
+                    str(
+                        book.get(
+                            "Genre",
+                            "",
+                        )
+                        or ""
+                    )
+                )
+
+                meta = status
+
+                if genre:
+                    meta += f" · {genre}"
+
+                label = f"📖 {title}"
+
+                if meta:
+                    label += f" — {meta}"
+
+                # ----------------------------
+                # BOOK — same pill shape, font,
+                # and size as the author/series
+                # st.button boxes above.
+                # ----------------------------
+
+                if cover:
+
+                    st.html(
+                        f"""
+                        <div style="
+                            margin:6px 0;
+                            padding:0.4rem 0.8rem;
+                            box-sizing:border-box;
+                            background:
+                                linear-gradient(
+                                    135deg,
+                                    var(--surface),
+                                    var(--surface2)
+                                );
+                            border:
+                                1px solid var(--accent);
+                            border-radius:
+                                18px 5px 18px 5px;
+                            box-shadow:
+                                0 3px 10px
+                                rgba(0,0,0,.18);
+                            display:flex;
+                            gap:10px;
+                            align-items:center;
+                            font-family:
+                                'Libre Baskerville',
+                                Georgia,
+                                serif;
+                            font-size:0.85rem;
+                            color:var(--text);
+                        ">
+                            <img
+                                src="{html.escape(cover)}"
+                                loading="lazy"
+                                style="
+                                    width:36px;
+                                    height:52px;
+                                    object-fit:cover;
+                                    border-radius:
+                                        3px 8px 3px 8px;
+                                    border:
+                                        1px solid
+                                        var(--accent);
+                                    flex-shrink:0;
+                                "
+                            >
+                            <span>{label}</span>
+                        </div>
+                        """
+                    )
+
+                else:
+
+                    st.html(
+                        f"""
+                        <div style="
+                            margin:6px 0;
+                            padding:0.4rem 0.8rem;
+                            box-sizing:border-box;
+                            background:
+                                linear-gradient(
+                                    135deg,
+                                    var(--surface),
+                                    var(--surface2)
+                                );
+                            border:
+                                1px solid var(--accent);
+                            border-radius:
+                                18px 5px 18px 5px;
+                            box-shadow:
+                                0 3px 10px
+                                rgba(0,0,0,.18);
+                            font-family:
+                                'Libre Baskerville',
+                                Georgia,
+                                serif;
+                            font-size:0.85rem;
+                            color:var(--text);
+                        ">
+                            {label}
+                        </div>
+                        """
+                    )
+
+
 with tree_tab:
 
     st.subheader("Search My Book Tree")
@@ -1659,303 +1984,7 @@ with tree_tab:
                 col = author_cols[author_index]
 
                 with col:
-
-                    author_id = safe_id(author)
-
-                    author_books = filtered[
-                        filtered["Author"] == author
-                    ].copy()
-
-                    author_open = (
-                        author_id
-                        in st.session_state.open_authors
-                    )
-
-                    arrow = "▼" if author_open else "▶"
-
-                    # ------------------------------------
-                    # AUTHOR BUTTON
-                    # ------------------------------------
-
-                    if st.button(
-                        f"{arrow} {author} ({len(author_books)})",
-                        key=f"tree_author_{author_id}",
-                        use_container_width=True,
-                    ):
-
-                        if author_open:
-                            st.session_state.open_authors.discard(
-                                author_id
-                            )
-                        else:
-                            st.session_state.open_authors.add(
-                                author_id
-                            )
-
-                        st.rerun()
-
-                    # ------------------------------------
-                    # OPEN AUTHOR TREE
-                    # ------------------------------------
-
-                    if author_open:
-
-                        st.html(
-                            f"""
-                            <div style="
-                                margin:18px 0 8px 0;
-                                text-align:center;
-                                font-family:'Berkshire Swash',
-                                    Georgia, serif;
-                                font-size:20px;
-                                color:var(--accent);
-                            ">
-                                {html.escape(author)}
-                            </div>
-                            """
-                        )
-
-                        # --------------------------------
-                        # AUTHOR → SERIES CONNECTOR
-                        # --------------------------------
-
-                        st.html(
-                            """
-                            <div style="
-                                width:2px;
-                                height:20px;
-                                background:var(--accent);
-                                margin:auto;
-                            "></div>
-                            """
-                        )
-
-                        # --------------------------------
-                        # SERIES LIST — stacked vertically,
-                        # one per row, at the FULL width of
-                        # this author's column. This is what
-                        # keeps every series button (and every
-                        # author's series buttons) the same
-                        # size — they all match the width of
-                        # the author box above them, instead
-                        # of being subdivided into extra
-                        # columns nested inside an already
-                        # narrow author column (which is what
-                        # squeezed "Five Packs" into a sliver
-                        # last time).
-                        # --------------------------------
-
-                        series_list = sorted(
-                            author_books["Series"].unique(),
-                            key=lambda x: str(x).lower(),
-                        )
-
-                        for series in series_list:
-
-                            series_id = safe_id(
-                                f"{author}_{series}"
-                            )
-
-                            series_books = author_books[
-                                author_books["Series"]
-                                == series
-                            ].copy()
-
-                            series_open = (
-                                series_id
-                                in st.session_state.open_series
-                            )
-
-                            series_arrow = (
-                                "▼"
-                                if series_open
-                                else "▶"
-                            )
-
-                            display_series = (
-                                "STANDALONE"
-                                if series == "Standalone"
-                                else str(series)
-                            )
-
-                            # ------------------------
-                            # SERIES BUTTON
-                            # ------------------------
-
-                            if st.button(
-                                f"{series_arrow} "
-                                f"{display_series} "
-                                f"({len(series_books)})",
-                                key=f"tree_series_{series_id}",
-                                use_container_width=True,
-                            ):
-
-                                if series_open:
-                                    st.session_state.open_series.discard(
-                                        series_id
-                                    )
-                                else:
-                                    st.session_state.open_series.add(
-                                        series_id
-                                    )
-
-                                st.rerun()
-
-                            # ------------------------
-                            # BOOKS
-                            # ------------------------
-
-                            if not series_open:
-                                continue
-
-                            st.html(
-                                """
-                                <div style="
-                                    width:2px;
-                                    height:15px;
-                                    background:var(--line);
-                                    margin:auto;
-                                "></div>
-                                """
-                            )
-
-                            for _, book in series_books.iterrows():
-
-                                title = html.escape(
-                                    str(
-                                        book.get(
-                                            "Title",
-                                            "",
-                                        )
-                                    )
-                                )
-
-                                cover = str(
-                                    book.get(
-                                        "Cover",
-                                        "",
-                                    )
-                                    or ""
-                                )
-
-                                status = html.escape(
-                                    str(
-                                        book.get(
-                                            "Status",
-                                            "",
-                                        )
-                                    )
-                                )
-
-                                genre = html.escape(
-                                    str(
-                                        book.get(
-                                            "Genre",
-                                            "",
-                                        )
-                                        or ""
-                                    )
-                                )
-
-                                meta = status
-
-                                if genre:
-                                    meta += f" · {genre}"
-
-                                label = f"📖 {title}"
-
-                                if meta:
-                                    label += f" — {meta}"
-
-                                # ----------------------------
-                                # BOOK — same pill shape, font,
-                                # and size as the author/series
-                                # st.button boxes above.
-                                # ----------------------------
-
-                                if cover:
-
-                                    st.html(
-                                        f"""
-                                        <div style="
-                                            margin:6px 0;
-                                            padding:0.5rem 1rem;
-                                            box-sizing:border-box;
-                                            background:
-                                                linear-gradient(
-                                                    135deg,
-                                                    var(--surface),
-                                                    var(--surface2)
-                                                );
-                                            border:
-                                                1px solid var(--accent);
-                                            border-radius:
-                                                18px 5px 18px 5px;
-                                            box-shadow:
-                                                0 3px 10px
-                                                rgba(0,0,0,.18);
-                                            display:flex;
-                                            gap:10px;
-                                            align-items:center;
-                                            font-family:
-                                                'Libre Baskerville',
-                                                Georgia,
-                                                serif;
-                                            font-size:1rem;
-                                            color:var(--text);
-                                        ">
-                                            <img
-                                                src="{html.escape(cover)}"
-                                                loading="lazy"
-                                                style="
-                                                    width:36px;
-                                                    height:52px;
-                                                    object-fit:cover;
-                                                    border-radius:
-                                                        3px 8px 3px 8px;
-                                                    border:
-                                                        1px solid
-                                                        var(--accent);
-                                                    flex-shrink:0;
-                                                "
-                                            >
-                                            <span>{label}</span>
-                                        </div>
-                                        """
-                                    )
-
-                                else:
-
-                                    st.html(
-                                        f"""
-                                        <div style="
-                                            margin:6px 0;
-                                            padding:0.5rem 1rem;
-                                            box-sizing:border-box;
-                                            background:
-                                                linear-gradient(
-                                                    135deg,
-                                                    var(--surface),
-                                                    var(--surface2)
-                                                );
-                                            border:
-                                                1px solid var(--accent);
-                                            border-radius:
-                                                18px 5px 18px 5px;
-                                            box-shadow:
-                                                0 3px 10px
-                                                rgba(0,0,0,.18);
-                                            font-family:
-                                                'Libre Baskerville',
-                                                Georgia,
-                                                serif;
-                                            font-size:1rem;
-                                            color:var(--text);
-                                        ">
-                                            {label}
-                                        </div>
-                                        """
-                                    )
+                    render_author_card(author, filtered)
 
 
 # ============================================================
