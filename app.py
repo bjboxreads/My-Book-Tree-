@@ -906,46 +906,6 @@ def status_stripe_color(status):
     return STATUS_STRIPE.get(str(status).strip(), "var(--muted)")
 
 
-def render_status_legend():
-    """Small key explaining the read/reading/want-to-read
-    stripe color used on every book pill in both tree views."""
-    st.html(
-        """
-        <div style="
-            display:flex;
-            gap:18px;
-            flex-wrap:wrap;
-            margin:2px 0 14px 0;
-            font-family:'Libre Baskerville', Georgia, serif;
-            font-size:11px;
-            color:var(--muted);
-        ">
-            <span>
-                <span style="
-                    display:inline-block;width:10px;height:10px;
-                    border-radius:2px;background:var(--accent2);
-                    margin-right:5px;vertical-align:middle;
-                "></span>Read
-            </span>
-            <span>
-                <span style="
-                    display:inline-block;width:10px;height:10px;
-                    border-radius:2px;background:var(--accent);
-                    margin-right:5px;vertical-align:middle;
-                "></span>Currently Reading
-            </span>
-            <span>
-                <span style="
-                    display:inline-block;width:10px;height:10px;
-                    border-radius:2px;background:var(--muted);
-                    margin-right:5px;vertical-align:middle;
-                "></span>Want to Read
-            </span>
-        </div>
-        """
-    )
-
-
 # ============================================================
 # FRAGMENT COMPATIBILITY SHIM
 # ============================================================
@@ -1745,21 +1705,6 @@ def render_author_card(author, filtered):
 
     if author_open:
 
-        st.html(
-            f"""
-            <div style="
-                margin:18px 0 8px 0;
-                text-align:center;
-                font-family:'Berkshire Swash',
-                    Georgia, serif;
-                font-size:15px;
-                color:var(--accent);
-            ">
-                {html.escape(author)}
-            </div>
-            """
-        )
-
         # --------------------------------
         # AUTHOR → SERIES CONNECTOR
         # --------------------------------
@@ -2040,8 +1985,6 @@ if st.session_state.active_tab == "tree":
         key="tree_status_radio",
     )
 
-    render_status_legend()
-
     filtered = library.copy()
 
     # --------------------------------------------------------
@@ -2271,8 +2214,6 @@ elif st.session_state.active_tab == "books":
             books = books[
                 books["Status"] == choice
             ]
-
-        render_status_legend()
 
         display_ancestry_tree(books)
 
