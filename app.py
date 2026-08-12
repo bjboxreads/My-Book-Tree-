@@ -436,19 +436,8 @@ st.html(
     [class*="st-key-stat_"] {{
         background: var(--card);
         border: 1px solid var(--accent);
-        border-radius: 24px 7px 24px 7px;
-        box-shadow: 0 6px 18px rgba(0,0,0,.18);
-        position: relative;
-        padding-top: 6px;
-    }}
-    [class*="st-key-stat_"]::before {{
-        content: "❧  ❦  ❧";
-        display: block;
-        color: var(--accent);
-        font-size: 16px;
-        line-height: 1;
-        text-align: center;
-        margin-top: 8px;
+        border-radius: 16px;
+        box-shadow: 0 4px 12px rgba(0,0,0,.18);
     }}
     [class*="st-key-stat_"] button {{
         background: transparent !important;
@@ -457,8 +446,8 @@ st.html(
         color: var(--text) !important;
         font-family: "Libre Baskerville", Georgia, serif !important;
         white-space: pre-line !important;
-        line-height: 1.35 !important;
-        padding: 8px 6px 14px 6px !important;
+        line-height: 1.4 !important;
+        padding: 16px 6px !important;
         width: 100%;
     }}
     [class*="st-key-stat_"] button:hover {{
@@ -467,6 +456,11 @@ st.html(
     }}
     [class*="st-key-stat_"] button p {{
         font-size: 13px !important;
+    }}
+    [class*="st-key-stat_"] button p:first-line {{
+        font-family: "Berkshire Swash", Georgia, serif !important;
+        font-size: 26px !important;
+        color: var(--accent) !important;
     }}
 
     .tree-root {{
@@ -1515,26 +1509,45 @@ for col, (
                 use_container_width=True,
             ):
                 st.session_state.stat_filter = STAT_FILTER_MAP[label]
-                st.session_state.active_tab_hint = "books"
+                st.session_state.active_tab = "books"
                 st.rerun()
 
-if st.session_state.get("active_tab_hint") == "books":
-    st.caption(
-        "↳ Filter applied — open the 📚 Books tab to see the results."
-    )
-
 # ============================================================
-# TABS
+# NAV — replaces st.tabs(). Streamlit tabs can't be switched
+# by code, which is why clicking a stat card above used to only
+# show a "go click the tab yourself" hint. This is a plain
+# button row bound to session_state instead, so a stat click
+# can jump straight to the Books view with the filter applied.
 # ============================================================
 
-tree_tab, books_tab, add_tab, import_tab = st.tabs(
-    [
-        "🌳 Book Tree",
-        "📚 Books",
-        "➕ Add Book",
-        "📥 Import",
-    ]
-)
+if "active_tab" not in st.session_state:
+    st.session_state.active_tab = "tree"
+
+NAV_ITEMS = [
+    ("tree", "🌳 Book Tree"),
+    ("books", "📚 Books"),
+    ("add", "➕ Add Book"),
+    ("import", "📥 Import"),
+]
+
+nav_cols = st.columns(len(NAV_ITEMS))
+
+for nav_col, (tab_key, tab_label) in zip(nav_cols, NAV_ITEMS):
+
+    with nav_col:
+
+        is_active = st.session_state.active_tab == tab_key
+
+        if st.button(
+            tab_label,
+            key=f"nav_{tab_key}",
+            use_container_width=True,
+            type="primary" if is_active else "secondary",
+        ):
+            st.session_state.active_tab = tab_key
+            st.rerun()
+
+st.html('<div style="height:14px;"></div>')
 
 # ============================================================
 # BOOK TREE — AUTHOR GRID → HORIZONTAL ANCESTRY TREE
@@ -1841,7 +1854,7 @@ def render_author_card(author, filtered):
                     )
 
 
-with tree_tab:
+if st.session_state.active_tab == "tree":
 
     st.subheader("Search My Book Tree")
 
@@ -1991,7 +2004,7 @@ with tree_tab:
 # BOOKS TAB
 # ============================================================
 
-with books_tab:
+elif st.session_state.active_tab == "books":
 
     # pick up a filter set by clicking a stat card
     if "stat_filter" in st.session_state:
@@ -2058,7 +2071,7 @@ with books_tab:
 # ADD BOOK
 # ============================================================
 
-with add_tab:
+elif st.session_state.active_tab == "add":
 
     st.header(
         "Add a Book"
@@ -2205,7 +2218,7 @@ with add_tab:
 # IMPORT TAB
 # ============================================================
 
-with import_tab:
+elif st.session_state.active_tab == "import":
 
     st.header(
         "Import Your Library"
