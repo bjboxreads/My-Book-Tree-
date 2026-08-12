@@ -393,7 +393,7 @@ def display_ancestry_tree(df):
 # ============================================================
 
 st.set_page_config(
-    page_title="Storyspire",
+    page_title="StorySpire",
     page_icon="📚",
     layout="wide",
     initial_sidebar_state="collapsed",
@@ -588,9 +588,20 @@ st.html(
     .book-header-title {{
         font-family: "Cormorant Garamond", Georgia, serif !important;
         font-size: clamp(48px, 6vw, 76px);
+        font-weight: 700;
         color: var(--accent) !important;
         text-shadow: 0 3px 12px rgba(0,0,0,0.35);
         animation: bookTitleRise .6s ease;
+    }}
+
+    /* "spire" renders lighter-weight and a touch softer than
+       "Story" — same case throughout (it's one word,
+       "Storyspire", not "StorySpire"), the weight/color shift
+       just keeps the two halves legible at a glance without
+       resorting to a second capital letter. */
+    .book-header-title .title-spire {{
+        font-weight: 400;
+        color: var(--accent2) !important;
     }}
 
     @keyframes bookTitleRise {{
@@ -663,10 +674,10 @@ st.html(
         transform: translateY(-1px) !important;
     }}
 
-    /* ---- Stat cards — all six are clickable and jump to a
-       relevant view (Books/Read/Unread/Favorites filter the
-       Books tab; Authors/Series open the Book Tree tab). ---- */
-    [class*="st-key-stat_"] {{
+    /* ---- Clickable stat cards (Books / Read / Unread / Favorites) —
+       each filters the Books tab, so a real card + hover-lift is
+       an honest affordance here. ---- */
+    [class*="st-key-statclick_"] {{
         background: var(--card);
         border: 1px solid var(--accent);
         border-radius: 16px;
@@ -674,11 +685,11 @@ st.html(
         cursor: pointer;
         transition: transform .15s ease, box-shadow .15s ease;
     }}
-    [class*="st-key-stat_"]:hover {{
+    [class*="st-key-statclick_"]:hover {{
         transform: translateY(-2px);
         box-shadow: 0 6px 16px rgba(0,0,0,.24);
     }}
-    [class*="st-key-stat_"] button {{
+    [class*="st-key-statclick_"] button {{
         background: transparent !important;
         border: none !important;
         box-shadow: none !important;
@@ -690,18 +701,29 @@ st.html(
         width: 100%;
         cursor: pointer;
     }}
-    [class*="st-key-stat_"] button:hover {{
+    [class*="st-key-statclick_"] button:hover {{
         background: var(--surface2) !important;
         cursor: pointer;
         transform: none !important;
     }}
-    [class*="st-key-stat_"] button p {{
+    [class*="st-key-statclick_"] button p {{
         font-size: 13px !important;
     }}
-    [class*="st-key-stat_"] button p:first-line {{
+    [class*="st-key-statclick_"] button p:first-line {{
         font-family: "Cormorant Garamond", Georgia, serif !important;
         font-size: 26px !important;
         color: var(--accent) !important;
+    }}
+
+    /* ---- Static stat tiles (Authors / Series) — deliberately
+       plain: no card, no border, no hover. There's no further
+       place for these two to take you (the Book Tree tab is
+       already the default view and already organized by author
+       and series), so they shouldn't look clickable at all. ---- */
+    [class*="st-key-statstatic_"] {{
+        background: transparent;
+        border: none;
+        box-shadow: none;
     }}
 
     .tree-root {{
@@ -750,7 +772,7 @@ st.html(
 st.html(
     """
     <div class="book-header">
-        <div class="book-header-title">Storyspire</div>
+        <div class="book-header-title">Story<span class="title-spire">Spire</span></div>
         <div class="book-header-tagline">
             a library that grows one branch at a time
         </div>
@@ -1712,23 +1734,22 @@ favorites = (
 )
 
 # ============================================================
-# STATS — all six cards are clickable. Books / Read / Unread /
-# Favorites jump to the Books tab pre-filtered. Authors and
-# Series don't have a matching filter on the Books tab, so they
-# jump to the Book Tree tab instead, which is already organized
-# by author (and, inside each author, by series) — a click on
-# either still takes you somewhere immediately useful instead
-# of doing nothing.
+# STATS — Books / Read / Unread / Favorites are clickable and
+# jump to the Books tab pre-filtered. Authors and Series have
+# no corresponding filter to jump to (the Book Tree tab is
+# already the default view and already organized by author and
+# series), so they're rendered as plain static numbers instead
+# of buttons that lead nowhere.
 # ============================================================
 
-STAT_NAV_MAP = {
-    "Books": ("books", "All"),
-    "Authors": ("tree", None),
-    "Series": ("tree", None),
-    "Read": ("books", "Read"),
-    "Unread": ("books", "Want to Read"),
-    "Favorites": ("books", "Favorites"),
+STAT_FILTER_MAP = {
+    "Books": "All",
+    "Read": "Read",
+    "Unread": "Want to Read",
+    "Favorites": "Favorites",
 }
+
+NON_INTERACTIVE_STATS = {"Authors", "Series"}
 
 columns = st.columns(
     6
@@ -1753,17 +1774,44 @@ for col, (
 
     with col:
 
-        with st.container(key=f"stat_{safe_id(label)}"):
+        is_clickable = label not in NON_INTERACTIVE_STATS
+        key_prefix = "statclick" if is_clickable else "statstatic"
 
-            if st.button(
+        with st.container(key=f"{key_prefix}_{safe_id(label)}"):
+
+            if not is_clickable:
+
+                st.html(
+                    f"""
+                    <div style="
+                        padding:16px 6px;
+                        text-align:center;
+                        font-family:'Libre Baskerville',
+                            Georgia, serif;
+                    ">
+                        <div style="
+                            font-family:'Cormorant Garamond',
+                                Georgia, serif;
+                            font-size:26px;
+                            color:var(--muted);
+                            line-height:1.2;
+                        ">{number}</div>
+                        <div style="
+                            font-size:13px;
+                            color:var(--muted);
+                            margin-top:2px;
+                        ">{label}</div>
+                    </div>
+                    """
+                )
+
+            elif st.button(
                 f"{number}\n{label}",
                 key=f"stat_btn_{safe_id(label)}",
                 use_container_width=True,
             ):
-                target_tab, target_filter = STAT_NAV_MAP[label]
-                if target_filter is not None:
-                    st.session_state.stat_filter = target_filter
-                st.session_state.active_tab = target_tab
+                st.session_state.stat_filter = STAT_FILTER_MAP[label]
+                st.session_state.active_tab = "books"
                 st.rerun()
 
 # ============================================================
