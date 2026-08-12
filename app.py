@@ -281,7 +281,7 @@ details[open] > .atree-books {
     margin: 26px 0 10px 0;
 }
 .atree-letter-divider .letter {
-    font-family: "Berkshire Swash", Georgia, serif;
+    font-family: "Cormorant Garamond", Georgia, serif;
     font-size: 20px;
     color: var(--accent);
     min-width: 26px;
@@ -540,7 +540,7 @@ st.html(
     <style>
 
     @import url(
-        'https://fonts.googleapis.com/css2?family=Berkshire+Swash&family=Libre+Baskerville:wght@400;700&display=swap'
+        'https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@600;700&family=Libre+Baskerville:wght@400;700&display=swap'
     );
 
     :root {{
@@ -572,7 +572,7 @@ st.html(
     }}
 
     h1, h2, h3, h4 {{
-        font-family: "Berkshire Swash", Georgia, serif !important;
+        font-family: "Cormorant Garamond", Georgia, serif !important;
         color: var(--text) !important;
     }}
 
@@ -586,7 +586,7 @@ st.html(
     }}
 
     .book-header-title {{
-        font-family: "Berkshire Swash", Georgia, serif !important;
+        font-family: "Cormorant Garamond", Georgia, serif !important;
         font-size: clamp(48px, 6vw, 76px);
         color: var(--accent) !important;
         text-shadow: 0 3px 12px rgba(0,0,0,0.35);
@@ -608,7 +608,7 @@ st.html(
     }}
 
     .theme-heading {{
-        font-family: "Berkshire Swash", Georgia, serif;
+        font-family: "Cormorant Garamond", Georgia, serif;
         font-size: 25px;
         color: var(--text);
         margin-bottom: 7px;
@@ -663,8 +663,10 @@ st.html(
         transform: translateY(-1px) !important;
     }}
 
-    /* ---- Clickable stat cards (Books / Read / Unread / Favorites) ---- */
-    [class*="st-key-statclick_"] {{
+    /* ---- Stat cards — all six are clickable and jump to a
+       relevant view (Books/Read/Unread/Favorites filter the
+       Books tab; Authors/Series open the Book Tree tab). ---- */
+    [class*="st-key-stat_"] {{
         background: var(--card);
         border: 1px solid var(--accent);
         border-radius: 16px;
@@ -672,11 +674,11 @@ st.html(
         cursor: pointer;
         transition: transform .15s ease, box-shadow .15s ease;
     }}
-    [class*="st-key-statclick_"]:hover {{
+    [class*="st-key-stat_"]:hover {{
         transform: translateY(-2px);
         box-shadow: 0 6px 16px rgba(0,0,0,.24);
     }}
-    [class*="st-key-statclick_"] button {{
+    [class*="st-key-stat_"] button {{
         background: transparent !important;
         border: none !important;
         box-shadow: none !important;
@@ -688,29 +690,18 @@ st.html(
         width: 100%;
         cursor: pointer;
     }}
-    [class*="st-key-statclick_"] button:hover {{
+    [class*="st-key-stat_"] button:hover {{
         background: var(--surface2) !important;
         cursor: pointer;
         transform: none !important;
     }}
-    [class*="st-key-statclick_"] button p {{
+    [class*="st-key-stat_"] button p {{
         font-size: 13px !important;
     }}
-    [class*="st-key-statclick_"] button p:first-line {{
-        font-family: "Berkshire Swash", Georgia, serif !important;
+    [class*="st-key-stat_"] button p:first-line {{
+        font-family: "Cormorant Garamond", Georgia, serif !important;
         font-size: 26px !important;
         color: var(--accent) !important;
-    }}
-
-    /* ---- Static stat cards (Authors / Series) — visibly flat,
-       no pointer cursor, no hover lift, so they read as info
-       tiles rather than buttons. ---- */
-    [class*="st-key-statstatic_"] {{
-        background: var(--surface2);
-        border: 1px solid var(--line);
-        border-radius: 16px;
-        box-shadow: 0 2px 6px rgba(0,0,0,.12);
-        cursor: default;
     }}
 
     .tree-root {{
@@ -735,7 +726,7 @@ st.html(
     }}
 
     .tree-root-title {{
-        font-family: "Berkshire Swash", Georgia, serif;
+        font-family: "Cormorant Garamond", Georgia, serif;
         font-size: 34px;
     }}
 
@@ -761,7 +752,7 @@ st.html(
     <div class="book-header">
         <div class="book-header-title">Storyspire</div>
         <div class="book-header-tagline">
-            a cozy little library that grows as you read
+            a library that grows one branch at a time
         </div>
     </div>
     """
@@ -1721,27 +1712,23 @@ favorites = (
 )
 
 # ============================================================
-# STATS — Books / Read / Unread / Favorites are clickable and
-# jump to the Books tab pre-filtered. Authors and Series are
-# just counts (there's no single-tap filter that corresponds
-# to "show me by author" here), so they're shown as plain,
-# non-clickable cards instead of buttons that don't do anything.
-#
-# The two groups get DIFFERENT container key prefixes
-# (statclick_ vs statstatic_) so the CSS above can give only
-# the real buttons a pointer cursor and hover-lift — otherwise
-# all six cards look identical and it's impossible to tell
-# which four are actually clickable.
+# STATS — all six cards are clickable. Books / Read / Unread /
+# Favorites jump to the Books tab pre-filtered. Authors and
+# Series don't have a matching filter on the Books tab, so they
+# jump to the Book Tree tab instead, which is already organized
+# by author (and, inside each author, by series) — a click on
+# either still takes you somewhere immediately useful instead
+# of doing nothing.
 # ============================================================
 
-STAT_FILTER_MAP = {
-    "Books": "All",
-    "Read": "Read",
-    "Unread": "Want to Read",
-    "Favorites": "Favorites",
+STAT_NAV_MAP = {
+    "Books": ("books", "All"),
+    "Authors": ("tree", None),
+    "Series": ("tree", None),
+    "Read": ("books", "Read"),
+    "Unread": ("books", "Want to Read"),
+    "Favorites": ("books", "Favorites"),
 }
-
-NON_INTERACTIVE_STATS = {"Authors", "Series"}
 
 columns = st.columns(
     6
@@ -1766,44 +1753,17 @@ for col, (
 
     with col:
 
-        is_clickable = label not in NON_INTERACTIVE_STATS
-        key_prefix = "statclick" if is_clickable else "statstatic"
+        with st.container(key=f"stat_{safe_id(label)}"):
 
-        with st.container(key=f"{key_prefix}_{safe_id(label)}"):
-
-            if not is_clickable:
-
-                st.html(
-                    f"""
-                    <div style="
-                        padding:16px 6px;
-                        text-align:center;
-                        font-family:'Libre Baskerville',
-                            Georgia, serif;
-                    ">
-                        <div style="
-                            font-family:'Berkshire Swash',
-                                Georgia, serif;
-                            font-size:26px;
-                            color:var(--accent);
-                            line-height:1.2;
-                        ">{number}</div>
-                        <div style="
-                            font-size:13px;
-                            color:var(--text);
-                            margin-top:2px;
-                        ">{label}</div>
-                    </div>
-                    """
-                )
-
-            elif st.button(
+            if st.button(
                 f"{number}\n{label}",
                 key=f"stat_btn_{safe_id(label)}",
                 use_container_width=True,
             ):
-                st.session_state.stat_filter = STAT_FILTER_MAP[label]
-                st.session_state.active_tab = "books"
+                target_tab, target_filter = STAT_NAV_MAP[label]
+                if target_filter is not None:
+                    st.session_state.stat_filter = target_filter
+                st.session_state.active_tab = target_tab
                 st.rerun()
 
 # ============================================================
@@ -2077,7 +2037,7 @@ if st.session_state.active_tab == "tree":
                     background:var(--accent);
                     color:var(--page);
                     border-radius:5px 20px 5px 20px;
-                    font-family:'Berkshire Swash', Georgia, serif;
+                    font-family:'Cormorant Garamond', Georgia, serif;
                     font-size:24px;
                     box-shadow:0 4px 12px rgba(0,0,0,.18);
                 ">
