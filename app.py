@@ -644,14 +644,22 @@ def get_cover(title, author="", isbn=""):
         )
 
         try:
-            response = requests.get(
+            # HEAD instead of GET — we only need to confirm the
+            # cover exists and has real content, not download it
+            # here (the <img> tag fetches it again when rendered).
+            response = requests.head(
                 url,
                 timeout=3,
+                allow_redirects=True,
+            )
+
+            content_length = int(
+                response.headers.get("Content-Length", 0)
             )
 
             if (
                 response.status_code == 200
-                and len(response.content) > 1000
+                and content_length > 1000
             ):
                 return url
 
@@ -843,6 +851,17 @@ elif hasattr(st, "experimental_fragment"):
 else:
     def fragment(func):
         return func
+
+
+def rerun_fragment():
+    """st.rerun(scope='fragment') keeps a rerun local to the
+    fragment it's called from, instead of re-running the whole
+    app. Older Streamlit versions don't accept the scope kwarg,
+    so fall back to a plain rerun there."""
+    try:
+        st.rerun(scope="fragment")
+    except TypeError:
+        st.rerun()
 
 
 # ============================================================
@@ -1602,7 +1621,10 @@ def render_author_card(author, filtered):
                 author_id
             )
 
-        st.rerun()
+        # scope="fragment" keeps this rerun local to this
+        # author's card instead of re-rendering the whole
+        # page (stats row, nav, every other author card).
+        rerun_fragment()
 
     # ------------------------------------
     # OPEN AUTHOR TREE
@@ -1709,7 +1731,7 @@ def render_author_card(author, filtered):
                         series_id
                     )
 
-                st.rerun()
+                rerun_fragment()
 
             # ------------------------
             # BOOKS
@@ -2113,8 +2135,9 @@ elif st.session_state.active_tab == "add":
         number = st.number_input(
             "Series number",
             min_value=0.0,
-            value=0.0,
+            value=None,
             step=0.5,
+            placeholder="e.g. 1, 2.5...",
         )
 
         genre = st.text_input(
@@ -2186,7 +2209,7 @@ elif st.session_state.active_tab == "add":
                     "Series": actual_series,
                     "Series Number": (
                         number
-                        if number
+                        if number is not None
                         else None
                     ),
                     "Genre": genre.strip(),
