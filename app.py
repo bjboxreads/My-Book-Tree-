@@ -61,10 +61,15 @@ def display_ancestry_tree(df):
                 if genre:
                     label += f' · {genre}'
 
+                stripe_color = status_stripe_color(
+                    book.get('Status', '')
+                )
+
                 if cover:
                     parts.append(
                         f'<div class="atree-pill atree-pill-book '
-                        f'atree-pill-book-cover">'
+                        f'atree-pill-book-cover" '
+                        f'style="border-left:4px solid {stripe_color};">'
                         f'<img class="atree-cover" '
                         f'src="{html.escape(cover)}" loading="lazy">'
                         f'<span>{label}</span>'
@@ -72,7 +77,8 @@ def display_ancestry_tree(df):
                     )
                 else:
                     parts.append(
-                        f'<div class="atree-pill atree-pill-book">'
+                        f'<div class="atree-pill atree-pill-book" '
+                        f'style="border-left:4px solid {stripe_color};">'
                         f'{label}</div>'
                     )
             parts.append('</div></details>')
@@ -110,11 +116,11 @@ def display_ancestry_tree(df):
                 135deg, var(--surface), var(--surface2)
             );
             color: var(--text);
-            border: 1px solid var(--accent);
-            border-radius: 18px 5px 18px 5px;
+            border: 1px solid var(--surface2);
+            border-radius: 12px 5px 12px 5px;
             font-family: "Libre Baskerville", Georgia, serif;
             font-size: 1rem;
-            box-shadow: 0 3px 10px rgba(0,0,0,.18);
+            box-shadow: 0 2px 6px rgba(0,0,0,.12);
             padding: 0.5rem 1rem;
             transition: all .15s ease;
         }}
@@ -122,7 +128,8 @@ def display_ancestry_tree(df):
             background: linear-gradient(
                 135deg, var(--surface2), var(--card)
             );
-            box-shadow: 0 4px 14px rgba(0,0,0,.25);
+            border-color: var(--accent);
+            box-shadow: 0 3px 10px rgba(0,0,0,.2);
         }}
         summary .atree-pill {{
             cursor: pointer;
@@ -475,6 +482,33 @@ st.html(
         font-family: "Berkshire Swash", Georgia, serif !important;
         font-size: 26px !important;
         color: var(--accent) !important;
+    }}
+
+    /* ---- Book Tree: author / series buttons ----
+       Lighter, quieter styling than the default .stButton so a
+       grid of many authors doesn't look busy: thinner border,
+       softer shadow, single-line truncated text so uneven name
+       lengths don't create ragged card heights. */
+    [class*="st-key-tree_author_"] button,
+    [class*="st-key-tree_series_"] button {{
+        background: var(--surface) !important;
+        border: 1px solid var(--surface2) !important;
+        box-shadow: none !important;
+        border-radius: 10px !important;
+        font-size: 0.82rem !important;
+        letter-spacing: 0.2px;
+        text-align: left !important;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        display: block;
+        padding: 0.45rem 0.75rem !important;
+    }}
+    [class*="st-key-tree_author_"] button:hover,
+    [class*="st-key-tree_series_"] button:hover {{
+        background: var(--surface2) !important;
+        border-color: var(--accent) !important;
+        box-shadow: none !important;
     }}
 
     .tree-root {{
@@ -830,6 +864,61 @@ def safe_id(text):
         r"[^a-zA-Z0-9_-]",
         "_",
         str(text),
+    )
+
+
+# Left-edge stripe color per status, so read/unread/currently
+# reading is visible at a glance on every book pill without
+# adding extra text or icons — keeps the tree's dropdown
+# structure untouched, just adds a quiet visual cue.
+STATUS_STRIPE = {
+    "Read": "var(--accent2)",
+    "Currently Reading": "var(--accent)",
+    "Want to Read": "var(--muted)",
+}
+
+
+def status_stripe_color(status):
+    return STATUS_STRIPE.get(str(status).strip(), "var(--muted)")
+
+
+def render_status_legend():
+    """Small key explaining the read/reading/want-to-read
+    stripe color used on every book pill in both tree views."""
+    st.html(
+        """
+        <div style="
+            display:flex;
+            gap:18px;
+            flex-wrap:wrap;
+            margin:2px 0 14px 0;
+            font-family:'Libre Baskerville', Georgia, serif;
+            font-size:11px;
+            color:var(--muted);
+        ">
+            <span>
+                <span style="
+                    display:inline-block;width:10px;height:10px;
+                    border-radius:2px;background:var(--accent2);
+                    margin-right:5px;vertical-align:middle;
+                "></span>Read
+            </span>
+            <span>
+                <span style="
+                    display:inline-block;width:10px;height:10px;
+                    border-radius:2px;background:var(--accent);
+                    margin-right:5px;vertical-align:middle;
+                "></span>Currently Reading
+            </span>
+            <span>
+                <span style="
+                    display:inline-block;width:10px;height:10px;
+                    border-radius:2px;background:var(--muted);
+                    margin-right:5px;vertical-align:middle;
+                "></span>Want to Read
+            </span>
+        </div>
+        """
     )
 
 
@@ -1799,10 +1888,18 @@ def render_author_card(author, filtered):
                 if meta:
                     label += f" — {meta}"
 
+                stripe_color = status_stripe_color(
+                    book.get("Status", "")
+                )
+
                 # ----------------------------
                 # BOOK — same pill shape, font,
                 # and size as the author/series
-                # st.button boxes above.
+                # st.button boxes above. Left
+                # edge is colored by status
+                # (read / currently reading /
+                # want to read) so it's visible
+                # at a glance.
                 # ----------------------------
 
                 if cover:
@@ -1820,12 +1917,14 @@ def render_author_card(author, filtered):
                                     var(--surface2)
                                 );
                             border:
-                                1px solid var(--accent);
+                                1px solid var(--surface2);
+                            border-left:
+                                4px solid {stripe_color};
                             border-radius:
-                                18px 5px 18px 5px;
+                                10px 5px 10px 5px;
                             box-shadow:
-                                0 3px 10px
-                                rgba(0,0,0,.18);
+                                0 2px 6px
+                                rgba(0,0,0,.15);
                             display:flex;
                             gap:10px;
                             align-items:center;
@@ -1871,12 +1970,14 @@ def render_author_card(author, filtered):
                                     var(--surface2)
                                 );
                             border:
-                                1px solid var(--accent);
+                                1px solid var(--surface2);
+                            border-left:
+                                4px solid {stripe_color};
                             border-radius:
-                                18px 5px 18px 5px;
+                                10px 5px 10px 5px;
                             box-shadow:
-                                0 3px 10px
-                                rgba(0,0,0,.18);
+                                0 2px 6px
+                                rgba(0,0,0,.15);
                             font-family:
                                 'Libre Baskerville',
                                 Georgia,
@@ -1903,6 +2004,8 @@ if st.session_state.active_tab == "tree":
     st.caption(
         "Searches authors, titles, series, genres, and ISBNs."
     )
+
+    render_status_legend()
 
     filtered = library.copy()
 
@@ -2081,6 +2184,8 @@ elif st.session_state.active_tab == "books":
             books = books[
                 books["Status"] == choice
             ]
+
+        render_status_legend()
 
         display_ancestry_tree(books)
 
