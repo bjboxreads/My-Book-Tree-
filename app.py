@@ -99,6 +99,215 @@ def load_library():
     return pd.DataFrame(columns=LIBRARY_COLUMNS)
 
 
+# ============================================================
+# SHARED TREE CSS — used by both the Books tab tree and the
+# Book Tree tab's author grid, so the pill look stays identical
+# everywhere. Both trees are pure CSS <details>/<summary>
+# structures now (see note below on the Book Tree tab) — no
+# Streamlit rerun happens on expand/collapse, so opening an
+# author or series is instant and doesn't repaint anything else
+# on the page. That's what fixes the choppiness: a button-driven
+# expand used to trigger a fragment rerun (a real round trip to
+# the server) every single click; a <details> tag just toggles
+# in the browser.
+#
+# A few small "subtle whimsy" touches live here too: pills lift
+# slightly on hover, the arrow rotates open instead of swapping
+# glyphs, and newly-revealed content eases in instead of
+# popping.
+# ============================================================
+
+TREE_CSS = """
+<style>
+.book-ancestry-tree {
+    animation: atreeFadeIn .35s ease;
+}
+@keyframes atreeFadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+
+.book-ancestry-tree summary,
+.atree-author-grid summary {
+    cursor: pointer;
+    list-style: none;
+}
+.book-ancestry-tree summary::-webkit-details-marker,
+.atree-author-grid summary::-webkit-details-marker {
+    display: none;
+}
+.book-ancestry-tree summary::marker,
+.atree-author-grid summary::marker {
+    content: "";
+}
+
+.atree-author {
+    margin: 22px 0;
+}
+
+.atree-arrow {
+    display: inline-block;
+    margin-right: 4px;
+    transition: transform .2s ease;
+}
+details[open] > summary .atree-arrow {
+    transform: rotate(90deg);
+}
+
+.atree-pill {
+    display: block;
+    width: 100%;
+    box-sizing: border-box;
+    background: linear-gradient(135deg, var(--surface), var(--surface2));
+    color: var(--text);
+    border: 1px solid var(--surface2);
+    border-radius: 12px 5px 12px 5px;
+    font-family: "Libre Baskerville", Georgia, serif;
+    font-size: 1rem;
+    box-shadow: 0 2px 6px rgba(0,0,0,.12);
+    padding: 0.5rem 1rem;
+    transition: transform .15s ease, box-shadow .15s ease,
+        background .15s ease, border-color .15s ease;
+}
+.atree-pill:hover {
+    background: linear-gradient(135deg, var(--surface2), var(--card));
+    border-color: var(--accent);
+    box-shadow: 0 4px 12px rgba(0,0,0,.22);
+    transform: translateY(-2px);
+}
+summary .atree-pill {
+    cursor: pointer;
+}
+.atree-pill-book {
+    margin: 6px 0;
+}
+.atree-pill-book-cover {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+.atree-cover {
+    width: 36px;
+    height: 52px;
+    object-fit: cover;
+    border-radius: 3px 8px 3px 8px;
+    border: 1px solid var(--accent);
+    flex-shrink: 0;
+}
+
+.atree-series-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 14px;
+    padding: 12px 0 4px 35px;
+}
+.atree-series {
+    flex: 1 1 230px;
+    min-width: 210px;
+}
+
+.atree-books {
+    margin-top: 8px;
+}
+
+details[open] > .atree-series-row,
+details[open] > .atree-books {
+    animation: atreeReveal .22s ease;
+}
+@keyframes atreeReveal {
+    from { opacity: 0; transform: translateY(-6px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+/* ---- Book Tree tab: author grid ----
+   Closed authors sit four to a row. Opening one expands its
+   grid cell to the full row width so the nested series/book
+   pills below it get real room instead of being squeezed into
+   a quarter-width sliver. */
+.atree-author-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 14px;
+    margin-bottom: 8px;
+}
+.atree-author-grid .atree-author {
+    margin: 0;
+}
+.atree-author-grid .atree-author[open] {
+    grid-column: 1 / -1;
+}
+.atree-author-grid .atree-pill {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+.atree-author-grid .atree-author[open] .atree-pill {
+    white-space: normal;
+}
+
+@media (max-width: 900px) {
+    .atree-author-grid { grid-template-columns: repeat(2, 1fr); }
+}
+@media (max-width: 600px) {
+    .atree-author-grid { grid-template-columns: 1fr; }
+}
+
+.atree-letter-divider {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin: 26px 0 10px 0;
+}
+.atree-letter-divider .letter {
+    font-family: "Berkshire Swash", Georgia, serif;
+    font-size: 20px;
+    color: var(--accent);
+    min-width: 26px;
+}
+.atree-letter-divider .rule {
+    flex: 1;
+    height: 1px;
+    background: linear-gradient(90deg, var(--line), transparent);
+    opacity: 0.6;
+}
+</style>
+"""
+
+
+def book_pill_html(book):
+    """One book's pill — cover thumbnail (if we have one), title,
+    status, genre, with a left-edge stripe colored by status.
+    Shared by both trees so a book looks identical everywhere."""
+
+    title = html.escape(str(book.get('Title', '')))
+    status = html.escape(str(book.get('Status', '') or ''))
+    genre = html.escape(str(book.get('Genre', '') or ''))
+    cover = str(book.get('Cover', '') or '')
+
+    label = f'📖 {title}'
+    if status:
+        label += f' — {status}'
+    if genre:
+        label += f' · {genre}'
+
+    stripe_color = status_stripe_color(book.get('Status', ''))
+
+    if cover:
+        return (
+            f'<div class="atree-pill atree-pill-book '
+            f'atree-pill-book-cover" '
+            f'style="border-left:4px solid {stripe_color};">'
+            f'<img class="atree-cover" '
+            f'src="{html.escape(cover)}" loading="lazy">'
+            f'<span>{label}</span>'
+            f'</div>'
+        )
+
+    return (
+        f'<div class="atree-pill atree-pill-book" '
+        f'style="border-left:4px solid {stripe_color};">'
+        f'{label}</div>'
+    )
 
 
 # ============================================================
@@ -125,7 +334,8 @@ def display_ancestry_tree(df):
         parts.append(
             f'<details class="atree-author">'
             f'<summary>'
-            f'<span class="atree-pill">🌳 {html.escape(str(author))} '
+            f'<span class="atree-pill"><span class="atree-arrow">▸</span>'
+            f'🌳 {html.escape(str(author))} '
             f'({len(author_df)})</span>'
             f'</summary>'
             f'<div class="atree-series-row">'
@@ -138,132 +348,21 @@ def display_ancestry_tree(df):
             parts.append(
                 f'<details class="atree-series">'
                 f'<summary>'
-                f'<span class="atree-pill">📂 '
-                f'{html.escape(str(series))} '
+                f'<span class="atree-pill"><span class="atree-arrow">▸</span>'
+                f'📂 {html.escape(str(series))} '
                 f'({len(series_books)})</span>'
                 f'</summary>'
                 f'<div class="atree-books">'
             )
             for _, book in series_books.iterrows():
-                title = html.escape(str(book.get('Title', '')))
-                status = html.escape(str(book.get('Status', '') or ''))
-                genre = html.escape(str(book.get('Genre', '') or ''))
-                cover = str(book.get('Cover', '') or '')
-
-                label = f'📖 {title}'
-                if status:
-                    label += f' — {status}'
-                if genre:
-                    label += f' · {genre}'
-
-                stripe_color = status_stripe_color(
-                    book.get('Status', '')
-                )
-
-                if cover:
-                    parts.append(
-                        f'<div class="atree-pill atree-pill-book '
-                        f'atree-pill-book-cover" '
-                        f'style="border-left:4px solid {stripe_color};">'
-                        f'<img class="atree-cover" '
-                        f'src="{html.escape(cover)}" loading="lazy">'
-                        f'<span>{label}</span>'
-                        f'</div>'
-                    )
-                else:
-                    parts.append(
-                        f'<div class="atree-pill atree-pill-book" '
-                        f'style="border-left:4px solid {stripe_color};">'
-                        f'{label}</div>'
-                    )
+                parts.append(book_pill_html(book))
             parts.append('</div></details>')
 
         parts.append('</div></details>')
 
     parts.append('</div>')
 
-    st.html(
-        f"""
-        <style>
-        /* All three tree levels (author / series / book) share one
-           identical pill style: same size, same font, same shape. */
-
-        .book-ancestry-tree summary {{
-            cursor: pointer;
-            list-style: none;
-        }}
-        .book-ancestry-tree summary::-webkit-details-marker {{
-            display: none;
-        }}
-        .book-ancestry-tree summary::marker {{
-            content: "";
-        }}
-
-        .atree-author {{
-            margin: 22px 0;
-        }}
-
-        .atree-pill {{
-            display: block;
-            width: 100%;
-            box-sizing: border-box;
-            background: linear-gradient(
-                135deg, var(--surface), var(--surface2)
-            );
-            color: var(--text);
-            border: 1px solid var(--surface2);
-            border-radius: 12px 5px 12px 5px;
-            font-family: "Libre Baskerville", Georgia, serif;
-            font-size: 1rem;
-            box-shadow: 0 2px 6px rgba(0,0,0,.12);
-            padding: 0.5rem 1rem;
-            transition: all .15s ease;
-        }}
-        .atree-pill:hover {{
-            background: linear-gradient(
-                135deg, var(--surface2), var(--card)
-            );
-            border-color: var(--accent);
-            box-shadow: 0 3px 10px rgba(0,0,0,.2);
-        }}
-        summary .atree-pill {{
-            cursor: pointer;
-        }}
-        .atree-pill-book {{
-            margin: 6px 0;
-        }}
-        .atree-pill-book-cover {{
-            display: flex;
-            align-items: center;
-            gap: 10px;
-        }}
-        .atree-cover {{
-            width: 36px;
-            height: 52px;
-            object-fit: cover;
-            border-radius: 3px 8px 3px 8px;
-            border: 1px solid var(--accent);
-            flex-shrink: 0;
-        }}
-
-        .atree-series-row {{
-            display: flex;
-            flex-wrap: wrap;
-            gap: 14px;
-            padding: 12px 0 4px 35px;
-        }}
-        .atree-series {{
-            flex: 1 1 230px;
-            min-width: 210px;
-        }}
-
-        .atree-books {{
-            margin-top: 8px;
-        }}
-        </style>
-        {''.join(parts)}
-        """
-    )
+    st.html(TREE_CSS + ''.join(parts))
 
 
 # ============================================================
@@ -407,12 +506,6 @@ if (
 if "library" not in st.session_state:
     st.session_state.library = load_library()
 
-if "open_authors" not in st.session_state:
-    st.session_state.open_authors = set()
-
-if "open_series" not in st.session_state:
-    st.session_state.open_series = set()
-
 theme = THEMES[st.session_state.theme]
 
 # ============================================================
@@ -474,6 +567,21 @@ st.html(
         font-size: clamp(48px, 6vw, 76px);
         color: var(--accent) !important;
         text-shadow: 0 3px 12px rgba(0,0,0,0.35);
+        animation: bookTitleRise .6s ease;
+    }}
+
+    @keyframes bookTitleRise {{
+        from {{ opacity: 0; transform: translateY(6px); }}
+        to {{ opacity: 1; transform: translateY(0); }}
+    }}
+
+    .book-header-tagline {{
+        font-family: "Libre Baskerville", Georgia, serif !important;
+        font-style: italic;
+        font-size: 15px;
+        color: var(--muted) !important;
+        margin-top: 6px;
+        animation: bookTitleRise .9s ease;
     }}
 
     .theme-heading {{
@@ -529,6 +637,7 @@ st.html(
         ) !important;
         border-color: var(--accent) !important;
         box-shadow: 0 4px 14px rgba(0,0,0,.25) !important;
+        transform: translateY(-1px) !important;
     }}
 
     /* ---- Clickable stat cards ---- */
@@ -537,6 +646,11 @@ st.html(
         border: 1px solid var(--accent);
         border-radius: 16px;
         box-shadow: 0 4px 12px rgba(0,0,0,.18);
+        transition: transform .15s ease, box-shadow .15s ease;
+    }}
+    [class*="st-key-stat_"]:hover {{
+        transform: translateY(-2px);
+        box-shadow: 0 6px 16px rgba(0,0,0,.24);
     }}
     [class*="st-key-stat_"] button {{
         background: transparent !important;
@@ -552,6 +666,7 @@ st.html(
     [class*="st-key-stat_"] button:hover {{
         background: var(--surface2) !important;
         cursor: pointer;
+        transform: none !important;
     }}
     [class*="st-key-stat_"] button p {{
         font-size: 13px !important;
@@ -560,57 +675,6 @@ st.html(
         font-family: "Berkshire Swash", Georgia, serif !important;
         font-size: 26px !important;
         color: var(--accent) !important;
-    }}
-
-    /* ---- Book Tree: author / series buttons ----
-       Quieter than the default .stButton (thinner border, no
-       heavy shadow, truncated single-line text so uneven name
-       lengths don't create ragged card heights) but still using
-       the theme's --line color for the border so cards don't
-       wash out flat against the page background. */
-    [class*="st-key-tree_author_"] button,
-    [class*="st-key-tree_series_"] button {{
-        background: var(--surface) !important;
-        border: 1px solid var(--line) !important;
-        box-shadow: 0 1px 4px rgba(0,0,0,.2) !important;
-        border-radius: 10px !important;
-        font-size: 0.82rem !important;
-        font-weight: 600 !important;
-        letter-spacing: 0.2px;
-        text-align: left !important;
-        white-space: nowrap;
-        overflow: hidden;
-        text-overflow: ellipsis;
-        display: block;
-        padding: 0.45rem 0.75rem !important;
-    }}
-    [class*="st-key-tree_author_"] button:hover,
-    [class*="st-key-tree_series_"] button:hover {{
-        background: var(--surface2) !important;
-        border-color: var(--accent) !important;
-        box-shadow: 0 2px 6px rgba(0,0,0,.28) !important;
-    }}
-
-    /* ---- Alphabet section dividers on the author grid ---- */
-    .atree-letter-divider {{
-        display: flex;
-        align-items: center;
-        gap: 10px;
-        margin: 26px 0 10px 0;
-    }}
-    .atree-letter-divider .letter {{
-        font-family: "Berkshire Swash", Georgia, serif;
-        font-size: 20px;
-        color: var(--accent);
-        min-width: 26px;
-    }}
-    .atree-letter-divider .rule {{
-        flex: 1;
-        height: 1px;
-        background: linear-gradient(
-            90deg, var(--line), transparent
-        );
-        opacity: 0.6;
     }}
 
     .tree-root {{
@@ -644,82 +708,6 @@ st.html(
         font-size: 11px;
     }}
 
-    .author-branch {{
-        position: relative;
-        margin: 25px 0;
-        padding-left: 35px;
-        border-left: 3px solid var(--accent);
-    }}
-
-    .author-card {{
-        background: linear-gradient(90deg, var(--surface), transparent);
-        border-radius: 0 18px 0 0;
-        padding: 13px 18px;
-    }}
-
-    .author-name {{
-        font-family: "Berkshire Swash", Georgia, serif;
-        font-size: 29px;
-    }}
-
-    .author-count {{
-        color: var(--muted);
-        font-family: "Libre Baskerville", Georgia, serif;
-        font-size: 10px;
-    }}
-
-    .series-branch {{
-        margin: 18px 0 18px 45px;
-        padding-left: 25px;
-        border-left: 2px solid var(--accent2);
-    }}
-
-    .series-card {{
-        background: linear-gradient(90deg, var(--surface2), transparent);
-        border-radius: 0 15px 0 0;
-        padding: 11px 15px;
-    }}
-
-    .series-name {{
-        font-family: "Berkshire Swash", Georgia, serif;
-        font-size: 24px;
-    }}
-
-    .series-count {{
-        color: var(--muted);
-        font-family: "Libre Baskerville", Georgia, serif;
-        font-size: 10px;
-    }}
-
-    .book-branch {{
-        margin: 8px 0 8px 35px;
-        padding: 10px 14px;
-        background: linear-gradient(90deg, var(--card), transparent);
-        border-left: 2px solid var(--line);
-        border-radius: 0 12px 0 0;
-    }}
-
-    .book-title {{
-        font-family: "Berkshire Swash", Georgia, serif;
-        font-size: 21px;
-        color: var(--text);
-    }}
-
-    .book-meta {{
-        color: var(--muted);
-        font-family: "Libre Baskerville", Georgia, serif;
-        font-size: 10px;
-        margin-top: 4px;
-    }}
-
-    .book-cover {{
-        width: 55px;
-        height: 80px;
-        object-fit: cover;
-        border-radius: 3px 10px 3px 10px;
-        border: 1px solid var(--accent);
-    }}
-
     .stCheckbox label {{
         color: var(--text) !important;
     }}
@@ -736,6 +724,9 @@ st.html(
     """
     <div class="book-header">
         <div class="book-header-title">My Book Tree</div>
+        <div class="book-header-tagline">
+            a cozy little library that grows as you read
+        </div>
     </div>
     """
 )
@@ -745,11 +736,11 @@ st.html(
 # ============================================================
 
 st.html(
-    '<div class="theme-heading">Choose your bookish theme</div>'
+    '<div class="theme-heading">Choose your library theme</div>'
 )
 
 theme_choice = st.selectbox(
-    "Bookish theme",
+    "Library theme",
     list(THEMES.keys()),
     index=list(THEMES.keys()).index(
         st.session_state.theme
@@ -982,37 +973,6 @@ STATUS_STRIPE = {
 
 def status_stripe_color(status):
     return STATUS_STRIPE.get(str(status).strip(), "var(--muted)")
-
-
-# ============================================================
-# FRAGMENT COMPATIBILITY SHIM
-# ============================================================
-# st.fragment (or the older st.experimental_fragment) makes a
-# click inside it only re-render that piece of the page instead
-# of the entire app — this is what makes expanding an author or
-# series feel instant instead of re-running everything (all
-# authors, all covers, the stats row, etc.) on every click. Falls
-# back to a no-op decorator on Streamlit versions that don't have
-# fragments yet, so the app still runs, just without the speedup.
-
-if hasattr(st, "fragment"):
-    fragment = st.fragment
-elif hasattr(st, "experimental_fragment"):
-    fragment = st.experimental_fragment
-else:
-    def fragment(func):
-        return func
-
-
-def rerun_fragment():
-    """st.rerun(scope='fragment') keeps a rerun local to the
-    fragment it's called from, instead of re-running the whole
-    app. Older Streamlit versions don't accept the scope kwarg,
-    so fall back to a plain rerun there."""
-    try:
-        st.rerun(scope="fragment")
-    except TypeError:
-        st.rerun()
 
 
 # ============================================================
@@ -1541,9 +1501,6 @@ def import_books(uploaded_file, fetch_covers=True, merge=True):
 
     save_library(combined)
 
-    st.session_state.open_authors = set()
-    st.session_state.open_series = set()
-
     if not fetch_covers or added_count == 0:
         return {
             "success": True,
@@ -1838,307 +1795,107 @@ st.html('<div style="height:14px;"></div>')
 
 # ============================================================
 # BOOK TREE — AUTHOR GRID → HORIZONTAL ANCESTRY TREE
+#
+# This whole tab is built as ONE html string, the same way the
+# Books tab tree is, using nested <details>/<summary>. Previously
+# each author/series row was an st.button that toggled
+# session_state and triggered a fragment rerun — a real server
+# round trip on every single click, which is what made expanding
+# an author feel choppy. A <details> tag expands natively in the
+# browser with zero server involvement, so it's instant no matter
+# how large the library is.
+#
+# Authors sit four to a row in a CSS grid while closed; opening
+# one makes its grid cell span the full row (grid-column: 1/-1)
+# so the series/book pills inside get real width instead of being
+# squeezed into a quarter-column sliver.
 # ============================================================
 
-@fragment
-def render_author_card(author, filtered):
+def render_tree_grid_html(filtered):
 
-    author_books = filtered[
-        filtered["Author"] == author
-    ].copy()
+    parts = ['<div class="book-ancestry-tree">']
 
-    author_id = safe_id(author)
-
-    author_open = (
-        author_id
-        in st.session_state.open_authors
+    author_list = sorted(
+        filtered["Author"].unique(),
+        key=lambda x: str(x).lower(),
     )
 
-    arrow = "▼" if author_open else "▶"
+    # Build letter -> authors groups, preserving sort order
+    letter_groups = []
+    for author in author_list:
+        letter = str(author).strip()[:1].upper() or "#"
+        if not letter_groups or letter_groups[-1][0] != letter:
+            letter_groups.append((letter, []))
+        letter_groups[-1][1].append(author)
 
-    # ------------------------------------
-    # AUTHOR BUTTON
-    # ------------------------------------
+    for letter, group_authors in letter_groups:
 
-    if st.button(
-        f"{arrow} {author} ({len(author_books)})",
-        key=f"tree_author_{author_id}",
-        use_container_width=True,
-    ):
-
-        if author_open:
-            st.session_state.open_authors.discard(
-                author_id
-            )
-        else:
-            st.session_state.open_authors.add(
-                author_id
-            )
-
-        # scope="fragment" keeps this rerun local to this
-        # author's card instead of re-rendering the whole
-        # page (stats row, nav, every other author card).
-        rerun_fragment()
-
-    # ------------------------------------
-    # OPEN AUTHOR TREE
-    # ------------------------------------
-
-    if author_open:
-
-        # --------------------------------
-        # AUTHOR → SERIES CONNECTOR
-        # --------------------------------
-
-        st.html(
-            """
-            <div style="
-                width:2px;
-                height:20px;
-                background:var(--accent);
-                margin:auto;
-            "></div>
-            """
+        parts.append(
+            f'<div class="atree-letter-divider">'
+            f'<span class="letter">{html.escape(letter)}</span>'
+            f'<span class="rule"></span>'
+            f'</div>'
         )
 
-        # --------------------------------
-        # SERIES LIST — stacked vertically,
-        # one per row, at the FULL width of
-        # this author's column. This is what
-        # keeps every series button (and every
-        # author's series buttons) the same
-        # size — they all match the width of
-        # the author box above them, instead
-        # of being subdivided into extra
-        # columns nested inside an already
-        # narrow author column (which is what
-        # squeezed "Five Packs" into a sliver
-        # last time).
-        # --------------------------------
+        parts.append('<div class="atree-author-grid">')
 
-        series_list = sorted(
-            author_books["Series"].unique(),
-            key=lambda x: str(x).lower(),
-        )
+        for author in group_authors:
 
-        for series in series_list:
+            author_books = filtered[
+                filtered["Author"] == author
+            ]
 
-            series_id = safe_id(
-                f"{author}_{series}"
+            parts.append(
+                f'<details class="atree-author">'
+                f'<summary>'
+                f'<span class="atree-pill">'
+                f'<span class="atree-arrow">▸</span>'
+                f'{html.escape(str(author))} '
+                f'({len(author_books)})</span>'
+                f'</summary>'
+                f'<div class="atree-series-row">'
             )
 
-            series_books = author_books[
-                author_books["Series"]
-                == series
-            ].copy()
-
-            series_open = (
-                series_id
-                in st.session_state.open_series
+            series_list = sorted(
+                author_books["Series"].unique(),
+                key=lambda x: str(x).lower(),
             )
 
-            series_arrow = (
-                "▼"
-                if series_open
-                else "▶"
-            )
+            for series in series_list:
 
-            display_series = (
-                "STANDALONE"
-                if series == "Standalone"
-                else str(series)
-            )
+                series_books = author_books[
+                    author_books["Series"] == series
+                ]
 
-            # ------------------------
-            # SERIES BUTTON
-            # ------------------------
-
-            if st.button(
-                f"{series_arrow} "
-                f"{display_series} "
-                f"({len(series_books)})",
-                key=f"tree_series_{series_id}",
-                use_container_width=True,
-            ):
-
-                if series_open:
-                    st.session_state.open_series.discard(
-                        series_id
-                    )
-                else:
-                    st.session_state.open_series.add(
-                        series_id
-                    )
-
-                rerun_fragment()
-
-            # ------------------------
-            # BOOKS
-            # ------------------------
-
-            if not series_open:
-                continue
-
-            st.html(
-                """
-                <div style="
-                    width:2px;
-                    height:15px;
-                    background:var(--line);
-                    margin:auto;
-                "></div>
-                """
-            )
-
-            for _, book in series_books.iterrows():
-
-                title = html.escape(
-                    str(
-                        book.get(
-                            "Title",
-                            "",
-                        )
-                    )
+                display_series = (
+                    "STANDALONE"
+                    if series == "Standalone"
+                    else str(series)
                 )
 
-                cover = str(
-                    book.get(
-                        "Cover",
-                        "",
-                    )
-                    or ""
+                parts.append(
+                    f'<details class="atree-series">'
+                    f'<summary>'
+                    f'<span class="atree-pill">'
+                    f'<span class="atree-arrow">▸</span>'
+                    f'{html.escape(display_series)} '
+                    f'({len(series_books)})</span>'
+                    f'</summary>'
+                    f'<div class="atree-books">'
                 )
 
-                status = html.escape(
-                    str(
-                        book.get(
-                            "Status",
-                            "",
-                        )
-                    )
-                )
+                for _, book in series_books.iterrows():
+                    parts.append(book_pill_html(book))
 
-                genre = html.escape(
-                    str(
-                        book.get(
-                            "Genre",
-                            "",
-                        )
-                        or ""
-                    )
-                )
+                parts.append('</div></details>')
 
-                meta = status
+            parts.append('</div></details>')
 
-                if genre:
-                    meta += f" · {genre}"
+        parts.append('</div>')
 
-                label = f"📖 {title}"
+    parts.append('</div>')
 
-                if meta:
-                    label += f" — {meta}"
-
-                stripe_color = status_stripe_color(
-                    book.get("Status", "")
-                )
-
-                # ----------------------------
-                # BOOK — same pill shape, font,
-                # and size as the author/series
-                # st.button boxes above. Left
-                # edge is colored by status
-                # (read / currently reading /
-                # want to read) so it's visible
-                # at a glance.
-                # ----------------------------
-
-                if cover:
-
-                    st.html(
-                        f"""
-                        <div style="
-                            margin:6px 0;
-                            padding:0.4rem 0.8rem;
-                            box-sizing:border-box;
-                            background:
-                                linear-gradient(
-                                    135deg,
-                                    var(--surface),
-                                    var(--surface2)
-                                );
-                            border:
-                                1px solid var(--surface2);
-                            border-left:
-                                4px solid {stripe_color};
-                            border-radius:
-                                10px 5px 10px 5px;
-                            box-shadow:
-                                0 2px 6px
-                                rgba(0,0,0,.15);
-                            display:flex;
-                            gap:10px;
-                            align-items:center;
-                            font-family:
-                                'Libre Baskerville',
-                                Georgia,
-                                serif;
-                            font-size:0.85rem;
-                            color:var(--text);
-                        ">
-                            <img
-                                src="{html.escape(cover)}"
-                                loading="lazy"
-                                style="
-                                    width:36px;
-                                    height:52px;
-                                    object-fit:cover;
-                                    border-radius:
-                                        3px 8px 3px 8px;
-                                    border:
-                                        1px solid
-                                        var(--accent);
-                                    flex-shrink:0;
-                                "
-                            >
-                            <span>{label}</span>
-                        </div>
-                        """
-                    )
-
-                else:
-
-                    st.html(
-                        f"""
-                        <div style="
-                            margin:6px 0;
-                            padding:0.4rem 0.8rem;
-                            box-sizing:border-box;
-                            background:
-                                linear-gradient(
-                                    135deg,
-                                    var(--surface),
-                                    var(--surface2)
-                                );
-                            border:
-                                1px solid var(--surface2);
-                            border-left:
-                                4px solid {stripe_color};
-                            border-radius:
-                                10px 5px 10px 5px;
-                            box-shadow:
-                                0 2px 6px
-                                rgba(0,0,0,.15);
-                            font-family:
-                                'Libre Baskerville',
-                                Georgia,
-                                serif;
-                            font-size:0.85rem;
-                            color:var(--text);
-                        ">
-                            {label}
-                        </div>
-                        """
-                    )
+    return ''.join(parts)
 
 
 if st.session_state.active_tab == "tree":
@@ -2221,8 +1978,8 @@ if st.session_state.active_tab == "tree":
         if library.empty:
 
             st.info(
-                "Your tree is empty. Import your library "
-                "or add your first book."
+                "Your tree is just a sapling — import your "
+                "library or add your first book to help it grow."
             )
 
         else:
@@ -2300,54 +2057,11 @@ if st.session_state.active_tab == "tree":
         )
 
         # ----------------------------------------------------
-        # AUTHOR GRID — grouped by first letter, 4 columns
-        # within each letter group. The letter dividers give
-        # the eye landmarks to jump to instead of scanning one
-        # uniform wall of identical boxes.
+        # AUTHOR GRID — grouped by first letter, four per row,
+        # rendered as one static HTML tree (see note above).
         # ----------------------------------------------------
 
-        AUTHORS_PER_ROW = 4
-
-        author_list = sorted(
-            filtered["Author"].unique(),
-            key=lambda x: str(x).lower(),
-        )
-
-        # Build letter -> authors groups, preserving sort order
-        letter_groups = []
-        for author in author_list:
-            letter = str(author).strip()[:1].upper() or "#"
-            if not letter_groups or letter_groups[-1][0] != letter:
-                letter_groups.append((letter, []))
-            letter_groups[-1][1].append(author)
-
-        for letter, group_authors in letter_groups:
-
-            st.html(
-                f"""
-                <div class="atree-letter-divider">
-                    <span class="letter">{html.escape(letter)}</span>
-                    <span class="rule"></span>
-                </div>
-                """
-            )
-
-            for author_row_start in range(
-                0, len(group_authors), AUTHORS_PER_ROW
-            ):
-
-                author_row = group_authors[
-                    author_row_start:author_row_start + AUTHORS_PER_ROW
-                ]
-
-                author_cols = st.columns(AUTHORS_PER_ROW)
-
-                for author_index, author in enumerate(author_row):
-
-                    col = author_cols[author_index]
-
-                    with col:
-                        render_author_card(author, filtered)
+        st.html(TREE_CSS + render_tree_grid_html(filtered))
 
 
 # ============================================================
