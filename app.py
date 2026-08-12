@@ -2019,6 +2019,16 @@ if st.session_state.active_tab == "tree":
 
     st.subheader("Search My Book Tree")
 
+    search = st.text_input(
+        "Search",
+        placeholder="Search by author, title, series, genre, or ISBN...",
+        label_visibility="collapsed",
+    )
+
+    st.caption(
+        "Searches authors, titles, series, genres, and ISBNs."
+    )
+
     tree_status_choice = st.radio(
         "Show",
         [
@@ -2028,16 +2038,6 @@ if st.session_state.active_tab == "tree":
         ],
         horizontal=True,
         key="tree_status_radio",
-    )
-
-    search = st.text_input(
-        "Search",
-        placeholder="Search by author, title, series, genre, or ISBN...",
-        label_visibility="collapsed",
-    )
-
-    st.caption(
-        "Searches authors, titles, series, genres, and ISBNs."
     )
 
     render_status_legend()
@@ -2352,11 +2352,17 @@ elif st.session_state.active_tab == "add":
             ],
         )
 
-        rating = st.slider(
-            "Rating",
-            0,
-            5,
-            0,
+        st.write("Rating")
+
+        star_click = st.feedback(
+            "stars",
+            key="add_book_rating",
+        )
+
+        rating = (
+            star_click + 1
+            if star_click is not None
+            else None
         )
 
         favorite = st.checkbox(
@@ -2410,11 +2416,7 @@ elif st.session_state.active_tab == "add":
                         "",
                         isbn,
                     ),
-                    "My Rating": (
-                        rating
-                        if rating
-                        else None
-                    ),
+                    "My Rating": rating,
                     "Status": status,
                     "Favorite": favorite,
                     "Cover": cover,
