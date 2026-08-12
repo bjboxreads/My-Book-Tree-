@@ -485,17 +485,19 @@ st.html(
     }}
 
     /* ---- Book Tree: author / series buttons ----
-       Lighter, quieter styling than the default .stButton so a
-       grid of many authors doesn't look busy: thinner border,
-       softer shadow, single-line truncated text so uneven name
-       lengths don't create ragged card heights. */
+       Quieter than the default .stButton (thinner border, no
+       heavy shadow, truncated single-line text so uneven name
+       lengths don't create ragged card heights) but still using
+       the theme's --line color for the border so cards don't
+       wash out flat against the page background. */
     [class*="st-key-tree_author_"] button,
     [class*="st-key-tree_series_"] button {{
         background: var(--surface) !important;
-        border: 1px solid var(--surface2) !important;
-        box-shadow: none !important;
+        border: 1px solid var(--line) !important;
+        box-shadow: 0 1px 4px rgba(0,0,0,.2) !important;
         border-radius: 10px !important;
         font-size: 0.82rem !important;
+        font-weight: 600 !important;
         letter-spacing: 0.2px;
         text-align: left !important;
         white-space: nowrap;
@@ -508,7 +510,29 @@ st.html(
     [class*="st-key-tree_series_"] button:hover {{
         background: var(--surface2) !important;
         border-color: var(--accent) !important;
-        box-shadow: none !important;
+        box-shadow: 0 2px 6px rgba(0,0,0,.28) !important;
+    }}
+
+    /* ---- Alphabet section dividers on the author grid ---- */
+    .atree-letter-divider {{
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        margin: 26px 0 10px 0;
+    }}
+    .atree-letter-divider .letter {{
+        font-family: "Berkshire Swash", Georgia, serif;
+        font-size: 20px;
+        color: var(--accent);
+        min-width: 26px;
+    }}
+    .atree-letter-divider .rule {{
+        flex: 1;
+        height: 1px;
+        background: linear-gradient(
+            90deg, var(--line), transparent
+        );
+        opacity: 0.6;
     }}
 
     .tree-root {{
@@ -2111,7 +2135,10 @@ if st.session_state.active_tab == "tree":
         )
 
         # ----------------------------------------------------
-        # AUTHOR GRID — EXACTLY 4 COLUMNS
+        # AUTHOR GRID — grouped by first letter, 4 columns
+        # within each letter group. The letter dividers give
+        # the eye landmarks to jump to instead of scanning one
+        # uniform wall of identical boxes.
         # ----------------------------------------------------
 
         AUTHORS_PER_ROW = 4
@@ -2121,22 +2148,41 @@ if st.session_state.active_tab == "tree":
             key=lambda x: str(x).lower(),
         )
 
-        for author_row_start in range(
-            0, len(author_list), AUTHORS_PER_ROW
-        ):
+        # Build letter -> authors groups, preserving sort order
+        letter_groups = []
+        for author in author_list:
+            letter = str(author).strip()[:1].upper() or "#"
+            if not letter_groups or letter_groups[-1][0] != letter:
+                letter_groups.append((letter, []))
+            letter_groups[-1][1].append(author)
 
-            author_row = author_list[
-                author_row_start:author_row_start + AUTHORS_PER_ROW
-            ]
+        for letter, group_authors in letter_groups:
 
-            author_cols = st.columns(AUTHORS_PER_ROW)
+            st.html(
+                f"""
+                <div class="atree-letter-divider">
+                    <span class="letter">{html.escape(letter)}</span>
+                    <span class="rule"></span>
+                </div>
+                """
+            )
 
-            for author_index, author in enumerate(author_row):
+            for author_row_start in range(
+                0, len(group_authors), AUTHORS_PER_ROW
+            ):
 
-                col = author_cols[author_index]
+                author_row = group_authors[
+                    author_row_start:author_row_start + AUTHORS_PER_ROW
+                ]
 
-                with col:
-                    render_author_card(author, filtered)
+                author_cols = st.columns(AUTHORS_PER_ROW)
+
+                for author_index, author in enumerate(author_row):
+
+                    col = author_cols[author_index]
+
+                    with col:
+                        render_author_card(author, filtered)
 
 
 # ============================================================
