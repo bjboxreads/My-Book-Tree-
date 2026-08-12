@@ -2019,6 +2019,17 @@ if st.session_state.active_tab == "tree":
 
     st.subheader("Search My Book Tree")
 
+    tree_status_choice = st.radio(
+        "Show",
+        [
+            "All Books",
+            "Read",
+            "Unread",
+        ],
+        horizontal=True,
+        key="tree_status_radio",
+    )
+
     search = st.text_input(
         "Search",
         placeholder="Search by author, title, series, genre, or ISBN...",
@@ -2032,6 +2043,22 @@ if st.session_state.active_tab == "tree":
     render_status_legend()
 
     filtered = library.copy()
+
+    # --------------------------------------------------------
+    # STATUS FILTER (All / Read / Unread)
+    # --------------------------------------------------------
+
+    if tree_status_choice == "Read":
+
+        filtered = filtered[
+            filtered["Status"] == "Read"
+        ]
+
+    elif tree_status_choice == "Unread":
+
+        filtered = filtered[
+            filtered["Status"] != "Read"
+        ]
 
     # --------------------------------------------------------
     # SEARCH
@@ -2076,9 +2103,15 @@ if st.session_state.active_tab == "tree":
 
         else:
 
-            st.info(
-                f'No books matched "{search}".'
-            )
+            if search.strip():
+                st.info(
+                    f'No books matched "{search}".'
+                )
+            else:
+                st.info(
+                    f"No books found for "
+                    f'"{tree_status_choice}".'
+                )
 
     else:
 
