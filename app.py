@@ -1731,242 +1731,231 @@ with tree_tab:
                         )
 
                         # --------------------------------
-                        # SERIES LIST — fixed columns per
-                        # row so every series button is the
-                        # same size, regardless of how many
-                        # series this author has.
+                        # SERIES LIST — stacked vertically,
+                        # one per row, at the FULL width of
+                        # this author's column. This is what
+                        # keeps every series button (and every
+                        # author's series buttons) the same
+                        # size — they all match the width of
+                        # the author box above them, instead
+                        # of being subdivided into extra
+                        # columns nested inside an already
+                        # narrow author column (which is what
+                        # squeezed "Five Packs" into a sliver
+                        # last time).
                         # --------------------------------
-
-                        SERIES_PER_ROW = 4
 
                         series_list = sorted(
                             author_books["Series"].unique(),
                             key=lambda x: str(x).lower(),
                         )
 
-                        for series_row_start in range(
-                            0, len(series_list), SERIES_PER_ROW
-                        ):
+                        for series in series_list:
 
-                            series_row = series_list[
-                                series_row_start:series_row_start
-                                + SERIES_PER_ROW
-                            ]
-
-                            series_cols = st.columns(
-                                SERIES_PER_ROW
+                            series_id = safe_id(
+                                f"{author}_{series}"
                             )
 
-                            for series_index, series in enumerate(
-                                series_row
+                            series_books = author_books[
+                                author_books["Series"]
+                                == series
+                            ].copy()
+
+                            series_open = (
+                                series_id
+                                in st.session_state.open_series
+                            )
+
+                            series_arrow = (
+                                "▼"
+                                if series_open
+                                else "▶"
+                            )
+
+                            display_series = (
+                                "STANDALONE"
+                                if series == "Standalone"
+                                else str(series)
+                            )
+
+                            # ------------------------
+                            # SERIES BUTTON
+                            # ------------------------
+
+                            if st.button(
+                                f"{series_arrow} "
+                                f"{display_series} "
+                                f"({len(series_books)})",
+                                key=f"tree_series_{series_id}",
+                                use_container_width=True,
                             ):
 
-                                with series_cols[series_index]:
-
-                                    series_id = safe_id(
-                                        f"{author}_{series}"
-                                    )
-
-                                    series_books = author_books[
-                                        author_books["Series"]
-                                        == series
-                                    ].copy()
-
-                                    series_open = (
+                                if series_open:
+                                    st.session_state.open_series.discard(
                                         series_id
-                                        in st.session_state.open_series
+                                    )
+                                else:
+                                    st.session_state.open_series.add(
+                                        series_id
                                     )
 
-                                    series_arrow = (
-                                        "▼"
-                                        if series_open
-                                        else "▶"
+                                st.rerun()
+
+                            # ------------------------
+                            # BOOKS
+                            # ------------------------
+
+                            if not series_open:
+                                continue
+
+                            st.html(
+                                """
+                                <div style="
+                                    width:2px;
+                                    height:15px;
+                                    background:var(--line);
+                                    margin:auto;
+                                "></div>
+                                """
+                            )
+
+                            for _, book in series_books.iterrows():
+
+                                title = html.escape(
+                                    str(
+                                        book.get(
+                                            "Title",
+                                            "",
+                                        )
                                     )
+                                )
 
-                                    display_series = (
-                                        "STANDALONE"
-                                        if series == "Standalone"
-                                        else str(series)
+                                cover = str(
+                                    book.get(
+                                        "Cover",
+                                        "",
                                     )
+                                    or ""
+                                )
 
-                                    # ------------------------
-                                    # SERIES BUTTON
-                                    # ------------------------
+                                status = html.escape(
+                                    str(
+                                        book.get(
+                                            "Status",
+                                            "",
+                                        )
+                                    )
+                                )
 
-                                    if st.button(
-                                        f"{series_arrow} "
-                                        f"{display_series} "
-                                        f"({len(series_books)})",
-                                        key=f"tree_series_{series_id}",
-                                        use_container_width=True,
-                                    ):
+                                genre = html.escape(
+                                    str(
+                                        book.get(
+                                            "Genre",
+                                            "",
+                                        )
+                                        or ""
+                                    )
+                                )
 
-                                        if series_open:
-                                            st.session_state.open_series.discard(
-                                                series_id
-                                            )
-                                        else:
-                                            st.session_state.open_series.add(
-                                                series_id
-                                            )
+                                meta = status
 
-                                        st.rerun()
+                                if genre:
+                                    meta += f" · {genre}"
 
-                                    # ------------------------
-                                    # BOOKS
-                                    # ------------------------
+                                label = f"📖 {title}"
 
-                                    if not series_open:
-                                        continue
+                                if meta:
+                                    label += f" — {meta}"
+
+                                # ----------------------------
+                                # BOOK — same pill shape, font,
+                                # and size as the author/series
+                                # st.button boxes above.
+                                # ----------------------------
+
+                                if cover:
 
                                     st.html(
-                                        """
+                                        f"""
                                         <div style="
-                                            width:2px;
-                                            height:15px;
-                                            background:var(--line);
-                                            margin:auto;
-                                        "></div>
+                                            margin:6px 0;
+                                            padding:0.5rem 1rem;
+                                            box-sizing:border-box;
+                                            background:
+                                                linear-gradient(
+                                                    135deg,
+                                                    var(--surface),
+                                                    var(--surface2)
+                                                );
+                                            border:
+                                                1px solid var(--accent);
+                                            border-radius:
+                                                18px 5px 18px 5px;
+                                            box-shadow:
+                                                0 3px 10px
+                                                rgba(0,0,0,.18);
+                                            display:flex;
+                                            gap:10px;
+                                            align-items:center;
+                                            font-family:
+                                                'Libre Baskerville',
+                                                Georgia,
+                                                serif;
+                                            font-size:1rem;
+                                            color:var(--text);
+                                        ">
+                                            <img
+                                                src="{html.escape(cover)}"
+                                                loading="lazy"
+                                                style="
+                                                    width:36px;
+                                                    height:52px;
+                                                    object-fit:cover;
+                                                    border-radius:
+                                                        3px 8px 3px 8px;
+                                                    border:
+                                                        1px solid
+                                                        var(--accent);
+                                                    flex-shrink:0;
+                                                "
+                                            >
+                                            <span>{label}</span>
+                                        </div>
                                         """
                                     )
 
-                                    for _, book in series_books.iterrows():
+                                else:
 
-                                        title = html.escape(
-                                            str(
-                                                book.get(
-                                                    "Title",
-                                                    "",
-                                                )
-                                            )
-                                        )
-
-                                        cover = str(
-                                            book.get(
-                                                "Cover",
-                                                "",
-                                            )
-                                            or ""
-                                        )
-
-                                        status = html.escape(
-                                            str(
-                                                book.get(
-                                                    "Status",
-                                                    "",
-                                                )
-                                            )
-                                        )
-
-                                        genre = html.escape(
-                                            str(
-                                                book.get(
-                                                    "Genre",
-                                                    "",
-                                                )
-                                                or ""
-                                            )
-                                        )
-
-                                        meta = status
-
-                                        if genre:
-                                            meta += f" · {genre}"
-
-                                        label = f"📖 {title}"
-
-                                        if meta:
-                                            label += f" — {meta}"
-
-                                        # ----------------------------
-                                        # BOOK — same pill shape, font,
-                                        # and size as the author/series
-                                        # st.button boxes above.
-                                        # ----------------------------
-
-                                        if cover:
-
-                                            st.html(
-                                                f"""
-                                                <div style="
-                                                    margin:6px 0;
-                                                    padding:0.5rem 1rem;
-                                                    box-sizing:border-box;
-                                                    background:
-                                                        linear-gradient(
-                                                            135deg,
-                                                            var(--surface),
-                                                            var(--surface2)
-                                                        );
-                                                    border:
-                                                        1px solid var(--accent);
-                                                    border-radius:
-                                                        18px 5px 18px 5px;
-                                                    box-shadow:
-                                                        0 3px 10px
-                                                        rgba(0,0,0,.18);
-                                                    display:flex;
-                                                    gap:10px;
-                                                    align-items:center;
-                                                    font-family:
-                                                        'Libre Baskerville',
-                                                        Georgia,
-                                                        serif;
-                                                    font-size:1rem;
-                                                    color:var(--text);
-                                                ">
-                                                    <img
-                                                        src="{html.escape(cover)}"
-                                                        loading="lazy"
-                                                        style="
-                                                            width:36px;
-                                                            height:52px;
-                                                            object-fit:cover;
-                                                            border-radius:
-                                                                3px 8px 3px 8px;
-                                                            border:
-                                                                1px solid
-                                                                var(--accent);
-                                                            flex-shrink:0;
-                                                        "
-                                                    >
-                                                    <span>{label}</span>
-                                                </div>
-                                                """
-                                            )
-
-                                        else:
-
-                                            st.html(
-                                                f"""
-                                                <div style="
-                                                    margin:6px 0;
-                                                    padding:0.5rem 1rem;
-                                                    box-sizing:border-box;
-                                                    background:
-                                                        linear-gradient(
-                                                            135deg,
-                                                            var(--surface),
-                                                            var(--surface2)
-                                                        );
-                                                    border:
-                                                        1px solid var(--accent);
-                                                    border-radius:
-                                                        18px 5px 18px 5px;
-                                                    box-shadow:
-                                                        0 3px 10px
-                                                        rgba(0,0,0,.18);
-                                                    font-family:
-                                                        'Libre Baskerville',
-                                                        Georgia,
-                                                        serif;
-                                                    font-size:1rem;
-                                                    color:var(--text);
-                                                ">
-                                                    {label}
-                                                </div>
-                                                """
-                                            )
+                                    st.html(
+                                        f"""
+                                        <div style="
+                                            margin:6px 0;
+                                            padding:0.5rem 1rem;
+                                            box-sizing:border-box;
+                                            background:
+                                                linear-gradient(
+                                                    135deg,
+                                                    var(--surface),
+                                                    var(--surface2)
+                                                );
+                                            border:
+                                                1px solid var(--accent);
+                                            border-radius:
+                                                18px 5px 18px 5px;
+                                            box-shadow:
+                                                0 3px 10px
+                                                rgba(0,0,0,.18);
+                                            font-family:
+                                                'Libre Baskerville',
+                                                Georgia,
+                                                serif;
+                                            font-size:1rem;
+                                            color:var(--text);
+                                        ">
+                                            {label}
+                                        </div>
+                                        """
+                                    )
 
 
 # ============================================================
