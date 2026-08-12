@@ -131,6 +131,7 @@ import pandas as pd
 import requests
 import re
 import html
+from concurrent.futures import ThreadPoolExecutor, as_completed
 
 # ============================================================
 # PAGE
@@ -598,7 +599,7 @@ def get_cover(title, author="", isbn=""):
         try:
             response = requests.get(
                 url,
-                timeout=8,
+                timeout=5,
             )
 
             if (
@@ -620,7 +621,7 @@ def get_cover(title, author="", isbn=""):
                 "author": author,
                 "limit": 1,
             },
-            timeout=10,
+            timeout=6,
         )
 
         if response.status_code == 200:
@@ -655,7 +656,7 @@ def get_cover(title, author="", isbn=""):
                 "q": f"{title} {author}",
                 "maxResults": 1,
             },
-            timeout=10,
+            timeout=6,
         )
 
         if response.status_code == 200:
@@ -1152,7 +1153,9 @@ def import_books(uploaded_file):
     st.session_state.open_series = set()
 
     # --------------------------------------------------------
-    # FIND COVERS
+    # FIND COVERS (in parallel — these are independent network
+    # calls, so fetching them one at a time serially was the
+    # main reason large imports took so long)
     # --------------------------------------------------------
 
     total_books = len(
@@ -1163,43 +1166,36 @@ def import_books(uploaded_file):
         0
     )
 
-    for i in range(
-        total_books
-    ):
+    done = 0
 
-        try:
+    with ThreadPoolExecutor(max_workers=16) as executor:
 
-            cover = get_cover(
-                new_library.loc[
-                    i,
-                    "Title",
-                ],
-                new_library.loc[
-                    i,
-                    "Author",
-                ],
-                new_library.loc[
-                    i,
-                    "ISBN",
-                ],
+        future_to_index = {
+            executor.submit(
+                get_cover,
+                new_library.loc[i, "Title"],
+                new_library.loc[i, "Author"],
+                new_library.loc[i, "ISBN"],
+            ): i
+            for i in range(total_books)
+        }
+
+        for future in as_completed(future_to_index):
+
+            i = future_to_index[future]
+
+            try:
+                cover = future.result()
+            except Exception:
+                cover = ""
+
+            new_library.loc[i, "Cover"] = cover
+
+            done += 1
+
+            progress.progress(
+                done / total_books
             )
-
-            new_library.loc[
-                i,
-                "Cover",
-            ] = cover
-
-        except Exception:
-
-            new_library.loc[
-                i,
-                "Cover",
-            ] = ""
-
-        progress.progress(
-            (i + 1)
-            / total_books
-        )
 
     progress.empty()
 
@@ -1250,6 +1246,17 @@ read_count = (
     else 0
 )
 
+unread_count = (
+    len(
+        library[
+            library["Status"]
+            == "Want to Read"
+        ]
+    )
+    if total
+    else 0
+)
+
 favorites = (
     len(
         library[
@@ -1266,7 +1273,7 @@ favorites = (
 # ============================================================
 
 columns = st.columns(
-    5
+    6
 )
 
 stats = [
@@ -1274,6 +1281,7 @@ stats = [
     (authors, "Authors"),
     (series_count, "Series"),
     (read_count, "Read"),
+    (unread_count, "Unread"),
     (favorites, "Favorites"),
 ]
 
