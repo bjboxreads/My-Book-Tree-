@@ -426,10 +426,61 @@ def book_pill_html(book):
 
 
 # ============================================================
+# TREE OPEN/CLOSE PERSISTENCE
+#
+# Every rerun (e.g. clicking the favorite heart, which is a
+# plain <a href="?toggle_fav=..."> link and therefore forces a
+# real page reload) rebuilds the tree's HTML from scratch, so
+# every <details> would normally snap back to closed. This
+# stores which sections are open in the browser's localStorage
+# and restores them right after the new HTML lands, so toggling
+# a favorite (or anything else that triggers a rerun) doesn't
+# collapse whatever you had open.
+#
+# It's injected as an invisible <svg onload="..."> rather than a
+# <script> tag, because <script> elements inserted via innerHTML
+# (which is how st.html gets this HTML onto the page) are inert
+# by design in every browser — but element event-attributes like
+# onload/onerror set through innerHTML DO fire normally, so this
+# is the standard workaround for running JS right after an HTML
+# injection.
+# ============================================================
+
+def tree_open_state_script(tree_id):
+    return (
+        '<svg style="position:absolute;width:0;height:0" '
+        'onload="(function(){'
+        'try{'
+        "var container=document.getElementById('atree-" + tree_id + "');"
+        'if(!container)return;'
+        'var stored;'
+        "try{stored=JSON.parse(localStorage.getItem('storyspire_open_sections')||'[]');}"
+        'catch(e){stored=[];}'
+        'var openSet=new Set(stored);'
+        "var els=container.querySelectorAll('details[data-tkey]');"
+        'els.forEach(function(el){'
+        "var key=el.getAttribute('data-tkey');"
+        "if(openSet.has(key))el.setAttribute('open','');"
+        "el.addEventListener('toggle',function(){"
+        'try{'
+        'var s;'
+        "try{s=new Set(JSON.parse(localStorage.getItem('storyspire_open_sections')||'[]'));}"
+        'catch(e){s=new Set();}'
+        'if(el.open){s.add(key);}else{s.delete(key);}'
+        "localStorage.setItem('storyspire_open_sections',JSON.stringify(Array.from(s)));"
+        '}catch(e){}'
+        '});'
+        '});'
+        '}catch(e){}'
+        '})()" />'
+    )
+
+
+# ============================================================
 # ANCESTRY TREE (Books tab) — now with covers
 # ============================================================
 
-def display_ancestry_tree(df, group_by="Author"):
+def display_ancestry_tree(df, group_by="Author", tree_id="books"):
     # Clean data: fill empty Author with 'Unknown Author' and
     # empty Series with 'Standalone' (shared helper so this
     # matches the Book Tree tab exactly — otherwise a book with
@@ -456,11 +507,15 @@ def display_ancestry_tree(df, group_by="Author"):
     # stElementContainer) — with hundreds of books that multiplied
     # into tens of thousands of DOM nodes. <details>/<summary> gives
     # native collapse/expand for free, with no JS and no extra nodes.
-    parts = ['<div class="book-ancestry-tree">']
+    parts = [f'<div class="book-ancestry-tree" id="atree-{tree_id}">']
 
     for group_value, group_df in df.groupby(group_col):
+        group_key = (
+            f"{tree_id}:{group_by}:group:"
+            f"{html.escape(str(group_value))}"
+        )
         parts.append(
-            f'<details class="atree-author">'
+            f'<details class="atree-author" data-tkey="{group_key}">'
             f'<summary>'
             f'<span class="atree-pill"><span class="atree-arrow">▸</span>'
             f'{group_icon} {html.escape(str(group_value))} '
@@ -473,8 +528,9 @@ def display_ancestry_tree(df, group_by="Author"):
 
         for series in series_list:
             series_books = group_df[group_df['Series'] == series]
+            series_key = f"{group_key}:series:{html.escape(str(series))}"
             parts.append(
-                f'<details class="atree-series">'
+                f'<details class="atree-series" data-tkey="{series_key}">'
                 f'<summary>'
                 f'<span class="atree-pill"><span class="atree-arrow">▸</span>'
                 f'📂 {html.escape(str(series))} '
@@ -489,6 +545,7 @@ def display_ancestry_tree(df, group_by="Author"):
         parts.append('</div></details>')
 
     parts.append('</div>')
+    parts.append(tree_open_state_script(tree_id))
 
     st.html(TREE_CSS + ''.join(parts))
 
@@ -641,9 +698,10 @@ if "library" not in st.session_state:
 # handler to attach otherwise) — this picks up the query param
 # on the resulting rerun, flips that row's Favorite flag, saves,
 # and clears the URL so refreshing the page doesn't re-toggle it.
-# Note: because this triggers a real rerun, any open sections of
-# the tree will re-collapse, the same as clicking any other
-# button on the page would.
+# The rerun this triggers still happens, but tree_open_state_script
+# (see above) restores whichever author/series sections were open
+# right after the new HTML lands, so it no longer feels like the
+# whole tree collapsed.
 # ------------------------------------------------------------
 
 if "toggle_fav" in st.query_params:
@@ -935,9 +993,22 @@ if theme_choice != st.session_state.theme:
 
 # ============================================================
 # COVER SEARCH
+#
+# NOTE: get_cover / get_description / get_genre are deliberately
+# NOT wrapped in @st.cache_data. They used to be — but
+# st.cache_data caches whatever a function returns, including
+# "" when a lookup fails (e.g. a rate-limited request during a
+# big import). Once that empty result was cached for a given
+# (title, author, isbn), every later call with the same
+# arguments — including from the "Fetch missing covers/
+# descriptions/genres" buttons — returned the same cached ""
+# instantly, which is why those buttons looked like they
+# "succeeded" but never actually filled anything in. The
+# library DataFrame (and the CSV it's saved to) is already the
+# real persistence layer for this data, so re-fetching on
+# request is the correct behavior here.
 # ============================================================
 
-@st.cache_data(show_spinner=False)
 def get_cover(title, author="", isbn=""):
 
     isbn = re.sub(r"\D", "", str(isbn))
@@ -1050,7 +1121,6 @@ def get_cover(title, author="", isbn=""):
     return ""
 
 
-@st.cache_data(show_spinner=False)
 def get_description(title, author=""):
     """Fetch a short book description from Google Books — this
     is what topic/theme search (e.g. searching "Christmas") runs
@@ -1092,7 +1162,6 @@ def get_description(title, author=""):
     return ""
 
 
-@st.cache_data(show_spinner=False)
 def get_genre(title, author=""):
     """Fetch a genre for a book — first from Google Books'
     'categories' field, then from Open Library's 'subject' field
@@ -1898,6 +1967,13 @@ def import_books(
     # topic/theme search (e.g. "Christmas") checks against.
     # Genre is only fetched when the row doesn't already have one
     # from the file itself (see fetch_row_metadata).
+    #
+    # max_workers is kept modest (10) rather than the very
+    # aggressive 40 this used to run at — hammering free public
+    # APIs (OpenLibrary / Google Books) with 40 concurrent
+    # requests is a good way to get rate-limited mid-import,
+    # which is what was quietly turning a chunk of these lookups
+    # into permanent blanks before.
     # --------------------------------------------------------
 
     cover_indices = list(
@@ -1919,7 +1995,7 @@ def import_books(
 
     done = 0
 
-    with ThreadPoolExecutor(max_workers=40) as executor:
+    with ThreadPoolExecutor(max_workers=10) as executor:
 
         future_to_index = {
             executor.submit(
@@ -1979,7 +2055,11 @@ def import_books(
 def fetch_missing_covers():
     """Fetch covers only for rows that don't have one yet —
     used by the 'Fetch missing covers' button so a fast
-    no-cover import can add covers later without re-importing."""
+    no-cover import can add covers later without re-importing.
+
+    Tracks how many lookups actually returned a real cover
+    (rather than always claiming success), since some books
+    genuinely have no cover art available from either source."""
 
     library = st.session_state.library
 
@@ -1999,8 +2079,9 @@ def fetch_missing_covers():
     total = len(missing)
     progress = st.progress(0)
     done = 0
+    found = 0
 
-    with ThreadPoolExecutor(max_workers=40) as executor:
+    with ThreadPoolExecutor(max_workers=10) as executor:
 
         future_to_index = {
             executor.submit(
@@ -2018,6 +2099,8 @@ def fetch_missing_covers():
                 cover = future.result()
             except Exception:
                 cover = ""
+            if cover:
+                found += 1
             library.loc[i, "Cover"] = cover
             done += 1
             progress.progress(done / total)
@@ -2025,9 +2108,27 @@ def fetch_missing_covers():
     progress.empty()
     st.session_state.library = library
     save_library(library)
-    st.session_state.fetch_result_message = (
-        "success", f"✓ Fetched covers for {total} books!"
-    )
+
+    if found == total:
+        st.session_state.fetch_result_message = (
+            "success", f"✓ Found covers for all {total} book(s)!"
+        )
+    elif found:
+        st.session_state.fetch_result_message = (
+            "warning",
+            f"Found covers for {found} of {total} book(s). "
+            f"The other {total - found} had no cover available "
+            f"from OpenLibrary or Google Books, or the lookup was "
+            f"rate-limited — try again in a bit.",
+        )
+    else:
+        st.session_state.fetch_result_message = (
+            "error",
+            f"Couldn't find covers for any of the {total} "
+            f"book(s) checked — neither OpenLibrary nor Google "
+            f"Books had matches, or requests are being "
+            f"rate-limited. Try again in a bit.",
+        )
 
 
 def fetch_missing_descriptions():
@@ -2050,8 +2151,9 @@ def fetch_missing_descriptions():
     total = len(missing)
     progress = st.progress(0)
     done = 0
+    found = 0
 
-    with ThreadPoolExecutor(max_workers=40) as executor:
+    with ThreadPoolExecutor(max_workers=10) as executor:
 
         future_to_index = {
             executor.submit(
@@ -2068,6 +2170,8 @@ def fetch_missing_descriptions():
                 description = future.result()
             except Exception:
                 description = ""
+            if description:
+                found += 1
             library.loc[i, "Description"] = description
             done += 1
             progress.progress(done / total)
@@ -2075,9 +2179,26 @@ def fetch_missing_descriptions():
     progress.empty()
     st.session_state.library = library
     save_library(library)
-    st.session_state.fetch_result_message = (
-        "success", f"✓ Fetched descriptions for {total} books!"
-    )
+
+    if found == total:
+        st.session_state.fetch_result_message = (
+            "success", f"✓ Found descriptions for all {total} book(s)!"
+        )
+    elif found:
+        st.session_state.fetch_result_message = (
+            "warning",
+            f"Found descriptions for {found} of {total} book(s). "
+            f"The other {total - found} had none available from "
+            f"Google Books, or the lookup was rate-limited — try "
+            f"again in a bit.",
+        )
+    else:
+        st.session_state.fetch_result_message = (
+            "error",
+            f"Couldn't find descriptions for any of the {total} "
+            f"book(s) checked — Google Books had no matches, or "
+            f"requests are being rate-limited. Try again in a bit.",
+        )
 
 
 def fetch_missing_genres():
@@ -2104,7 +2225,7 @@ def fetch_missing_genres():
     done = 0
     matched = 0
 
-    with ThreadPoolExecutor(max_workers=40) as executor:
+    with ThreadPoolExecutor(max_workers=10) as executor:
 
         future_to_index = {
             executor.submit(
@@ -2335,9 +2456,9 @@ st.html('<div style="height:14px;"></div>')
 # squeezed into a quarter-column sliver.
 # ============================================================
 
-def render_tree_grid_html(filtered, group_by="Author"):
+def render_tree_grid_html(filtered, group_by="Author", tree_id="spire"):
 
-    parts = ['<div class="book-ancestry-tree">']
+    parts = [f'<div class="book-ancestry-tree" id="atree-{tree_id}">']
 
     if group_by == "Genre":
         group_series = clean_genre_column(filtered["Genre"])
@@ -2374,8 +2495,13 @@ def render_tree_grid_html(filtered, group_by="Author"):
 
             group_books = filtered[group_series == group_value]
 
+            group_key = (
+                f"{tree_id}:{group_by}:group:"
+                f"{html.escape(str(group_value))}"
+            )
+
             parts.append(
-                f'<details class="atree-author">'
+                f'<details class="atree-author" data-tkey="{group_key}">'
                 f'<summary>'
                 f'<span class="atree-pill">'
                 f'<span class="atree-arrow">▸</span>'
@@ -2402,8 +2528,12 @@ def render_tree_grid_html(filtered, group_by="Author"):
                     else str(series)
                 )
 
+                series_key = (
+                    f"{group_key}:series:{html.escape(str(series))}"
+                )
+
                 parts.append(
-                    f'<details class="atree-series">'
+                    f'<details class="atree-series" data-tkey="{series_key}">'
                     f'<summary>'
                     f'<span class="atree-pill">'
                     f'<span class="atree-arrow">▸</span>'
@@ -2423,6 +2553,7 @@ def render_tree_grid_html(filtered, group_by="Author"):
         parts.append('</div>')
 
     parts.append('</div>')
+    parts.append(tree_open_state_script(tree_id))
 
     return ''.join(parts)
 
