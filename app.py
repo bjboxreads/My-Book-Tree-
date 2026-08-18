@@ -1054,16 +1054,19 @@ def get_description(title, author=""):
 
 @st.cache_data(show_spinner=False)
 def get_genre(title, author=""):
-    """Fetch a genre for a book from Google Books' 'categories'
-    field, since most imported files (Goodreads exports in
-    particular) don't include genre data at all — that's why
-    everything was piling into "Unknown Genre" before. Mirrors
-    get_cover / get_description: same endpoint, same
-    best-effort/fail-quiet behavior. Only the first category is
-    used, since Google Books categories are often nested/verbose
-    (e.g. "Fiction / Fantasy / Epic") and a single clean label is
-    what the tree groups on."""
+    """Fetch a genre for a book — first from Google Books'
+    'categories' field, then from Open Library's 'subject' field
+    if Google has nothing. This two-source fallback matters:
+    Google Books only has 'categories' when the publisher
+    supplied that metadata, which in practice is missing for a
+    large share of books (especially older, indie, or backlist
+    titles) — so relying on it alone left most books unmatched
+    even though the lookup "succeeded". Open Library's subject
+    headings are far more consistently populated, even if the
+    labels are less polished (e.g. "Fantasy fiction" instead of
+    "Fantasy")."""
 
+    # ---- Google Books ----
     try:
 
         response = requests.get(
@@ -1096,6 +1099,43 @@ def get_genre(title, author=""):
                     # "Fiction / Fantasy / Epic" — keep just the
                     # first, most general segment.
                     genre = str(categories[0]).split("/")[0].strip()
+
+                    if genre:
+                        return genre
+
+    except Exception:
+        pass
+
+    # ---- Open Library fallback ----
+    # Requesting the "subject" field explicitly, since it isn't
+    # included in a plain search.json call by default.
+    try:
+
+        response = requests.get(
+            "https://openlibrary.org/search.json",
+            params={
+                "title": title,
+                "author": author,
+                "fields": "subject",
+                "limit": 1,
+            },
+            timeout=4,
+        )
+
+        if response.status_code == 200:
+
+            docs = response.json().get(
+                "docs",
+                [],
+            )
+
+            if docs:
+
+                subjects = docs[0].get("subject", [])
+
+                if subjects:
+
+                    genre = str(subjects[0]).strip()
 
                     if genre:
                         return genre
@@ -2003,6 +2043,7 @@ def fetch_missing_genres():
     total = len(missing)
     progress = st.progress(0)
     done = 0
+    matched = 0
 
     with ThreadPoolExecutor(max_workers=40) as executor:
 
@@ -2023,13 +2064,32 @@ def fetch_missing_genres():
                 genre = ""
             if genre:
                 library.loc[i, "Genre"] = genre
+                matched += 1
             done += 1
             progress.progress(done / total)
 
     progress.empty()
     st.session_state.library = library
     save_library(library)
-    st.success(f"✓ Fetched genres for {total} books!")
+
+    if matched == total:
+        st.success(f"✓ Found genres for all {total} book(s)!")
+    elif matched:
+        st.warning(
+            f"Found genres for {matched} of {total} book(s). "
+            f"The other {total - matched} had no genre data "
+            f"available from either Google Books or Open Library "
+            f"— those will stay under \"Unknown Genre\" unless "
+            f"you set them manually in Edit / Delete."
+        )
+    else:
+        st.error(
+            f"Couldn't find genre data for any of the {total} "
+            f"book(s) checked — neither Google Books nor Open "
+            f"Library had matches. This can happen if titles/"
+            f"authors are formatted unusually, or if requests are "
+            f"being rate-limited."
+        )
 
 
 # ============================================================
