@@ -77,12 +77,19 @@ def normalize_library_columns(df):
             df[column] = "" if column != "Favorite" else False
     df = df[LIBRARY_COLUMNS]
     for column in TEXT_LIBRARY_COLUMNS:
-        df[column] = (
-            df[column]
-            .fillna("")
-            .astype(str)
-            .replace(["nan", "None"], "")
+        # astype(object) is a real dtype cast and is always allowed,
+        # even on an all-NaN float64 column — unlike fillna("") on
+        # a float64 Series, which newer pandas can itself reject
+        # with the same "Invalid value for dtype" error we're
+        # trying to avoid here. Casting to object FIRST, then
+        # cleaning up NaN/"nan"/"None" per-element, sidesteps that.
+        df[column] = df[column].astype(object)
+        df[column] = df[column].apply(
+            lambda v: ""
+            if (v is None or (isinstance(v, float) and pd.isna(v)))
+            else str(v)
         )
+        df[column] = df[column].replace(["nan", "None"], "")
     return df
 
 
@@ -1900,6 +1907,12 @@ def import_books(
         )
     )
 
+    # Defensive: same dtype guard as the "fetch missing" functions
+    # — force these to object dtype before writing into them below.
+    combined["Cover"] = combined["Cover"].astype(object)
+    combined["Description"] = combined["Description"].astype(object)
+    combined["Genre"] = combined["Genre"].astype(object)
+
     progress = st.progress(
         0
     )
@@ -1970,6 +1983,11 @@ def fetch_missing_covers():
 
     library = st.session_state.library
 
+    # Defensive: force to object dtype right here, at the point of
+    # writing, regardless of what happened upstream — this is the
+    # column the crash was happening on.
+    library["Cover"] = library["Cover"].astype(object)
+
     missing = library[
         library["Cover"].fillna("") == ""
     ]
@@ -2007,7 +2025,9 @@ def fetch_missing_covers():
     progress.empty()
     st.session_state.library = library
     save_library(library)
-    st.success(f"✓ Fetched covers for {total} books!")
+    st.session_state.fetch_result_message = (
+        "success", f"✓ Fetched covers for {total} books!"
+    )
 
 
 def fetch_missing_descriptions():
@@ -2016,6 +2036,8 @@ def fetch_missing_descriptions():
     powers topic search (e.g. searching "Christmas")."""
 
     library = st.session_state.library
+
+    library["Description"] = library["Description"].astype(object)
 
     missing = library[
         library["Description"].fillna("") == ""
@@ -2053,7 +2075,9 @@ def fetch_missing_descriptions():
     progress.empty()
     st.session_state.library = library
     save_library(library)
-    st.success(f"✓ Fetched descriptions for {total} books!")
+    st.session_state.fetch_result_message = (
+        "success", f"✓ Fetched descriptions for {total} books!"
+    )
 
 
 def fetch_missing_genres():
@@ -2064,6 +2088,8 @@ def fetch_missing_genres():
     all) and are currently all piled into "Unknown Genre"."""
 
     library = st.session_state.library
+
+    library["Genre"] = library["Genre"].astype(object)
 
     missing = library[
         library["Genre"].fillna("").astype(str).str.strip() == ""
@@ -2106,22 +2132,26 @@ def fetch_missing_genres():
     save_library(library)
 
     if matched == total:
-        st.success(f"✓ Found genres for all {total} book(s)!")
+        st.session_state.fetch_result_message = (
+            "success", f"✓ Found genres for all {total} book(s)!"
+        )
     elif matched:
-        st.warning(
+        st.session_state.fetch_result_message = (
+            "warning",
             f"Found genres for {matched} of {total} book(s). "
             f"The other {total - matched} had no genre data "
             f"available from either Google Books or Open Library "
             f"— those will stay under \"Unknown Genre\" unless "
-            f"you set them manually in Edit / Delete."
+            f"you set them manually in Edit / Delete.",
         )
     else:
-        st.error(
+        st.session_state.fetch_result_message = (
+            "error",
             f"Couldn't find genre data for any of the {total} "
             f"book(s) checked — neither Google Books nor Open "
             f"Library had matches. This can happen if titles/"
             f"authors are formatted unusually, or if requests are "
-            f"being rate-limited."
+            f"being rate-limited.",
         )
 
 
@@ -2594,6 +2624,23 @@ if st.session_state.active_tab == "tree":
 # ============================================================
 
 elif st.session_state.active_tab == "books":
+
+    # A fetch button (covers/descriptions/genres) may have just run
+    # and rerun the page — show its result here now, since the
+    # message it originally displayed got wiped by that rerun
+    # before it was visible.
+    if "fetch_result_message" in st.session_state:
+
+        _msg_type, _msg_text = st.session_state.pop(
+            "fetch_result_message"
+        )
+
+        if _msg_type == "success":
+            st.success(_msg_text)
+        elif _msg_type == "warning":
+            st.warning(_msg_text)
+        else:
+            st.error(_msg_text)
 
     # pick up a filter set by clicking a stat card
     if "stat_filter" in st.session_state:
