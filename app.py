@@ -1052,15 +1052,84 @@ def get_description(title, author=""):
     return ""
 
 
-def fetch_row_metadata(title, author, isbn, want_cover, want_description):
-    """Fetch a cover and/or description for one row in a single
-    worker call, so the import ThreadPoolExecutor can do both at
-    once instead of two separate passes."""
+@st.cache_data(show_spinner=False)
+def get_genre(title, author=""):
+    """Fetch a genre for a book from Google Books' 'categories'
+    field, since most imported files (Goodreads exports in
+    particular) don't include genre data at all — that's why
+    everything was piling into "Unknown Genre" before. Mirrors
+    get_cover / get_description: same endpoint, same
+    best-effort/fail-quiet behavior. Only the first category is
+    used, since Google Books categories are often nested/verbose
+    (e.g. "Fiction / Fantasy / Epic") and a single clean label is
+    what the tree groups on."""
+
+    try:
+
+        response = requests.get(
+            "https://www.googleapis.com/books/v1/volumes",
+            params={
+                "q": f"{title} {author}",
+                "maxResults": 1,
+            },
+            timeout=4,
+        )
+
+        if response.status_code == 200:
+
+            items = response.json().get(
+                "items",
+                [],
+            )
+
+            if items:
+
+                categories = (
+                    items[0]
+                    .get("volumeInfo", {})
+                    .get("categories", [])
+                )
+
+                if categories:
+
+                    # Google often returns something like
+                    # "Fiction / Fantasy / Epic" — keep just the
+                    # first, most general segment.
+                    genre = str(categories[0]).split("/")[0].strip()
+
+                    if genre:
+                        return genre
+
+    except Exception:
+        pass
+
+    return ""
+
+
+def fetch_row_metadata(
+    title,
+    author,
+    isbn,
+    current_genre,
+    want_cover,
+    want_description,
+    want_genre,
+):
+    """Fetch a cover / description / genre for one row in a
+    single worker call, so the import ThreadPoolExecutor can do
+    all of it at once instead of separate passes. Genre is only
+    looked up when the row doesn't already have one (e.g. from a
+    file's own Genre column) — fetching shouldn't clobber genre
+    data that was already there."""
 
     cover = get_cover(title, author, isbn) if want_cover else ""
     description = get_description(title, author) if want_description else ""
 
-    return cover, description
+    genre = ""
+    if want_genre and not str(current_genre).strip():
+        genre = get_genre(title, author)
+
+    return cover, description, genre
 
 
 # ============================================================
@@ -1295,6 +1364,7 @@ def import_books(
     uploaded_file,
     fetch_covers=True,
     fetch_descriptions=False,
+    fetch_genres=False,
     merge=True,
 ):
 
@@ -1731,7 +1801,7 @@ def import_books(
     save_library(combined)
 
     if (
-        (not fetch_covers and not fetch_descriptions)
+        (not fetch_covers and not fetch_descriptions and not fetch_genres)
         or added_count == 0
     ):
         return {
@@ -1741,11 +1811,13 @@ def import_books(
         }
 
     # --------------------------------------------------------
-    # FIND COVERS / DESCRIPTIONS — only for the newly-added
-    # rows. Existing books already have this metadata (or a
-    # deliberately-empty version from before), so there's no
-    # need to re-fetch those. Descriptions are what topic/theme
-    # search (e.g. "Christmas") checks against.
+    # FIND COVERS / DESCRIPTIONS / GENRES — only for the
+    # newly-added rows. Existing books already have this
+    # metadata (or a deliberately-empty version from before), so
+    # there's no need to re-fetch those. Descriptions are what
+    # topic/theme search (e.g. "Christmas") checks against.
+    # Genre is only fetched when the row doesn't already have one
+    # from the file itself (see fetch_row_metadata).
     # --------------------------------------------------------
 
     cover_indices = list(
@@ -1769,8 +1841,10 @@ def import_books(
                 combined.loc[i, "Title"],
                 combined.loc[i, "Author"],
                 combined.loc[i, "ISBN"],
+                combined.loc[i, "Genre"],
                 fetch_covers,
                 fetch_descriptions,
+                fetch_genres,
             ): i
             for i in cover_indices
         }
@@ -1780,15 +1854,18 @@ def import_books(
             i = future_to_index[future]
 
             try:
-                cover, description = future.result()
+                cover, description, genre = future.result()
             except Exception:
-                cover, description = "", ""
+                cover, description, genre = "", "", ""
 
             if fetch_covers:
                 combined.loc[i, "Cover"] = cover
 
             if fetch_descriptions:
                 combined.loc[i, "Description"] = description
+
+            if fetch_genres and genre:
+                combined.loc[i, "Genre"] = genre
 
             done += 1
 
@@ -1904,6 +1981,55 @@ def fetch_missing_descriptions():
     st.session_state.library = library
     save_library(library)
     st.success(f"✓ Fetched descriptions for {total} books!")
+
+
+def fetch_missing_genres():
+    """Fetch genres only for rows that don't have one yet — same
+    pattern as fetch_missing_covers/descriptions. This is the fix
+    for libraries that were imported before genre lookup existed
+    (e.g. from a Goodreads export, which has no genre column at
+    all) and are currently all piled into "Unknown Genre"."""
+
+    library = st.session_state.library
+
+    missing = library[
+        library["Genre"].fillna("").astype(str).str.strip() == ""
+    ]
+
+    if missing.empty:
+        st.info("Every book already has a genre.")
+        return
+
+    total = len(missing)
+    progress = st.progress(0)
+    done = 0
+
+    with ThreadPoolExecutor(max_workers=40) as executor:
+
+        future_to_index = {
+            executor.submit(
+                get_genre,
+                library.loc[i, "Title"],
+                library.loc[i, "Author"],
+            ): i
+            for i in missing.index
+        }
+
+        for future in as_completed(future_to_index):
+            i = future_to_index[future]
+            try:
+                genre = future.result()
+            except Exception:
+                genre = ""
+            if genre:
+                library.loc[i, "Genre"] = genre
+            done += 1
+            progress.progress(done / total)
+
+    progress.empty()
+    st.session_state.library = library
+    save_library(library)
+    st.success(f"✓ Fetched genres for {total} books!")
 
 
 # ============================================================
@@ -2482,9 +2608,16 @@ elif st.session_state.active_tab == "books":
                 books[books["Description"].fillna("") == ""]
             )
 
-            if missing_covers or missing_descriptions:
+            missing_genres = len(
+                books[
+                    books["Genre"].fillna("").astype(str).str.strip()
+                    == ""
+                ]
+            )
 
-                fetch_col1, fetch_col2 = st.columns(2)
+            if missing_covers or missing_descriptions or missing_genres:
+
+                fetch_col1, fetch_col2, fetch_col3 = st.columns(3)
 
                 with fetch_col1:
 
@@ -2521,6 +2654,24 @@ elif st.session_state.active_tab == "books":
                                 "Looking up descriptions..."
                             ):
                                 fetch_missing_descriptions()
+                            st.rerun()
+
+                with fetch_col3:
+
+                    if missing_genres:
+
+                        st.caption(
+                            f"{missing_genres} book(s) shown here "
+                            f"have no genre yet — that's why they're "
+                            f"grouped under \"Unknown Genre\"."
+                        )
+
+                        if st.button(
+                            "🏷️ Fetch missing genres",
+                            key="fetch_missing_genres_btn",
+                        ):
+                            with st.spinner("Looking up genres..."):
+                                fetch_missing_genres()
                             st.rerun()
 
 
@@ -2642,6 +2793,11 @@ elif st.session_state.active_tab == "add":
                     author,
                 )
 
+                actual_genre = genre.strip()
+
+                if not actual_genre:
+                    actual_genre = get_genre(title, author)
+
                 new_book = {
                     "Title": title.strip(),
                     "Author": author.strip(),
@@ -2651,7 +2807,7 @@ elif st.session_state.active_tab == "add":
                         if number is not None
                         else None
                     ),
-                    "Genre": genre.strip(),
+                    "Genre": actual_genre,
                     "ISBN": re.sub(
                         r"\D",
                         "",
@@ -2913,6 +3069,15 @@ elif st.session_state.active_tab == "import":
             value=False,
         )
 
+        fetch_genres_now = st.checkbox(
+            "Fetch genres during import (slower — most files "
+            "(like Goodreads exports) don't include genre data, "
+            "so without this every book groups under \"Unknown "
+            "Genre\"; you can fetch these later from the Books "
+            "tab instead)",
+            value=False,
+        )
+
         if st.button(
             "🗼 Raise My Spire",
             use_container_width=True,
@@ -2931,6 +3096,7 @@ elif st.session_state.active_tab == "import":
                     uploaded,
                     fetch_covers=fetch_covers_now,
                     fetch_descriptions=fetch_descriptions_now,
+                    fetch_genres=fetch_genres_now,
                     merge=merge_choice,
                 )
 
