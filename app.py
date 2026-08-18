@@ -2660,6 +2660,115 @@ elif st.session_state.active_tab == "books":
 
             display_ancestry_tree(books, group_by=books_group_choice)
 
+            with st.expander("🔍 Debug: test genre lookup on 3 books"):
+
+                st.caption(
+                    "Runs a live lookup against Google Books and "
+                    "Open Library for a few of your actual books "
+                    "and shows exactly what comes back, so we can "
+                    "see whether it's a network/rate-limit problem "
+                    "or a genuine lack of genre data."
+                )
+
+                if st.button(
+                    "Run test",
+                    key="debug_genre_test_btn",
+                ):
+
+                    sample = library.head(3)
+
+                    for _, row in sample.iterrows():
+
+                        test_title = row["Title"]
+                        test_author = row["Author"]
+
+                        st.markdown(
+                            f"**{test_title}** — {test_author}"
+                        )
+
+                        # Google Books
+                        try:
+                            gb_resp = requests.get(
+                                "https://www.googleapis.com/books/v1/volumes",
+                                params={
+                                    "q": f"{test_title} {test_author}",
+                                    "maxResults": 1,
+                                },
+                                timeout=6,
+                            )
+                            st.write(
+                                f"Google Books — HTTP "
+                                f"{gb_resp.status_code}"
+                            )
+                            if gb_resp.status_code == 200:
+                                gb_items = gb_resp.json().get(
+                                    "items", []
+                                )
+                                if gb_items:
+                                    gb_cats = (
+                                        gb_items[0]
+                                        .get("volumeInfo", {})
+                                        .get("categories", [])
+                                    )
+                                    st.write(
+                                        f"→ categories found: {gb_cats!r}"
+                                    )
+                                else:
+                                    st.write("→ no items matched")
+                            else:
+                                st.write(
+                                    f"→ response body: "
+                                    f"{gb_resp.text[:300]!r}"
+                                )
+                        except Exception as error:
+                            st.write(
+                                f"Google Books — request failed: "
+                                f"{error!r}"
+                            )
+
+                        # Open Library
+                        try:
+                            ol_resp = requests.get(
+                                "https://openlibrary.org/search.json",
+                                params={
+                                    "title": test_title,
+                                    "author": test_author,
+                                    "fields": "subject",
+                                    "limit": 1,
+                                },
+                                timeout=6,
+                            )
+                            st.write(
+                                f"Open Library — HTTP "
+                                f"{ol_resp.status_code}"
+                            )
+                            if ol_resp.status_code == 200:
+                                ol_docs = ol_resp.json().get(
+                                    "docs", []
+                                )
+                                if ol_docs:
+                                    ol_subjects = ol_docs[0].get(
+                                        "subject", []
+                                    )
+                                    st.write(
+                                        f"→ subjects found: "
+                                        f"{ol_subjects[:5]!r}"
+                                    )
+                                else:
+                                    st.write("→ no docs matched")
+                            else:
+                                st.write(
+                                    f"→ response body: "
+                                    f"{ol_resp.text[:300]!r}"
+                                )
+                        except Exception as error:
+                            st.write(
+                                f"Open Library — request failed: "
+                                f"{error!r}"
+                            )
+
+                        st.divider()
+
             missing_covers = len(
                 books[books["Cover"].fillna("") == ""]
             )
