@@ -358,7 +358,7 @@ def display_ancestry_tree(df):
             f'<details class="atree-author">'
             f'<summary>'
             f'<span class="atree-pill"><span class="atree-arrow">▸</span>'
-            f'🌳 {html.escape(str(author))} '
+            f'🗼 {html.escape(str(author))} '
             f'({len(author_df)})</span>'
             f'</summary>'
             f'<div class="atree-series-row">'
@@ -763,7 +763,7 @@ st.html(
     <div class="book-header">
         <div class="book-header-title">Story<span class="title-spire">Spire</span></div>
         <div class="book-header-tagline">
-            a library that grows one branch at a time
+            a library that rises one story at a time
         </div>
     </div>
     """
@@ -1799,7 +1799,7 @@ if "active_tab" not in st.session_state:
     st.session_state.active_tab = "tree"
 
 NAV_ITEMS = [
-    ("tree", "🌳 Book Tree"),
+    ("tree", "🗼 Book Spire"),
     ("books", "📚 Books"),
     ("add", "➕ Add Book"),
     ("manage", "✏️ Edit / Delete"),
@@ -1932,7 +1932,7 @@ def render_tree_grid_html(filtered):
 
 if st.session_state.active_tab == "tree":
 
-    st.subheader("Search My Book Tree")
+    st.subheader("Search My Spire")
 
     search = st.text_input(
         "Search",
@@ -2031,8 +2031,8 @@ if st.session_state.active_tab == "tree":
         if library.empty:
 
             st.info(
-                "Your tree is just a sapling — import your "
-                "library or add your first book to help it grow."
+                "Your spire is just a foundation — import your "
+                "library or add your first book to help it rise."
             )
 
         else:
@@ -2062,9 +2062,9 @@ if st.session_state.active_tab == "tree":
         # ----------------------------------------------------
 
         root_label = {
-            "All Books": "🌳 MY LIBRARY",
-            "Read": "🌳 MY READ BOOKS",
-            "Unread": "🌳 MY UNREAD BOOKS",
+            "All Books": "🗼 MY LIBRARY",
+            "Read": "🗼 MY READ BOOKS",
+            "Unread": "🗼 MY UNREAD BOOKS",
         }[tree_status_choice]
 
         st.html(
@@ -2275,7 +2275,7 @@ elif st.session_state.active_tab == "add":
         )
 
         submit = st.form_submit_button(
-            "Add to My Tree"
+            "Add to My Spire"
         )
 
         if submit:
@@ -2346,7 +2346,7 @@ elif st.session_state.active_tab == "add":
                 save_library(st.session_state.library)
 
                 st.success(
-                    f'"{title}" was added to your tree!'
+                    f'"{title}" was added to your spire!'
                 )
 
                 st.rerun()
@@ -2569,7 +2569,7 @@ elif st.session_state.active_tab == "import":
         )
 
         if st.button(
-            "🌳 Grow My Book Tree",
+            "🗼 Raise My Spire",
             use_container_width=True,
             type="primary",
         ):
