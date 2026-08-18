@@ -41,16 +41,49 @@ LIBRARY_COLUMNS = [
 ]
 
 
+TEXT_LIBRARY_COLUMNS = [
+    "Title",
+    "Author",
+    "Series",
+    "Genre",
+    "ISBN",
+    "Status",
+    "Cover",
+    "Description",
+    "Tags",
+    "Publisher",
+    "Pages",
+    "Date Read",
+]
+
+
 def normalize_library_columns(df):
     """Make sure a DataFrame has exactly LIBRARY_COLUMNS, in
     order, filling in any missing ones. Used any time a
     DataFrame comes from somewhere that might not have every
-    column (a fresh CSV, the data editor's '+' row, etc)."""
+    column (a fresh CSV, the data editor's '+' row, etc).
+
+    Also forces every text column to a plain string dtype. This
+    matters because when a column is entirely empty (e.g. no
+    book has a Description or Genre yet), pandas infers it as
+    float64 (all-NaN) rather than text. On newer pandas, later
+    assigning a real string into a float64 column (e.g.
+    library.loc[i, "Genre"] = "Fantasy") raises a TypeError
+    instead of silently upcasting — which is what was breaking
+    the cover/description/genre fetch buttons."""
     df = df.copy()
     for column in LIBRARY_COLUMNS:
         if column not in df.columns:
             df[column] = "" if column != "Favorite" else False
-    return df[LIBRARY_COLUMNS]
+    df = df[LIBRARY_COLUMNS]
+    for column in TEXT_LIBRARY_COLUMNS:
+        df[column] = (
+            df[column]
+            .fillna("")
+            .astype(str)
+            .replace(["nan", "None"], "")
+        )
+    return df
 
 
 def save_library(df):
