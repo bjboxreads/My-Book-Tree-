@@ -122,6 +122,21 @@ def clean_author_series(df):
     return df
 
 
+def clean_genre_column(series):
+    """Same idea as clean_author_series but for Genre, returned
+    as a standalone cleaned Series rather than mutating the
+    library's actual Genre column — grouping by genre shouldn't
+    change what's shown on a book's own pill (which reads Genre
+    straight from the row) for books that happen to have a
+    blank genre."""
+    return (
+        series.fillna("")
+        .astype(str)
+        .str.strip()
+        .replace(["", "nan", "None"], "Unknown Genre")
+    )
+
+
 # ============================================================
 # SHARED TREE CSS — used by both the Books tab tree and the
 # Book Tree tab's author grid, so the pill look stays identical
@@ -203,22 +218,12 @@ summary .atree-pill {
 }
 .atree-pill-book {
     margin: 6px 0;
+    position: relative;
 }
-
-/* Book pills (with or without a cover thumbnail) lay their
-   contents out in a row: [cover?] [title/status/genre] [star].
-   The label flexes to fill the middle so the star always sits
-   pinned to the right edge regardless of title length. */
-.atree-pill-book,
 .atree-pill-book-cover {
     display: flex;
     align-items: center;
-    justify-content: space-between;
     gap: 10px;
-}
-.atree-pill-book-label {
-    flex: 1;
-    min-width: 0;
 }
 .atree-cover {
     width: 36px;
@@ -229,35 +234,25 @@ summary .atree-pill {
     flex-shrink: 0;
 }
 
-/* Favorite star — hollow/muted by default, filled and glowing
-   in the theme's accent color once favorited. A real link
-   (?fav=<row index>) rather than a widget, so it works from
-   inside the raw-HTML tree without needing a Streamlit rerun
-   per pill. */
-.atree-fav-star {
-    flex-shrink: 0;
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    width: 26px;
-    height: 26px;
-    border-radius: 50%;
-    font-size: 16px;
+/* Small favorite-toggle heart pinned to the corner of a book
+   pill. Kept intentionally tiny so it doesn't disturb the
+   pill's existing layout — it overlays rather than taking up
+   its own row/column. */
+.atree-fav-heart {
+    position: absolute;
+    top: 6px;
+    right: 10px;
+    font-size: 15px;
     line-height: 1;
     text-decoration: none;
-    color: var(--muted);
-    background: rgba(0,0,0,0.15);
-    transition: transform .15s ease, color .15s ease,
-        background .15s ease;
-}
-.atree-fav-star:hover {
     color: var(--accent);
-    background: rgba(0,0,0,0.28);
-    transform: scale(1.15);
+    opacity: 0.85;
+    z-index: 2;
+    transition: transform .15s ease, opacity .15s ease;
 }
-.atree-fav-star.atree-fav-on {
-    color: var(--accent);
-    text-shadow: 0 0 8px rgba(0,0,0,.35);
+.atree-fav-heart:hover {
+    opacity: 1;
+    transform: scale(1.2);
 }
 
 .atree-series-row {
@@ -285,7 +280,7 @@ details[open] > .atree-books {
 }
 
 /* ---- Book Tree tab: author grid ----
-   Closed authors sit four to a row. Opening one expands its
+   Closed groups sit four to a row. Opening one expands its
    grid cell to the full row width so the nested series/book
    pills below it get real room instead of being squeezed into
    a quarter-width sliver. */
@@ -339,24 +334,20 @@ details[open] > .atree-books {
 """
 
 
-def book_pill_html(book, index=None):
+def book_pill_html(book):
     """One book's pill — cover thumbnail (if we have one), title,
-    status, genre, with a left-edge stripe colored by status, and
-    a click-to-toggle favorite star on the right in the theme's
-    accent color. Shared by both trees so a book looks identical
-    everywhere.
+    status, genre, with a left-edge stripe colored by status.
+    Shared by both trees so a book looks identical everywhere.
 
-    `index` is the book's row index in st.session_state.library —
-    pass it so the star link knows which row to flip. Pills
-    rendered without an index (none currently) simply omit the
-    star.
-    """
+    Also carries a small clickable heart in the corner that
+    toggles the book's Favorite flag (via a ?toggle_fav=<row id>
+    link, since these trees are static HTML — see the query-param
+    handling near the top of the script)."""
 
     title = html.escape(str(book.get('Title', '')))
     status = html.escape(str(book.get('Status', '') or ''))
     genre = html.escape(str(book.get('Genre', '') or ''))
     cover = str(book.get('Cover', '') or '')
-    is_favorite = bool(book.get('Favorite', False))
 
     label = f'📖 {title}'
     if status:
@@ -366,40 +357,31 @@ def book_pill_html(book, index=None):
 
     stripe_color = status_stripe_color(book.get('Status', ''))
 
-    star_html = ''
-    if index is not None:
-        star_symbol = '★' if is_favorite else '☆'
-        star_class = (
-            'atree-fav-star atree-fav-on'
-            if is_favorite
-            else 'atree-fav-star'
-        )
-        star_title = (
-            'Remove from favorites' if is_favorite else 'Add to favorites'
-        )
-        star_html = (
-            f'<a class="{star_class}" href="?fav={index}" '
-            f'target="_self" title="{star_title}">{star_symbol}</a>'
-        )
+    row_id = book.name if book.name is not None else ''
+    is_favorite = bool(book.get('Favorite', False))
+    heart_symbol = "★" if is_favorite else "☆"
+    heart_html = (
+        f'<a class="atree-fav-heart" href="?toggle_fav={row_id}" '
+        f'title="Toggle favorite">{heart_symbol}</a>'
+    )
 
     if cover:
         return (
             f'<div class="atree-pill atree-pill-book '
             f'atree-pill-book-cover" '
             f'style="border-left:4px solid {stripe_color};">'
+            f'{heart_html}'
             f'<img class="atree-cover" '
             f'src="{html.escape(cover)}" loading="lazy">'
-            f'<span class="atree-pill-book-label">{label}</span>'
-            f'{star_html}'
+            f'<span>{label}</span>'
             f'</div>'
         )
 
     return (
         f'<div class="atree-pill atree-pill-book" '
         f'style="border-left:4px solid {stripe_color};">'
-        f'<span class="atree-pill-book-label">{label}</span>'
-        f'{star_html}'
-        f'</div>'
+        f'{heart_html}'
+        f'{label}</div>'
     )
 
 
@@ -407,13 +389,25 @@ def book_pill_html(book, index=None):
 # ANCESTRY TREE (Books tab) — now with covers
 # ============================================================
 
-def display_ancestry_tree(df):
+def display_ancestry_tree(df, group_by="Author"):
     # Clean data: fill empty Author with 'Unknown Author' and
     # empty Series with 'Standalone' (shared helper so this
     # matches the Book Tree tab exactly — otherwise a book with
     # a blank author would silently vanish here, since
     # groupby() drops NaN groups by default).
     df = clean_author_series(df)
+
+    # group_by picks the top-level grouping: normally "Author",
+    # or "Genre" to organize the same tree by genre instead.
+    # Series stays as the second level either way, so the shape
+    # of the tree (and every pill's look) is unchanged — only
+    # which field the top pill groups on changes.
+    if group_by == "Genre":
+        group_col = clean_genre_column(df["Genre"])
+        group_icon = "🏷️"
+    else:
+        group_col = df["Author"]
+        group_icon = "🗼"
 
     # Build the entire tree as ONE html string instead of looping
     # st.expander / st.columns / st.write per author/series/book.
@@ -424,21 +418,21 @@ def display_ancestry_tree(df):
     # native collapse/expand for free, with no JS and no extra nodes.
     parts = ['<div class="book-ancestry-tree">']
 
-    for author, author_df in df.groupby('Author'):
+    for group_value, group_df in df.groupby(group_col):
         parts.append(
             f'<details class="atree-author">'
             f'<summary>'
             f'<span class="atree-pill"><span class="atree-arrow">▸</span>'
-            f'🗼 {html.escape(str(author))} '
-            f'({len(author_df)})</span>'
+            f'{group_icon} {html.escape(str(group_value))} '
+            f'({len(group_df)})</span>'
             f'</summary>'
             f'<div class="atree-series-row">'
         )
 
-        series_list = author_df['Series'].unique()
+        series_list = group_df['Series'].unique()
 
         for series in series_list:
-            series_books = author_df[author_df['Series'] == series]
+            series_books = group_df[group_df['Series'] == series]
             parts.append(
                 f'<details class="atree-series">'
                 f'<summary>'
@@ -448,8 +442,8 @@ def display_ancestry_tree(df):
                 f'</summary>'
                 f'<div class="atree-books">'
             )
-            for idx, book in series_books.iterrows():
-                parts.append(book_pill_html(book, idx))
+            for _, book in series_books.iterrows():
+                parts.append(book_pill_html(book))
             parts.append('</div></details>')
 
         parts.append('</div></details>')
@@ -600,29 +594,39 @@ if (
 if "library" not in st.session_state:
     st.session_state.library = load_library()
 
-# ============================================================
-# FAVORITE TOGGLE — triggered by the star link on each book
-# pill (see book_pill_html). Uses a query param instead of a
-# widget so it works from inside the raw-HTML tree, which has
-# no Streamlit widget event handlers to hook into.
-# ============================================================
+# ------------------------------------------------------------
+# FAVORITE TOGGLE — handles clicks on the little heart icon in
+# the tree pills. Those are plain <a href="?toggle_fav=..."> a
+# links (the trees are static HTML, so there's no Python click
+# handler to attach otherwise) — this picks up the query param
+# on the resulting rerun, flips that row's Favorite flag, saves,
+# and clears the URL so refreshing the page doesn't re-toggle it.
+# Note: because this triggers a real rerun, any open sections of
+# the tree will re-collapse, the same as clicking any other
+# button on the page would.
+# ------------------------------------------------------------
 
-if "fav" in st.query_params:
+if "toggle_fav" in st.query_params:
+
+    _fav_raw = st.query_params["toggle_fav"]
 
     try:
-        fav_index = int(st.query_params["fav"])
-    except (TypeError, ValueError):
-        fav_index = None
+        _fav_idx = int(_fav_raw)
 
-    if (
-        fav_index is not None
-        and fav_index in st.session_state.library.index
-    ):
-        current = bool(
-            st.session_state.library.loc[fav_index, "Favorite"]
-        )
-        st.session_state.library.loc[fav_index, "Favorite"] = not current
-        save_library(st.session_state.library)
+        if _fav_idx in st.session_state.library.index:
+
+            _current = bool(
+                st.session_state.library.loc[_fav_idx, "Favorite"]
+            )
+
+            st.session_state.library.loc[_fav_idx, "Favorite"] = (
+                not _current
+            )
+
+            save_library(st.session_state.library)
+
+    except (ValueError, TypeError):
+        pass
 
     st.query_params.clear()
     st.rerun()
@@ -1162,39 +1166,6 @@ STATUS_STRIPE = {
 
 def status_stripe_color(status):
     return STATUS_STRIPE.get(str(status).strip(), "var(--muted)")
-
-
-# ============================================================
-# GENRE HELPERS — genre cells can hold multiple comma-separated
-# values (e.g. "Fantasy, Romance"), so filtering treats each
-# piece as its own tag rather than matching the whole string.
-# ============================================================
-
-def get_all_genres(df):
-    """Unique genre values across the library, split on commas
-    so a book tagged 'Fantasy, Romance' contributes both
-    'Fantasy' and 'Romance' as separate filter options."""
-
-    genres = set()
-
-    for value in df["Genre"].fillna("").astype(str):
-        for piece in value.split(","):
-            piece = piece.strip()
-            if piece and piece.lower() != "nan":
-                genres.add(piece)
-
-    return sorted(genres, key=lambda g: g.lower())
-
-
-def matches_genre(genre_value, target):
-    """True if target is one of the comma-separated genres in
-    genre_value (case-insensitive)."""
-
-    pieces = [
-        p.strip().lower()
-        for p in str(genre_value or "").split(",")
-    ]
-    return target.lower() in pieces
 
 
 # ============================================================
@@ -2097,7 +2068,7 @@ for nav_col, (tab_key, tab_label) in zip(nav_cols, NAV_ITEMS):
 st.html('<div style="height:14px;"></div>')
 
 # ============================================================
-# BOOK TREE — AUTHOR GRID → HORIZONTAL ANCESTRY TREE
+# BOOK TREE — AUTHOR/GENRE GRID → HORIZONTAL ANCESTRY TREE
 #
 # This whole tab is built as ONE html string, the same way the
 # Books tab tree is, using nested <details>/<summary>. Previously
@@ -2108,30 +2079,38 @@ st.html('<div style="height:14px;"></div>')
 # browser with zero server involvement, so it's instant no matter
 # how large the library is.
 #
-# Authors sit four to a row in a CSS grid while closed; opening
-# one makes its grid cell span the full row (grid-column: 1/-1)
-# so the series/book pills inside get real width instead of being
+# Groups (Author, or Genre when that grouping is picked) sit
+# four to a row in a CSS grid while closed; opening one makes its
+# grid cell span the full row (grid-column: 1/-1) so the
+# series/book pills inside get real width instead of being
 # squeezed into a quarter-column sliver.
 # ============================================================
 
-def render_tree_grid_html(filtered):
+def render_tree_grid_html(filtered, group_by="Author"):
 
     parts = ['<div class="book-ancestry-tree">']
 
-    author_list = sorted(
-        filtered["Author"].unique(),
+    if group_by == "Genre":
+        group_series = clean_genre_column(filtered["Genre"])
+        group_icon = "🏷️"
+    else:
+        group_series = filtered["Author"]
+        group_icon = "🗼"
+
+    group_list = sorted(
+        group_series.unique(),
         key=lambda x: str(x).lower(),
     )
 
-    # Build letter -> authors groups, preserving sort order
+    # Build letter -> group-values groups, preserving sort order
     letter_groups = []
-    for author in author_list:
-        letter = str(author).strip()[:1].upper() or "#"
+    for group_value in group_list:
+        letter = str(group_value).strip()[:1].upper() or "#"
         if not letter_groups or letter_groups[-1][0] != letter:
             letter_groups.append((letter, []))
-        letter_groups[-1][1].append(author)
+        letter_groups[-1][1].append(group_value)
 
-    for letter, group_authors in letter_groups:
+    for letter, group_values in letter_groups:
 
         parts.append(
             f'<div class="atree-letter-divider">'
@@ -2142,32 +2121,30 @@ def render_tree_grid_html(filtered):
 
         parts.append('<div class="atree-author-grid">')
 
-        for author in group_authors:
+        for group_value in group_values:
 
-            author_books = filtered[
-                filtered["Author"] == author
-            ]
+            group_books = filtered[group_series == group_value]
 
             parts.append(
                 f'<details class="atree-author">'
                 f'<summary>'
                 f'<span class="atree-pill">'
                 f'<span class="atree-arrow">▸</span>'
-                f'{html.escape(str(author))} '
-                f'({len(author_books)})</span>'
+                f'{group_icon} {html.escape(str(group_value))} '
+                f'({len(group_books)})</span>'
                 f'</summary>'
                 f'<div class="atree-series-row">'
             )
 
             series_list = sorted(
-                author_books["Series"].unique(),
+                group_books["Series"].unique(),
                 key=lambda x: str(x).lower(),
             )
 
             for series in series_list:
 
-                series_books = author_books[
-                    author_books["Series"] == series
+                series_books = group_books[
+                    group_books["Series"] == series
                 ]
 
                 display_series = (
@@ -2187,8 +2164,8 @@ def render_tree_grid_html(filtered):
                     f'<div class="atree-books">'
                 )
 
-                for idx, book in series_books.iterrows():
-                    parts.append(book_pill_html(book, idx))
+                for _, book in series_books.iterrows():
+                    parts.append(book_pill_html(book))
 
                 parts.append('</div></details>')
 
@@ -2216,9 +2193,10 @@ if st.session_state.active_tab == "tree":
         "descriptions, and ISBNs — try a theme like \"Christmas\"."
     )
 
-    filter_col1, filter_col2 = st.columns([2, 1])
+    filter_col, group_col_ui = st.columns(2)
 
-    with filter_col1:
+    with filter_col:
+
         tree_status_choice = st.radio(
             "Show",
             [
@@ -2230,12 +2208,16 @@ if st.session_state.active_tab == "tree":
             key="tree_status_radio",
         )
 
-    with filter_col2:
-        tree_genre_choice = st.selectbox(
-            "Genre",
-            ["All Genres"] + get_all_genres(library),
-            key="tree_genre_select",
-            label_visibility="collapsed",
+    with group_col_ui:
+
+        tree_group_choice = st.radio(
+            "Organize by",
+            [
+                "Author",
+                "Genre",
+            ],
+            horizontal=True,
+            key="tree_group_by_radio",
         )
 
     # Series-only filter, set by clicking the "Series" stat tile.
@@ -2275,18 +2257,6 @@ if st.session_state.active_tab == "tree":
 
         filtered = filtered[
             filtered["Status"] != "Read"
-        ]
-
-    # --------------------------------------------------------
-    # GENRE FILTER
-    # --------------------------------------------------------
-
-    if tree_genre_choice != "All Genres":
-
-        filtered = filtered[
-            filtered["Genre"].apply(
-                lambda g: matches_genre(g, tree_genre_choice)
-            )
         ]
 
     # --------------------------------------------------------
@@ -2389,11 +2359,15 @@ if st.session_state.active_tab == "tree":
         )
 
         # ----------------------------------------------------
-        # AUTHOR GRID — grouped by first letter, four per row,
+        # GROUP GRID — grouped by first letter of the chosen
+        # grouping field (Author or Genre), four per row,
         # rendered as one static HTML tree (see note above).
         # ----------------------------------------------------
 
-        st.html(TREE_CSS + render_tree_grid_html(filtered))
+        st.html(
+            TREE_CSS
+            + render_tree_grid_html(filtered, group_by=tree_group_choice)
+        )
 
 
 # ============================================================
@@ -2421,9 +2395,10 @@ elif st.session_state.active_tab == "books":
             key="books_search_input",
         )
 
-        status_col, genre_col_filter = st.columns([2, 1])
+        filter_col2, group_col_ui2 = st.columns(2)
 
-        with status_col:
+        with filter_col2:
+
             choice = st.radio(
                 "Show",
                 [
@@ -2437,12 +2412,16 @@ elif st.session_state.active_tab == "books":
                 key="unique_books_radio",
             )
 
-        with genre_col_filter:
-            genre_choice = st.selectbox(
-                "Genre",
-                ["All Genres"] + get_all_genres(library),
-                key="books_genre_select",
-                label_visibility="collapsed",
+        with group_col_ui2:
+
+            books_group_choice = st.radio(
+                "Organize by",
+                [
+                    "Author",
+                    "Genre",
+                ],
+                horizontal=True,
+                key="books_group_by_radio",
             )
 
         books = library.copy()
@@ -2457,14 +2436,6 @@ elif st.session_state.active_tab == "books":
 
             books = books[
                 books["Status"] == choice
-            ]
-
-        if genre_choice != "All Genres":
-
-            books = books[
-                books["Genre"].apply(
-                    lambda g: matches_genre(g, genre_choice)
-                )
             ]
 
         if books_search.strip():
@@ -2501,7 +2472,7 @@ elif st.session_state.active_tab == "books":
 
         else:
 
-            display_ancestry_tree(books)
+            display_ancestry_tree(books, group_by=books_group_choice)
 
             missing_covers = len(
                 books[books["Cover"].fillna("") == ""]
