@@ -34,6 +34,7 @@ LIBRARY_COLUMNS = [
     "Favorite",
     "Cover",
     "Description",
+    "Tags",
     "Publisher",
     "Pages",
     "Date Read",
@@ -203,10 +204,21 @@ summary .atree-pill {
 .atree-pill-book {
     margin: 6px 0;
 }
+
+/* Book pills (with or without a cover thumbnail) lay their
+   contents out in a row: [cover?] [title/status/genre] [star].
+   The label flexes to fill the middle so the star always sits
+   pinned to the right edge regardless of title length. */
+.atree-pill-book,
 .atree-pill-book-cover {
     display: flex;
     align-items: center;
+    justify-content: space-between;
     gap: 10px;
+}
+.atree-pill-book-label {
+    flex: 1;
+    min-width: 0;
 }
 .atree-cover {
     width: 36px;
@@ -215,6 +227,37 @@ summary .atree-pill {
     border-radius: 3px 8px 3px 8px;
     border: 1px solid var(--accent);
     flex-shrink: 0;
+}
+
+/* Favorite star — hollow/muted by default, filled and glowing
+   in the theme's accent color once favorited. A real link
+   (?fav=<row index>) rather than a widget, so it works from
+   inside the raw-HTML tree without needing a Streamlit rerun
+   per pill. */
+.atree-fav-star {
+    flex-shrink: 0;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 26px;
+    height: 26px;
+    border-radius: 50%;
+    font-size: 16px;
+    line-height: 1;
+    text-decoration: none;
+    color: var(--muted);
+    background: rgba(0,0,0,0.15);
+    transition: transform .15s ease, color .15s ease,
+        background .15s ease;
+}
+.atree-fav-star:hover {
+    color: var(--accent);
+    background: rgba(0,0,0,0.28);
+    transform: scale(1.15);
+}
+.atree-fav-star.atree-fav-on {
+    color: var(--accent);
+    text-shadow: 0 0 8px rgba(0,0,0,.35);
 }
 
 .atree-series-row {
@@ -296,15 +339,24 @@ details[open] > .atree-books {
 """
 
 
-def book_pill_html(book):
+def book_pill_html(book, index=None):
     """One book's pill — cover thumbnail (if we have one), title,
-    status, genre, with a left-edge stripe colored by status.
-    Shared by both trees so a book looks identical everywhere."""
+    status, genre, with a left-edge stripe colored by status, and
+    a click-to-toggle favorite star on the right in the theme's
+    accent color. Shared by both trees so a book looks identical
+    everywhere.
+
+    `index` is the book's row index in st.session_state.library —
+    pass it so the star link knows which row to flip. Pills
+    rendered without an index (none currently) simply omit the
+    star.
+    """
 
     title = html.escape(str(book.get('Title', '')))
     status = html.escape(str(book.get('Status', '') or ''))
     genre = html.escape(str(book.get('Genre', '') or ''))
     cover = str(book.get('Cover', '') or '')
+    is_favorite = bool(book.get('Favorite', False))
 
     label = f'📖 {title}'
     if status:
@@ -314,6 +366,22 @@ def book_pill_html(book):
 
     stripe_color = status_stripe_color(book.get('Status', ''))
 
+    star_html = ''
+    if index is not None:
+        star_symbol = '★' if is_favorite else '☆'
+        star_class = (
+            'atree-fav-star atree-fav-on'
+            if is_favorite
+            else 'atree-fav-star'
+        )
+        star_title = (
+            'Remove from favorites' if is_favorite else 'Add to favorites'
+        )
+        star_html = (
+            f'<a class="{star_class}" href="?fav={index}" '
+            f'target="_self" title="{star_title}">{star_symbol}</a>'
+        )
+
     if cover:
         return (
             f'<div class="atree-pill atree-pill-book '
@@ -321,14 +389,17 @@ def book_pill_html(book):
             f'style="border-left:4px solid {stripe_color};">'
             f'<img class="atree-cover" '
             f'src="{html.escape(cover)}" loading="lazy">'
-            f'<span>{label}</span>'
+            f'<span class="atree-pill-book-label">{label}</span>'
+            f'{star_html}'
             f'</div>'
         )
 
     return (
         f'<div class="atree-pill atree-pill-book" '
         f'style="border-left:4px solid {stripe_color};">'
-        f'{label}</div>'
+        f'<span class="atree-pill-book-label">{label}</span>'
+        f'{star_html}'
+        f'</div>'
     )
 
 
@@ -377,8 +448,8 @@ def display_ancestry_tree(df):
                 f'</summary>'
                 f'<div class="atree-books">'
             )
-            for _, book in series_books.iterrows():
-                parts.append(book_pill_html(book))
+            for idx, book in series_books.iterrows():
+                parts.append(book_pill_html(book, idx))
             parts.append('</div></details>')
 
         parts.append('</div></details>')
@@ -528,6 +599,33 @@ if (
 
 if "library" not in st.session_state:
     st.session_state.library = load_library()
+
+# ============================================================
+# FAVORITE TOGGLE — triggered by the star link on each book
+# pill (see book_pill_html). Uses a query param instead of a
+# widget so it works from inside the raw-HTML tree, which has
+# no Streamlit widget event handlers to hook into.
+# ============================================================
+
+if "fav" in st.query_params:
+
+    try:
+        fav_index = int(st.query_params["fav"])
+    except (TypeError, ValueError):
+        fav_index = None
+
+    if (
+        fav_index is not None
+        and fav_index in st.session_state.library.index
+    ):
+        current = bool(
+            st.session_state.library.loc[fav_index, "Favorite"]
+        )
+        st.session_state.library.loc[fav_index, "Favorite"] = not current
+        save_library(st.session_state.library)
+
+    st.query_params.clear()
+    st.rerun()
 
 theme = THEMES[st.session_state.theme]
 
@@ -908,6 +1006,59 @@ def get_cover(title, author="", isbn=""):
     return ""
 
 
+@st.cache_data(show_spinner=False)
+def get_description(title, author=""):
+    """Fetch a short book description from Google Books — this
+    is what topic/theme search (e.g. searching "Christmas") runs
+    against, so a book turns up even when the title itself
+    doesn't mention the theme."""
+
+    try:
+
+        response = requests.get(
+            "https://www.googleapis.com/books/v1/volumes",
+            params={
+                "q": f"{title} {author}",
+                "maxResults": 1,
+            },
+            timeout=4,
+        )
+
+        if response.status_code == 200:
+
+            items = response.json().get(
+                "items",
+                [],
+            )
+
+            if items:
+
+                description = (
+                    items[0]
+                    .get("volumeInfo", {})
+                    .get("description", "")
+                )
+
+                if description:
+                    return description.strip()
+
+    except Exception:
+        pass
+
+    return ""
+
+
+def fetch_row_metadata(title, author, isbn, want_cover, want_description):
+    """Fetch a cover and/or description for one row in a single
+    worker call, so the import ThreadPoolExecutor can do both at
+    once instead of two separate passes."""
+
+    cover = get_cover(title, author, isbn) if want_cover else ""
+    description = get_description(title, author) if want_description else ""
+
+    return cover, description
+
+
 # ============================================================
 # SERIES DETECTION
 # ============================================================
@@ -1011,6 +1162,39 @@ STATUS_STRIPE = {
 
 def status_stripe_color(status):
     return STATUS_STRIPE.get(str(status).strip(), "var(--muted)")
+
+
+# ============================================================
+# GENRE HELPERS — genre cells can hold multiple comma-separated
+# values (e.g. "Fantasy, Romance"), so filtering treats each
+# piece as its own tag rather than matching the whole string.
+# ============================================================
+
+def get_all_genres(df):
+    """Unique genre values across the library, split on commas
+    so a book tagged 'Fantasy, Romance' contributes both
+    'Fantasy' and 'Romance' as separate filter options."""
+
+    genres = set()
+
+    for value in df["Genre"].fillna("").astype(str):
+        for piece in value.split(","):
+            piece = piece.strip()
+            if piece and piece.lower() != "nan":
+                genres.add(piece)
+
+    return sorted(genres, key=lambda g: g.lower())
+
+
+def matches_genre(genre_value, target):
+    """True if target is one of the comma-separated genres in
+    genre_value (case-insensitive)."""
+
+    pieces = [
+        p.strip().lower()
+        for p in str(genre_value or "").split(",")
+    ]
+    return target.lower() in pieces
 
 
 # ============================================================
@@ -1136,7 +1320,12 @@ def load_dataframe(uploaded_file):
 # IMPORT BOOKS
 # ============================================================
 
-def import_books(uploaded_file, fetch_covers=True, merge=True):
+def import_books(
+    uploaded_file,
+    fetch_covers=True,
+    fetch_descriptions=False,
+    merge=True,
+):
 
     # --------------------------------------------------------
     # READ FILE (csv / excel / txt / pdf)
@@ -1223,6 +1412,14 @@ def import_books(uploaded_file, fetch_covers=True, merge=True):
             "series number",
             "series no",
             "book number",
+        ]
+    )
+
+    tags_col = find_column(
+        [
+            "tags",
+            "keywords",
+            "themes",
         ]
     )
 
@@ -1314,6 +1511,22 @@ def import_books(uploaded_file, fetch_covers=True, merge=True):
 
             if genre.lower() == "nan":
                 genre = ""
+
+        # TAGS
+
+        tags = ""
+
+        if tags_col:
+
+            tags = str(
+                row.get(
+                    tags_col,
+                    "",
+                )
+            ).strip()
+
+            if tags.lower() == "nan":
+                tags = ""
 
         # SERIES
 
@@ -1451,6 +1664,7 @@ def import_books(uploaded_file, fetch_covers=True, merge=True):
                 "Favorite": False,
                 "Cover": "",
                 "Description": "",
+                "Tags": tags,
                 "Publisher": "",
                 "Pages": "",
                 "Date Read": "",
@@ -1545,7 +1759,10 @@ def import_books(uploaded_file, fetch_covers=True, merge=True):
 
     save_library(combined)
 
-    if not fetch_covers or added_count == 0:
+    if (
+        (not fetch_covers and not fetch_descriptions)
+        or added_count == 0
+    ):
         return {
             "success": True,
             "added": added_count,
@@ -1553,9 +1770,11 @@ def import_books(uploaded_file, fetch_covers=True, merge=True):
         }
 
     # --------------------------------------------------------
-    # FIND COVERS — only for the newly-added rows. Existing
-    # books already have covers (or a deliberately-empty one
-    # from before), so there's no need to re-fetch those.
+    # FIND COVERS / DESCRIPTIONS — only for the newly-added
+    # rows. Existing books already have this metadata (or a
+    # deliberately-empty version from before), so there's no
+    # need to re-fetch those. Descriptions are what topic/theme
+    # search (e.g. "Christmas") checks against.
     # --------------------------------------------------------
 
     cover_indices = list(
@@ -1575,10 +1794,12 @@ def import_books(uploaded_file, fetch_covers=True, merge=True):
 
         future_to_index = {
             executor.submit(
-                get_cover,
+                fetch_row_metadata,
                 combined.loc[i, "Title"],
                 combined.loc[i, "Author"],
                 combined.loc[i, "ISBN"],
+                fetch_covers,
+                fetch_descriptions,
             ): i
             for i in cover_indices
         }
@@ -1588,11 +1809,15 @@ def import_books(uploaded_file, fetch_covers=True, merge=True):
             i = future_to_index[future]
 
             try:
-                cover = future.result()
+                cover, description = future.result()
             except Exception:
-                cover = ""
+                cover, description = "", ""
 
-            combined.loc[i, "Cover"] = cover
+            if fetch_covers:
+                combined.loc[i, "Cover"] = cover
+
+            if fetch_descriptions:
+                combined.loc[i, "Description"] = description
 
             done += 1
 
@@ -1662,6 +1887,52 @@ def fetch_missing_covers():
     st.session_state.library = library
     save_library(library)
     st.success(f"✓ Fetched covers for {total} books!")
+
+
+def fetch_missing_descriptions():
+    """Fetch descriptions only for rows that don't have one yet
+    — same pattern as fetch_missing_covers, but this is what
+    powers topic search (e.g. searching "Christmas")."""
+
+    library = st.session_state.library
+
+    missing = library[
+        library["Description"].fillna("") == ""
+    ]
+
+    if missing.empty:
+        st.info("Every book already has a description.")
+        return
+
+    total = len(missing)
+    progress = st.progress(0)
+    done = 0
+
+    with ThreadPoolExecutor(max_workers=40) as executor:
+
+        future_to_index = {
+            executor.submit(
+                get_description,
+                library.loc[i, "Title"],
+                library.loc[i, "Author"],
+            ): i
+            for i in missing.index
+        }
+
+        for future in as_completed(future_to_index):
+            i = future_to_index[future]
+            try:
+                description = future.result()
+            except Exception:
+                description = ""
+            library.loc[i, "Description"] = description
+            done += 1
+            progress.progress(done / total)
+
+    progress.empty()
+    st.session_state.library = library
+    save_library(library)
+    st.success(f"✓ Fetched descriptions for {total} books!")
 
 
 # ============================================================
@@ -1916,8 +2187,8 @@ def render_tree_grid_html(filtered):
                     f'<div class="atree-books">'
                 )
 
-                for _, book in series_books.iterrows():
-                    parts.append(book_pill_html(book))
+                for idx, book in series_books.iterrows():
+                    parts.append(book_pill_html(book, idx))
 
                 parts.append('</div></details>')
 
@@ -1936,24 +2207,36 @@ if st.session_state.active_tab == "tree":
 
     search = st.text_input(
         "Search",
-        placeholder="Search by author, title, series, genre, or ISBN...",
+        placeholder="Search by author, title, series, genre, tag, theme, or ISBN...",
         label_visibility="collapsed",
     )
 
     st.caption(
-        "Searches authors, titles, series, genres, and ISBNs."
+        "Searches authors, titles, series, genres, tags, "
+        "descriptions, and ISBNs — try a theme like \"Christmas\"."
     )
 
-    tree_status_choice = st.radio(
-        "Show",
-        [
-            "All Books",
-            "Read",
-            "Unread",
-        ],
-        horizontal=True,
-        key="tree_status_radio",
-    )
+    filter_col1, filter_col2 = st.columns([2, 1])
+
+    with filter_col1:
+        tree_status_choice = st.radio(
+            "Show",
+            [
+                "All Books",
+                "Read",
+                "Unread",
+            ],
+            horizontal=True,
+            key="tree_status_radio",
+        )
+
+    with filter_col2:
+        tree_genre_choice = st.selectbox(
+            "Genre",
+            ["All Genres"] + get_all_genres(library),
+            key="tree_genre_select",
+            label_visibility="collapsed",
+        )
 
     # Series-only filter, set by clicking the "Series" stat tile.
     # Popped so it applies once right after the click and doesn't
@@ -1995,6 +2278,18 @@ if st.session_state.active_tab == "tree":
         ]
 
     # --------------------------------------------------------
+    # GENRE FILTER
+    # --------------------------------------------------------
+
+    if tree_genre_choice != "All Genres":
+
+        filtered = filtered[
+            filtered["Genre"].apply(
+                lambda g: matches_genre(g, tree_genre_choice)
+            )
+        ]
+
+    # --------------------------------------------------------
     # SEARCH
     # --------------------------------------------------------
 
@@ -2010,6 +2305,10 @@ if st.session_state.active_tab == "tree":
             + filtered["Series"].fillna("").astype(str)
             + " "
             + filtered["Genre"].fillna("").astype(str)
+            + " "
+            + filtered["Tags"].fillna("").astype(str)
+            + " "
+            + filtered["Description"].fillna("").astype(str)
             + " "
             + filtered["ISBN"].fillna("").astype(str)
         ).str.lower()
@@ -2117,23 +2416,34 @@ elif st.session_state.active_tab == "books":
 
         books_search = st.text_input(
             "Search books",
-            placeholder="Search by author, title, series, genre, or ISBN...",
+            placeholder="Search by author, title, series, genre, tag, theme, or ISBN...",
             label_visibility="collapsed",
             key="books_search_input",
         )
 
-        choice = st.radio(
-            "Show",
-            [
-                "All",
-                "Favorites",
-                "Read",
-                "Currently Reading",
-                "Want to Read",
-            ],
-            horizontal=True,
-            key="unique_books_radio",
-        )
+        status_col, genre_col_filter = st.columns([2, 1])
+
+        with status_col:
+            choice = st.radio(
+                "Show",
+                [
+                    "All",
+                    "Favorites",
+                    "Read",
+                    "Currently Reading",
+                    "Want to Read",
+                ],
+                horizontal=True,
+                key="unique_books_radio",
+            )
+
+        with genre_col_filter:
+            genre_choice = st.selectbox(
+                "Genre",
+                ["All Genres"] + get_all_genres(library),
+                key="books_genre_select",
+                label_visibility="collapsed",
+            )
 
         books = library.copy()
 
@@ -2149,6 +2459,14 @@ elif st.session_state.active_tab == "books":
                 books["Status"] == choice
             ]
 
+        if genre_choice != "All Genres":
+
+            books = books[
+                books["Genre"].apply(
+                    lambda g: matches_genre(g, genre_choice)
+                )
+            ]
+
         if books_search.strip():
 
             q = books_search.strip().lower()
@@ -2161,6 +2479,10 @@ elif st.session_state.active_tab == "books":
                 + books["Series"].fillna("").astype(str)
                 + " "
                 + books["Genre"].fillna("").astype(str)
+                + " "
+                + books["Tags"].fillna("").astype(str)
+                + " "
+                + books["Description"].fillna("").astype(str)
                 + " "
                 + books["ISBN"].fillna("").astype(str)
             ).str.lower()
@@ -2185,19 +2507,50 @@ elif st.session_state.active_tab == "books":
                 books[books["Cover"].fillna("") == ""]
             )
 
-            if missing_covers:
+            missing_descriptions = len(
+                books[books["Description"].fillna("") == ""]
+            )
 
-                st.caption(
-                    f"{missing_covers} book(s) shown here have no cover yet."
-                )
+            if missing_covers or missing_descriptions:
 
-                if st.button(
-                    "🖼️ Fetch missing covers",
-                    key="fetch_missing_covers_btn",
-                ):
-                    with st.spinner("Looking up covers..."):
-                        fetch_missing_covers()
-                    st.rerun()
+                fetch_col1, fetch_col2 = st.columns(2)
+
+                with fetch_col1:
+
+                    if missing_covers:
+
+                        st.caption(
+                            f"{missing_covers} book(s) shown here "
+                            f"have no cover yet."
+                        )
+
+                        if st.button(
+                            "🖼️ Fetch missing covers",
+                            key="fetch_missing_covers_btn",
+                        ):
+                            with st.spinner("Looking up covers..."):
+                                fetch_missing_covers()
+                            st.rerun()
+
+                with fetch_col2:
+
+                    if missing_descriptions:
+
+                        st.caption(
+                            f"{missing_descriptions} book(s) shown "
+                            f"here have no description yet — "
+                            f"needed for topic search."
+                        )
+
+                        if st.button(
+                            "📝 Fetch missing descriptions",
+                            key="fetch_missing_descriptions_btn",
+                        ):
+                            with st.spinner(
+                                "Looking up descriptions..."
+                            ):
+                                fetch_missing_descriptions()
+                            st.rerun()
 
 
 # ============================================================
@@ -2241,6 +2594,13 @@ elif st.session_state.active_tab == "add":
             "Genre",
             placeholder=(
                 "Fantasy, Romance, Mystery..."
+            ),
+        )
+
+        tags = st.text_input(
+            "Tags",
+            placeholder=(
+                "Christmas, cozy, found family..."
             ),
         )
 
@@ -2306,6 +2666,11 @@ elif st.session_state.active_tab == "add":
                     isbn,
                 )
 
+                description = get_description(
+                    title,
+                    author,
+                )
+
                 new_book = {
                     "Title": title.strip(),
                     "Author": author.strip(),
@@ -2325,7 +2690,8 @@ elif st.session_state.active_tab == "add":
                     "Status": status,
                     "Favorite": favorite,
                     "Cover": cover,
-                    "Description": "",
+                    "Description": description,
+                    "Tags": tags.strip(),
                     "Publisher": "",
                     "Pages": "",
                     "Date Read": "",
@@ -2388,6 +2754,7 @@ elif st.session_state.active_tab == "manage":
                 "Series",
                 "Series Number",
                 "Genre",
+                "Tags",
                 "Status",
                 "My Rating",
                 "Favorite",
@@ -2568,6 +2935,13 @@ elif st.session_state.active_tab == "import":
             value=False,
         )
 
+        fetch_descriptions_now = st.checkbox(
+            "Fetch descriptions during import (slower — powers "
+            "topic search like \"Christmas\" or \"found family\"; "
+            "you can fetch these later from the Books tab instead)",
+            value=False,
+        )
+
         if st.button(
             "🗼 Raise My Spire",
             use_container_width=True,
@@ -2585,6 +2959,7 @@ elif st.session_state.active_tab == "import":
                 result = import_books(
                     uploaded,
                     fetch_covers=fetch_covers_now,
+                    fetch_descriptions=fetch_descriptions_now,
                     merge=merge_choice,
                 )
 
