@@ -23,7 +23,10 @@ def main(page: ft.Page):
 
     state = {
         "library": data.load_library(),  # list of dicts
-        "tab": "books",
+        "tab": "tree",
+        "tree_status": "All Books",
+        "tree_group": "Author",
+        "tree_search": "",
     }
 
     body = ft.Column(expand=True, scroll=ft.ScrollMode.AUTO)
@@ -66,6 +69,7 @@ def main(page: ft.Page):
 
     def nav_bar():
         items = [
+            ("tree", "✨ Book Spire"),
             ("books", "📚 Books"),
             ("add", "➕ Add Book"),
             ("import", "📥 Import"),
@@ -82,11 +86,18 @@ def main(page: ft.Page):
                     expand=True,
                 )
             )
-        return ft.Row(buttons, spacing=8)
+        return ft.Row(buttons, spacing=8, wrap=True)
 
     def switch_tab(key):
         state["tab"] = key
         render()
+
+    def status_stripe_color(status):
+        return {
+            "Read": THEME["accent2"],
+            "Currently Reading": THEME["accent"],
+            "Want to Read": THEME["muted"],
+        }.get(status, THEME["muted"])
 
     def book_card(book, idx):
         title = str(book.get("Title", ""))
@@ -136,12 +147,13 @@ def main(page: ft.Page):
             ),
             bgcolor=THEME["surface"],
             border_radius=10,
+            border=ft.border.only(left=ft.border.BorderSide(4, status_stripe_color(status))),
             padding=10,
             margin=ft.margin.only(bottom=6),
         )
 
     def grouped_list(books_with_idx, group_by):
-        # books_with_idx: list of (idx, book) tuples, idx = position in state["library"]
+        # flat one-level grouping, used by the Books tab
         def group_key(book):
             if group_by == "Genre":
                 return data.clean_genre(book.get("Genre", ""))
@@ -164,6 +176,51 @@ def main(page: ft.Page):
                 )
             )
         return ft.Column(tiles, spacing=6)
+
+    def tree_view(books_with_idx, group_by):
+        # two-level grouping: Author/Genre -> Series -> books
+        def group_key(book):
+            if group_by == "Genre":
+                return data.clean_genre(book.get("Genre", ""))
+            return data.clean_author(book.get("Author", ""))
+
+        groups = {}
+        for idx, book in books_with_idx:
+            key = group_key(book)
+            groups.setdefault(key, []).append((idx, book))
+
+        author_tiles = []
+        for group_name in sorted(groups.keys(), key=lambda x: str(x).lower()):
+            items = groups[group_name]
+
+            series_groups = {}
+            for idx, book in items:
+                series = str(book.get("Series", "") or "Standalone")
+                series_groups.setdefault(series, []).append((idx, book))
+
+            series_tiles = []
+            for series_name in sorted(series_groups.keys(), key=lambda x: str(x).lower()):
+                series_items = series_groups[series_name]
+                label = "Standalone" if series_name == "Standalone" else series_name
+                series_tiles.append(
+                    ft.ExpansionTile(
+                        title=ft.Text(f"📂 {label} ({len(series_items)})", color=THEME["text"], size=13),
+                        bgcolor=THEME["surface2"],
+                        collapsed_bgcolor=THEME["surface2"],
+                        controls=[book_card(book, idx) for idx, book in series_items],
+                    )
+                )
+
+            icon = "🏷️" if group_by == "Genre" else "🗼"
+            author_tiles.append(
+                ft.ExpansionTile(
+                    title=ft.Text(f"{icon} {group_name} ({len(items)})", color=THEME["accent"], weight=ft.FontWeight.BOLD),
+                    bgcolor=THEME["card"],
+                    collapsed_bgcolor=THEME["card"],
+                    controls=series_tiles,
+                )
+            )
+        return ft.Column(author_tiles, spacing=8)
 
     # ---------------- edit dialog ----------------
 
@@ -208,6 +265,88 @@ def main(page: ft.Page):
             ],
         )
         page.open(dlg)
+
+    # ---------------- TREE (Book Spire) TAB ----------------
+
+    def tree_tab():
+        search_f = ft.TextField(
+            hint_text="Search author, title, series, genre, tag, ISBN...",
+            value=state["tree_search"],
+            bgcolor=THEME["surface"], color=THEME["text"], border_color=THEME["line"],
+        )
+        status_group = ft.RadioGroup(
+            value=state["tree_status"],
+            content=ft.Row([
+                ft.Radio(value="All Books", label="All Books"),
+                ft.Radio(value="Read", label="Read"),
+                ft.Radio(value="Unread", label="Unread"),
+            ], wrap=True),
+        )
+        group_by_group = ft.RadioGroup(
+            value=state["tree_group"],
+            content=ft.Row([
+                ft.Radio(value="Author", label="Author"),
+                ft.Radio(value="Genre", label="Genre"),
+            ], wrap=True),
+        )
+        results = ft.Column()
+
+        def apply_filters(e=None):
+            state["tree_search"] = search_f.value or ""
+            state["tree_status"] = status_group.value
+            state["tree_group"] = group_by_group.value
+
+            lib = state["library"]
+            if not lib:
+                results.controls = [
+                    ft.Text("Your spire is just a foundation — import your library or add your first book.",
+                            color=THEME["muted"])
+                ]
+                page.update()
+                return
+
+            items = list(enumerate(lib))
+
+            if state["tree_status"] == "Read":
+                items = [(i, b) for i, b in items if b["Status"] == "Read"]
+            elif state["tree_status"] == "Unread":
+                items = [(i, b) for i, b in items if b["Status"] != "Read"]
+
+            q = state["tree_search"].strip().lower()
+            if q:
+                def matches(b):
+                    haystack = " ".join([
+                        str(b.get("Title", "")), str(b.get("Author", "")), str(b.get("Series", "")),
+                        str(b.get("Genre", "")), str(b.get("Tags", "")), str(b.get("Description", "")),
+                        str(b.get("ISBN", "")),
+                    ]).lower()
+                    return q in haystack
+                items = [(i, b) for i, b in items if matches(b)]
+
+            if not items:
+                results.controls = [ft.Text(f'No books matched "{q}".' if q else "No books found.", color=THEME["muted"])]
+            else:
+                results.controls = [tree_view(items, state["tree_group"])]
+            page.update()
+
+        search_f.on_change = apply_filters
+        status_group.on_change = apply_filters
+        group_by_group.on_change = apply_filters
+        apply_filters()
+
+        return ft.Column(
+            [
+                ft.Text("Search My Spire", size=18, color=THEME["accent"]),
+                search_f,
+                ft.Text("Show", size=12, color=THEME["muted"]),
+                status_group,
+                ft.Text("Organize by", size=12, color=THEME["muted"]),
+                group_by_group,
+                ft.Divider(color=THEME["line"]),
+                results,
+            ],
+            spacing=8,
+        )
 
     # ---------------- BOOKS TAB ----------------
 
@@ -408,7 +547,7 @@ def main(page: ft.Page):
                     "Choose File",
                     on_click=lambda e: file_picker.pick_files(allowed_extensions=["csv", "txt"]),
                 ),
-                ft.FilledButton("Raise My Spire", on_click=do_import),
+                ft.FilledButton("Bind My Spine", on_click=do_import),
                 status_text,
             ],
             spacing=12,
@@ -418,7 +557,14 @@ def main(page: ft.Page):
 
     def render():
         tab = state["tab"]
-        content = books_tab() if tab == "books" else add_tab() if tab == "add" else import_tab()
+        if tab == "tree":
+            content = tree_tab()
+        elif tab == "books":
+            content = books_tab()
+        elif tab == "add":
+            content = add_tab()
+        else:
+            content = import_tab()
 
         body.controls = [
             ft.Container(
@@ -431,7 +577,7 @@ def main(page: ft.Page):
                             text_align=ft.TextAlign.CENTER,
                         ),
                         ft.Text(
-                            "a library that rises one story at a time",
+                            "Shelving your thoughts, opening your world.",
                             italic=True, color=THEME["muted"], size=13,
                             text_align=ft.TextAlign.CENTER,
                         ),
