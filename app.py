@@ -2776,35 +2776,28 @@ elif st.session_state.active_tab == "import":
                 )
 
         fetch_covers_now = st.checkbox(
-            "Fetch cover art during import",
+            "Fetch cover art",
             value=True,
         )
 
         fetch_descriptions_now = st.checkbox(
-            "Fetch descriptions during import — powers topic "
-            "search like \"Christmas\" or \"found family\"",
+            "Fetch descriptions",
             value=True,
         )
 
         fetch_genres_now = st.checkbox(
-            "Fetch genres during import — most files (like "
-            "Goodreads exports) don't include genre data, so "
-            "without this every book groups under \"Unknown "
-            "Genre\"",
+            "Fetch genres",
             value=True,
         )
 
         fetch_pubinfo_now = st.checkbox(
-            "Fetch publisher, page count, and publication date "
-            "during import",
+            "Fetch publisher, page count, and publication date",
             value=True,
         )
 
         st.caption(
-            "All four run automatically using your ISBNs where "
-            "available, with title/author search as a fallback. "
-            "Anything not found can be retried anytime from the "
-            "Books tab."
+            "Everything is looked up automatically. Anything "
+            "missed can be fetched later from the Books tab."
         )
 
         if st.button(
