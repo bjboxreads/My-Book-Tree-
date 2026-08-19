@@ -1,21 +1,49 @@
 name: Build Android APK
+
 on:
+  workflow_dispatch:
   push:
-    branches: [main]
-  workflow_dispatch: {}
+    branches: [ main ]
+
+env:
+  FLUTTER_VERSION: "3.35.2"
+
 jobs:
   build:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
         with:
-          python-version: "3.11"
-      - name: Install Flet
-        run: pip install -r requirements.txt
-      - name: Build APK
+          python-version: "3.12"
+
+      - name: Setup Java JDK
+        uses: actions/setup-java@v4
+        with:
+          distribution: "temurin"
+          java-version: "17"
+
+      - name: Setup Flutter ${{ env.FLUTTER_VERSION }}
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: ${{ env.FLUTTER_VERSION }}
+          channel: "stable"
+
+      - name: Disable Flutter analytics
+        run: flutter config --no-analytics
+
+      - name: Install Python dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: Flet Build APK
         run: flet build apk --verbose
-      - name: Upload APK artifact
+
+      - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
           name: storyspire-apk
