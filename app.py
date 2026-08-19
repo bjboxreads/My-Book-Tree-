@@ -38,6 +38,7 @@ LIBRARY_COLUMNS = [
     "Tags",
     "Publisher",
     "Pages",
+    "Publication Date",
     "Date Read",
 ]
 
@@ -54,6 +55,7 @@ TEXT_LIBRARY_COLUMNS = [
     "Tags",
     "Publisher",
     "Pages",
+    "Publication Date",
     "Date Read",
 ]
 
@@ -801,19 +803,25 @@ if theme_choice != st.session_state.theme:
     st.rerun()
 
 
-def _http_get_with_backoff(url, params=None, timeout=4, max_retries=2):
-    """requests.get with basic exponential backoff on HTTP 429."""
+def _http_get_with_backoff(url, params=None, timeout=6, max_retries=3):
+    """requests.get with exponential backoff on 429s and transient
+    5xx errors, so a large import doesn't mistake a rate limit for
+    a genuine no-match."""
 
-    delay = 0.5
+    delay = 0.75
 
     for attempt in range(max_retries + 1):
 
         try:
             response = requests.get(url, params=params, timeout=timeout)
         except Exception:
+            if attempt < max_retries:
+                time.sleep(delay)
+                delay *= 2
+                continue
             return None
 
-        if response.status_code == 429 and attempt < max_retries:
+        if response.status_code in (429, 500, 502, 503) and attempt < max_retries:
             time.sleep(delay)
             delay *= 2
             continue
@@ -832,15 +840,117 @@ def _metadata_cache():
     return st.session_state.book_metadata_cache
 
 
+GENERIC_GENRE_TERMS = {"fiction", "nonfiction", "non-fiction", "general"}
+
+
+def _normalize_for_key(text):
+    text = str(text or "").strip().lower()
+    text = re.sub(r"[^\w\s]", "", text)
+    text = re.sub(r"\s+", " ", text)
+    return text.strip()
+
+
+def _metadata_cache_key(title, author, isbn):
+    """One stable identity per book, regardless of which field
+    (cover/description/genre/etc) is being requested — so a book
+    is only ever looked up once, and every field comes from the
+    same matched edition instead of two different lookups."""
+    isbn = clean_isbn(isbn)
+    if isbn:
+        return f"isbn:{isbn}"
+    return (
+        f"ta:{_normalize_for_key(clean_title_for_lookup(title))}"
+        f"|{_normalize_for_key(author)}"
+    )
+
+
+def _pick_genre_from_categories(categories):
+    """Google Books categories are often 'Fiction / Fantasy / Epic' —
+    prefer the most specific segment over a generic top-level one."""
+    for category in categories:
+        parts = [p.strip() for p in str(category).split("/") if p.strip()]
+        for part in reversed(parts):
+            if part.lower() not in GENERIC_GENRE_TERMS:
+                return part
+        if parts:
+            return parts[0]
+    return ""
+
+
+def _pick_genre_from_subjects(subjects):
+    for subject in subjects:
+        subject = str(subject).strip()
+        if subject and subject.lower() not in GENERIC_GENRE_TERMS and len(subject) < 40:
+            return subject
+    return ""
+
+
+def _google_books_lookup(query):
+    response = _http_get_with_backoff(
+        "https://www.googleapis.com/books/v1/volumes",
+        params={"q": query, "maxResults": 1},
+        timeout=6,
+        max_retries=3,
+    )
+    if response is None or response.status_code != 200:
+        return None
+    try:
+        items = response.json().get("items", [])
+    except Exception:
+        return None
+    return items[0].get("volumeInfo", {}) if items else None
+
+
+def _openlibrary_lookup(title="", author="", isbn=""):
+    if isbn:
+        response = _http_get_with_backoff(
+            f"https://openlibrary.org/isbn/{isbn}.json",
+            timeout=6,
+            max_retries=3,
+        )
+        if response is not None and response.status_code == 200:
+            try:
+                return response.json()
+            except Exception:
+                return None
+        return None
+
+    response = _http_get_with_backoff(
+        "https://openlibrary.org/search.json",
+        params={
+            "title": title,
+            "author": author,
+            "fields": "cover_i,subject,publisher,first_publish_year,number_of_pages_median",
+            "limit": 1,
+        },
+        timeout=6,
+        max_retries=3,
+    )
+    if response is None or response.status_code != 200:
+        return None
+    try:
+        docs = response.json().get("docs", [])
+    except Exception:
+        return None
+    return docs[0] if docs else None
+
+
 def fetch_book_metadata(title, author="", isbn=""):
-    """Fetch cover, description, genre, publisher, and page count
-    for one book in a single external request wherever possible."""
+    """Fetch cover, description, genre, publisher, page count, and
+    publication date for one book.
+
+    Strategy: try ISBN against Google Books, then OpenLibrary (most
+    reliable — pins to a specific edition). Whatever fields are
+    STILL missing after that, fall back to a title/author search
+    against both sources too, instead of giving up on the whole
+    book just because the ISBN wasn't indexed anywhere. Each source
+    call only fills in fields that are still blank, so one thin
+    source never blocks a better one from filling the rest."""
 
     isbn = clean_isbn(isbn)
     clean_title = clean_title_for_lookup(title)
 
-    cache_key = isbn if isbn else f"{clean_title.lower()}|{str(author).lower()}"
-
+    cache_key = _metadata_cache_key(title, author, isbn)
     cache = _metadata_cache()
 
     if cache_key in cache:
@@ -852,79 +962,100 @@ def fetch_book_metadata(title, author="", isbn=""):
         "genre": "",
         "publisher": "",
         "pages": "",
+        "publication_date": "",
+        "matched_by": "none",
     }
 
-    query = f"isbn:{isbn}" if isbn else f"{clean_title} {author}"
-
-    response = _http_get_with_backoff(
-        "https://www.googleapis.com/books/v1/volumes",
-        params={"q": query, "maxResults": 1},
-        timeout=4,
-    )
-
-    if response is not None and response.status_code == 200:
-
-        items = response.json().get("items", [])
-
-        if items:
-
-            info = items[0].get("volumeInfo", {})
-
-            image = info.get("imageLinks", {}).get("thumbnail")
+    def fill_from_google(info):
+        if not info:
+            return
+        if not result["cover"]:
+            links = info.get("imageLinks", {})
+            image = links.get("thumbnail") or links.get("smallThumbnail")
             if image:
                 result["cover"] = image.replace("http://", "https://")
-
+        if not result["description"]:
             description = info.get("description", "")
             if description:
                 result["description"] = description.strip()
-
-            categories = info.get("categories", [])
-            if categories:
-                genre = str(categories[0]).split("/")[0].strip()
-                if genre:
-                    result["genre"] = genre
-
+        if not result["genre"]:
+            genre = _pick_genre_from_categories(info.get("categories", []))
+            if genre:
+                result["genre"] = genre
+        if not result["publisher"]:
             publisher = info.get("publisher", "")
             if publisher:
                 result["publisher"] = publisher.strip()
+        if not result["pages"] and info.get("pageCount"):
+            result["pages"] = info["pageCount"]
+        if not result["publication_date"]:
+            published = info.get("publishedDate", "")
+            if published:
+                result["publication_date"] = published.strip()
 
-            page_count = info.get("pageCount")
-            if page_count:
-                result["pages"] = page_count
+    def fill_from_openlibrary(doc):
+        if not doc:
+            return
+        if not result["cover"]:
+            cover_id = doc.get("cover_i")
+            if cover_id:
+                result["cover"] = (
+                    f"https://covers.openlibrary.org/b/id/{cover_id}-L.jpg"
+                )
+        if not result["genre"]:
+            genre = _pick_genre_from_subjects(doc.get("subject", []))
+            if genre:
+                result["genre"] = genre
+        if not result["publisher"]:
+            publishers = doc.get("publisher", [])
+            if publishers:
+                result["publisher"] = str(publishers[0]).strip()
+        if not result["pages"] and doc.get("number_of_pages_median"):
+            result["pages"] = doc["number_of_pages_median"]
+        if not result["publication_date"] and doc.get("first_publish_year"):
+            result["publication_date"] = str(doc["first_publish_year"])
 
-    if not result["cover"] or not result["genre"]:
+    def still_missing_fields():
+        return not all([
+            result["cover"], result["description"], result["genre"],
+            result["publisher"], result["pages"], result["publication_date"],
+        ])
 
-        ol_response = _http_get_with_backoff(
-            "https://openlibrary.org/search.json",
-            params={
-                "title": clean_title,
-                "author": author,
-                "fields": "cover_i,subject",
-                "limit": 1,
-            },
-            timeout=4,
+    # Stage 1 — ISBN, the reliable path
+    if isbn and still_missing_fields():
+        info = _google_books_lookup(f"isbn:{isbn}")
+        if info:
+            fill_from_google(info)
+            result["matched_by"] = "isbn"
+
+    if isbn and still_missing_fields():
+        doc = _openlibrary_lookup(isbn=isbn)
+        if doc:
+            fill_from_openlibrary(doc)
+            if result["matched_by"] == "none":
+                result["matched_by"] = "isbn"
+
+    # Stage 2 — title/author fallback, tried whenever fields remain
+    # blank (whether or not there was an ISBN, and whether or not
+    # stage 1 ran at all)
+    if still_missing_fields() and clean_title.strip():
+        query = (
+            f"intitle:{clean_title} inauthor:{author}".strip()
+            if str(author).strip()
+            else f"intitle:{clean_title}"
         )
+        info = _google_books_lookup(query)
+        if info:
+            fill_from_google(info)
+            if result["matched_by"] == "none":
+                result["matched_by"] = "title_author"
 
-        if ol_response is not None and ol_response.status_code == 200:
-
-            docs = ol_response.json().get("docs", [])
-
-            if docs:
-
-                if not result["cover"]:
-                    cover_id = docs[0].get("cover_i")
-                    if cover_id:
-                        result["cover"] = (
-                            "https://covers.openlibrary.org/"
-                            f"b/id/{cover_id}-L.jpg"
-                        )
-
-                if not result["genre"]:
-                    subjects = docs[0].get("subject", [])
-                    if subjects:
-                        genre = str(subjects[0]).strip()
-                        if genre:
-                            result["genre"] = genre
+    if still_missing_fields() and clean_title.strip():
+        doc = _openlibrary_lookup(title=clean_title, author=author)
+        if doc:
+            fill_from_openlibrary(doc)
+            if result["matched_by"] == "none":
+                result["matched_by"] = "title_author"
 
     cache[cache_key] = result
 
@@ -935,12 +1066,24 @@ def get_cover(title, author="", isbn=""):
     return fetch_book_metadata(title, author, isbn).get("cover", "")
 
 
-def get_description(title, author=""):
-    return fetch_book_metadata(title, author, "").get("description", "")
+def get_description(title, author="", isbn=""):
+    return fetch_book_metadata(title, author, isbn).get("description", "")
 
 
-def get_genre(title, author=""):
-    return fetch_book_metadata(title, author, "").get("genre", "")
+def get_genre(title, author="", isbn=""):
+    return fetch_book_metadata(title, author, isbn).get("genre", "")
+
+
+def get_publisher(title, author="", isbn=""):
+    return fetch_book_metadata(title, author, isbn).get("publisher", "")
+
+
+def get_pages(title, author="", isbn=""):
+    return fetch_book_metadata(title, author, isbn).get("pages", "")
+
+
+def get_publication_date(title, author="", isbn=""):
+    return fetch_book_metadata(title, author, isbn).get("publication_date", "")
 
 
 def fetch_row_metadata(
@@ -951,23 +1094,38 @@ def fetch_row_metadata(
     want_cover,
     want_description,
     want_genre,
+    want_publisher=True,
+    want_pages=True,
+    want_publication_date=True,
 ):
-    """Fetch cover / description / genre for one row in a single
-    worker call."""
+    """Fetch whichever fields are requested for one row in a single
+    lookup, returning a dict — so nothing (like publisher/pages
+    used to) gets silently dropped on the way back to the caller."""
 
-    if not (want_cover or want_description or want_genre):
-        return "", "", ""
+    if not any([
+        want_cover, want_description, want_genre,
+        want_publisher, want_pages, want_publication_date,
+    ]):
+        return {}
 
     metadata = fetch_book_metadata(title, author, isbn)
 
-    cover = metadata["cover"] if want_cover else ""
-    description = metadata["description"] if want_description else ""
+    out = {"matched_by": metadata["matched_by"]}
 
-    genre = ""
+    if want_cover:
+        out["cover"] = metadata["cover"]
+    if want_description:
+        out["description"] = metadata["description"]
     if want_genre and not str(current_genre).strip():
-        genre = metadata["genre"]
+        out["genre"] = metadata["genre"]
+    if want_publisher:
+        out["publisher"] = metadata["publisher"]
+    if want_pages:
+        out["pages"] = metadata["pages"]
+    if want_publication_date:
+        out["publication_date"] = metadata["publication_date"]
 
-    return cover, description, genre
+    return out
 
 
 def detect_series(title):
@@ -1195,8 +1353,9 @@ def load_dataframe(uploaded_file):
 def import_books(
     uploaded_file,
     fetch_covers=True,
-    fetch_descriptions=False,
-    fetch_genres=False,
+    fetch_descriptions=True,
+    fetch_genres=True,
+    fetch_publisher_pages=True,
     merge=True,
 ):
 
@@ -1375,6 +1534,7 @@ def import_books(
                 "Tags": tags,
                 "Publisher": "",
                 "Pages": "",
+                "Publication Date": "",
                 "Date Read": "",
             }
         )
@@ -1428,29 +1588,41 @@ def import_books(
 
     save_library(combined)
 
-    if (
-        (not fetch_covers and not fetch_descriptions and not fetch_genres)
-        or added_count == 0
-    ):
+    metadata_stats = {"isbn": 0, "title_author": 0, "none": 0}
+
+    want_any = (
+        fetch_covers or fetch_descriptions
+        or fetch_genres or fetch_publisher_pages
+    )
+
+    if not want_any or added_count == 0:
         return {
             "success": True,
             "added": added_count,
             "skipped": skipped_count,
+            "metadata": metadata_stats,
         }
 
-    cover_indices = list(
+    fetch_indices = list(
         range(cover_fetch_start, cover_fetch_start + added_count)
     )
 
-    combined["Cover"] = combined["Cover"].astype(object)
-    combined["Description"] = combined["Description"].astype(object)
-    combined["Genre"] = combined["Genre"].astype(object)
+    for column in [
+        "Cover", "Description", "Genre",
+        "Publisher", "Pages", "Publication Date",
+    ]:
+        combined[column] = combined[column].astype(object)
 
     progress = st.progress(0)
-
+    status_text = st.empty()
     done = 0
 
-    with ThreadPoolExecutor(max_workers=10) as executor:
+    # Cap concurrency so this holds up for very large libraries
+    # without hammering free, keyless APIs into rate-limiting
+    # everyone using them.
+    workers = min(8, max(2, added_count))
+
+    with ThreadPoolExecutor(max_workers=workers) as executor:
 
         future_to_index = {
             executor.submit(
@@ -1462,8 +1634,11 @@ def import_books(
                 fetch_covers,
                 fetch_descriptions,
                 fetch_genres,
+                fetch_publisher_pages,
+                fetch_publisher_pages,
+                fetch_publisher_pages,
             ): i
-            for i in cover_indices
+            for i in fetch_indices
         }
 
         for future in as_completed(future_to_index):
@@ -1471,24 +1646,38 @@ def import_books(
             i = future_to_index[future]
 
             try:
-                cover, description, genre = future.result()
+                fields = future.result()
             except Exception:
-                cover, description, genre = "", "", ""
+                fields = {}
 
-            if fetch_covers:
-                combined.loc[i, "Cover"] = cover
+            if fields.get("cover"):
+                combined.loc[i, "Cover"] = fields["cover"]
 
-            if fetch_descriptions:
-                combined.loc[i, "Description"] = description
+            if fields.get("description"):
+                combined.loc[i, "Description"] = fields["description"]
 
-            if fetch_genres and genre:
-                combined.loc[i, "Genre"] = genre
+            if fields.get("genre"):
+                combined.loc[i, "Genre"] = fields["genre"]
+
+            if fields.get("publisher"):
+                combined.loc[i, "Publisher"] = fields["publisher"]
+
+            if fields.get("pages"):
+                combined.loc[i, "Pages"] = fields["pages"]
+
+            if fields.get("publication_date"):
+                combined.loc[i, "Publication Date"] = fields["publication_date"]
+
+            matched_by = fields.get("matched_by", "none")
+            metadata_stats[matched_by] = metadata_stats.get(matched_by, 0) + 1
 
             done += 1
 
             progress.progress(done / added_count)
+            status_text.caption(f"Looked up {done} of {added_count} book(s)...")
 
     progress.empty()
+    status_text.empty()
 
     st.session_state.library = combined
 
@@ -1498,6 +1687,7 @@ def import_books(
         "success": True,
         "added": added_count,
         "skipped": skipped_count,
+        "metadata": metadata_stats,
     }
 
 
@@ -1519,7 +1709,7 @@ def fetch_missing_covers():
     done = 0
     found = 0
 
-    with ThreadPoolExecutor(max_workers=10) as executor:
+    with ThreadPoolExecutor(max_workers=8) as executor:
 
         future_to_index = {
             executor.submit(
@@ -1587,13 +1777,14 @@ def fetch_missing_descriptions():
     done = 0
     found = 0
 
-    with ThreadPoolExecutor(max_workers=10) as executor:
+    with ThreadPoolExecutor(max_workers=8) as executor:
 
         future_to_index = {
             executor.submit(
                 get_description,
                 library.loc[i, "Title"],
                 library.loc[i, "Author"],
+                library.loc[i, "ISBN"],
             ): i
             for i in missing.index
         }
@@ -1655,13 +1846,14 @@ def fetch_missing_genres():
     done = 0
     matched = 0
 
-    with ThreadPoolExecutor(max_workers=10) as executor:
+    with ThreadPoolExecutor(max_workers=8) as executor:
 
         future_to_index = {
             executor.submit(
                 get_genre,
                 library.loc[i, "Title"],
                 library.loc[i, "Author"],
+                library.loc[i, "ISBN"],
             ): i
             for i in missing.index
         }
@@ -1703,6 +1895,108 @@ def fetch_missing_genres():
             f"Library had matches. This can happen if titles/"
             f"authors are formatted unusually, or if requests are "
             f"being rate-limited.",
+        )
+
+
+def fetch_missing_publisher_pages():
+    """Fetch publisher / page count / publication date for rows
+    missing any of the three."""
+
+    library = st.session_state.library
+
+    for column in ["Publisher", "Pages", "Publication Date"]:
+        library[column] = library[column].astype(object)
+
+    def is_missing(row):
+        return not (
+            str(row.get("Publisher") or "").strip()
+            and str(row.get("Pages") or "").strip()
+            and str(row.get("Publication Date") or "").strip()
+        )
+
+    missing = library[library.apply(is_missing, axis=1)]
+
+    if missing.empty:
+        st.info(
+            "Every book already has publisher, page count, "
+            "and publication date."
+        )
+        return
+
+    total = len(missing)
+    progress = st.progress(0)
+    done = 0
+    found = 0
+
+    with ThreadPoolExecutor(max_workers=8) as executor:
+
+        future_to_index = {
+            executor.submit(
+                fetch_book_metadata,
+                library.loc[i, "Title"],
+                library.loc[i, "Author"],
+                library.loc[i, "ISBN"],
+            ): i
+            for i in missing.index
+        }
+
+        for future in as_completed(future_to_index):
+            i = future_to_index[future]
+            try:
+                metadata = future.result()
+            except Exception:
+                metadata = {}
+
+            got_something = False
+
+            if (
+                not str(library.loc[i, "Publisher"] or "").strip()
+                and metadata.get("publisher")
+            ):
+                library.loc[i, "Publisher"] = metadata["publisher"]
+                got_something = True
+
+            if (
+                not str(library.loc[i, "Pages"] or "").strip()
+                and metadata.get("pages")
+            ):
+                library.loc[i, "Pages"] = metadata["pages"]
+                got_something = True
+
+            if (
+                not str(library.loc[i, "Publication Date"] or "").strip()
+                and metadata.get("publication_date")
+            ):
+                library.loc[i, "Publication Date"] = metadata["publication_date"]
+                got_something = True
+
+            if got_something:
+                found += 1
+
+            done += 1
+            progress.progress(done / total)
+
+    progress.empty()
+    st.session_state.library = library
+    save_library(library)
+
+    if found == total:
+        st.session_state.fetch_result_message = (
+            "success",
+            f"✓ Filled in publisher/page/date info for all {total} book(s)!",
+        )
+    elif found:
+        st.session_state.fetch_result_message = (
+            "warning",
+            f"Filled in publisher/page/date info for {found} of "
+            f"{total} book(s). The rest had none available, or "
+            f"the lookup was rate-limited — try again in a bit.",
+        )
+    else:
+        st.session_state.fetch_result_message = (
+            "error",
+            f"Couldn't find publisher/page/date info for any of "
+            f"the {total} book(s) checked. Try again in a bit.",
         )
 
 
@@ -2123,10 +2417,20 @@ elif st.session_state.active_tab == "books":
             missing_genres = len(
                 books[books["Genre"].fillna("").astype(str).str.strip() == ""]
             )
+            missing_pub_info = len(
+                books[
+                    (books["Publisher"].fillna("") == "")
+                    | (books["Pages"].fillna("") == "")
+                    | (books["Publication Date"].fillna("") == "")
+                ]
+            )
 
-            if missing_covers or missing_descriptions or missing_genres:
+            if (
+                missing_covers or missing_descriptions
+                or missing_genres or missing_pub_info
+            ):
 
-                fetch_col1, fetch_col2, fetch_col3 = st.columns(3)
+                fetch_col1, fetch_col2, fetch_col3, fetch_col4 = st.columns(4)
 
                 with fetch_col1:
 
@@ -2178,6 +2482,26 @@ elif st.session_state.active_tab == "books":
                         ):
                             with st.spinner("Looking up genres..."):
                                 fetch_missing_genres()
+                            st.rerun()
+
+                with fetch_col4:
+
+                    if missing_pub_info:
+
+                        st.caption(
+                            f"{missing_pub_info} book(s) shown here "
+                            f"are missing publisher, page count, "
+                            f"or publication date."
+                        )
+
+                        if st.button(
+                            "📅 Fetch missing publisher/pages/date",
+                            key="fetch_missing_pubinfo_btn",
+                        ):
+                            with st.spinner(
+                                "Looking up publisher, pages, and date..."
+                            ):
+                                fetch_missing_publisher_pages()
                             st.rerun()
 
 
@@ -2242,13 +2566,18 @@ elif st.session_state.active_tab == "add":
 
                 actual_series = series.strip() if series.strip() else "Standalone"
 
-                cover = get_cover(title, author, isbn)
-                description = get_description(title, author)
+                metadata = fetch_book_metadata(title, author, isbn)
+
+                cover = metadata.get("cover", "")
+                description = metadata.get("description", "")
+                publisher = metadata.get("publisher", "")
+                pages = metadata.get("pages", "")
+                publication_date = metadata.get("publication_date", "")
 
                 actual_genre = genre.strip()
 
                 if not actual_genre:
-                    actual_genre = get_genre(title, author)
+                    actual_genre = metadata.get("genre", "")
 
                 new_book = {
                     "Title": title.strip(),
@@ -2263,8 +2592,9 @@ elif st.session_state.active_tab == "add":
                     "Cover": cover,
                     "Description": description,
                     "Tags": tags.strip(),
-                    "Publisher": "",
-                    "Pages": "",
+                    "Publisher": publisher,
+                    "Pages": pages,
+                    "Publication Date": publication_date,
                     "Date Read": "",
                 }
 
@@ -2446,25 +2776,35 @@ elif st.session_state.active_tab == "import":
                 )
 
         fetch_covers_now = st.checkbox(
-            "Fetch cover art during import (slower — you can "
-            "fetch covers later from the Books tab instead)",
-            value=False,
+            "Fetch cover art during import",
+            value=True,
         )
 
         fetch_descriptions_now = st.checkbox(
-            "Fetch descriptions during import (slower — powers "
-            "topic search like \"Christmas\" or \"found family\"; "
-            "you can fetch these later from the Books tab instead)",
-            value=False,
+            "Fetch descriptions during import — powers topic "
+            "search like \"Christmas\" or \"found family\"",
+            value=True,
         )
 
         fetch_genres_now = st.checkbox(
-            "Fetch genres during import (slower — most files "
-            "(like Goodreads exports) don't include genre data, "
-            "so without this every book groups under \"Unknown "
-            "Genre\"; you can fetch these later from the Books "
-            "tab instead)",
-            value=False,
+            "Fetch genres during import — most files (like "
+            "Goodreads exports) don't include genre data, so "
+            "without this every book groups under \"Unknown "
+            "Genre\"",
+            value=True,
+        )
+
+        fetch_pubinfo_now = st.checkbox(
+            "Fetch publisher, page count, and publication date "
+            "during import",
+            value=True,
+        )
+
+        st.caption(
+            "All four run automatically using your ISBNs where "
+            "available, with title/author search as a fallback. "
+            "Anything not found can be retried anytime from the "
+            "Books tab."
         )
 
         if st.button(
@@ -2482,6 +2822,7 @@ elif st.session_state.active_tab == "import":
                     fetch_covers=fetch_covers_now,
                     fetch_descriptions=fetch_descriptions_now,
                     fetch_genres=fetch_genres_now,
+                    fetch_publisher_pages=fetch_pubinfo_now,
                     merge=merge_choice,
                 )
 
@@ -2489,16 +2830,29 @@ elif st.session_state.active_tab == "import":
 
                 added = result.get("added", 0)
                 skipped = result.get("skipped", 0)
+                metadata = result.get("metadata", {})
+
+                base_msg = f"✓ Added {added} new book(s)."
 
                 if merge_choice and skipped:
+                    base_msg += f" Skipped {skipped} already in your library."
 
-                    st.success(
-                        f"✓ Added {added} new book(s). "
-                        f"Skipped {skipped} already in your library."
+                st.success(base_msg)
+
+                if added:
+
+                    isbn_hits = metadata.get("isbn", 0)
+                    ta_hits = metadata.get("title_author", 0)
+                    misses = metadata.get("none", 0)
+
+                    st.info(
+                        f"Metadata lookup: {isbn_hits} matched by "
+                        f"ISBN, {ta_hits} matched by title/author "
+                        f"fallback, {misses} had no match from "
+                        f"either source. Unmatched books stay in "
+                        f"your library — use the \"Fetch missing...\" "
+                        f"buttons on the Books tab to retry them "
+                        f"anytime."
                     )
-
-                else:
-
-                    st.success(f"✓ Successfully imported {added} book(s)!")
 
                 st.rerun()
