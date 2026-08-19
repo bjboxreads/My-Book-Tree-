@@ -20,7 +20,7 @@ STAT_FILTER_MAP = {
 STAT_TAB_MAP = {"Authors": "tree", "Series": "tree"}
 
 NAV_ITEMS = [
-    ("tree", "✨ SpineVesper"),
+    ("tree", "SpineVesper"),
     ("books", "📚 Books"),
     ("add", "➕ Add Book"),
     ("manage", "✏️ Edit / Delete"),
@@ -48,6 +48,7 @@ def main(page: ft.Page):
         "books_group": "Author",
         "books_search": "",
         "tree_series_only": False,
+        "tree_open": set(),  # keys of expanded author/series tree nodes
         "fetch_message": None,  # (type, text)
     }
 
@@ -203,15 +204,67 @@ def main(page: ft.Page):
             margin=ft.margin.only(bottom=6),
         )
 
-    def series_tile(series_name, series_items, key_prefix):
-        label = "Standalone" if series_name == "Standalone" else series_name
-        return ft.ExpansionTile(
-            title=ft.Text(f"📂 {label} ({len(series_items)})", color=color("text"), size=13,
-                           font_family="Baskerville"),
-            bgcolor=color("surface2"),
-            collapsed_bgcolor=color("surface2"),
-            controls=[book_card(book, idx) for idx, book in series_items],
+    def toggle_tree_node(key):
+        state["tree_open"].symmetric_difference_update({key})
+        render()
+
+    def tree_branch(key, icon, label, count, title_color_key, header_bg_key, children_builder):
+        """One collapsible node in the ancestor-style tree: an
+        arrow + label header, and when expanded, its children hung
+        off a vertical trunk line so the parent/child relationship
+        is visible instead of everything looking like a flat list."""
+        is_open = key in state["tree_open"]
+        arrow = "▼" if is_open else "▶"
+        header = ft.Container(
+            content=ft.Row(
+                [
+                    ft.Text(arrow, color=color("accent"), size=13),
+                    ft.Text(f"{icon} {label} ({count})", color=color(title_color_key),
+                             weight=ft.FontWeight.BOLD, font_family="Cormorant", size=16),
+                ],
+                spacing=6,
+            ),
+            bgcolor=color(header_bg_key),
+            border_radius=6,
+            padding=ft.padding.symmetric(vertical=6, horizontal=8),
+            on_click=lambda e: toggle_tree_node(key),
+            ink=True,
         )
+        if not is_open:
+            return header
+        return ft.Column(
+            [
+                header,
+                ft.Row(
+                    [
+                        ft.Container(width=2, bgcolor=color("line")),
+                        ft.Column(children_builder(), spacing=6, expand=True),
+                    ],
+                    spacing=10,
+                    vertical_alignment=ft.CrossAxisAlignment.STRETCH,
+                ),
+            ],
+            spacing=0,
+        )
+
+    def series_tile(author_name, series_name, series_items):
+        label = "Standalone" if series_name == "Standalone" else series_name
+        key = f"series::{author_name}::{series_name}"
+
+        def build_children():
+            return [
+                ft.Row(
+                    [
+                        ft.Text("└─", color=color("line"), size=13),
+                        ft.Container(book_card(book, idx), expand=True),
+                    ],
+                    spacing=4,
+                    vertical_alignment=ft.CrossAxisAlignment.START,
+                )
+                for idx, book in series_items
+            ]
+
+        return tree_branch(key, "📂", label, len(series_items), "text", "surface2", build_children)
 
     def author_tile(group_name, items, group_icon):
         series_groups = {}
@@ -219,18 +272,15 @@ def main(page: ft.Page):
             series = str(book.get("Series", "") or "Standalone")
             series_groups.setdefault(series, []).append((idx, book))
 
-        series_tiles = [
-            series_tile(name, series_groups[name], group_name)
-            for name in sorted(series_groups.keys(), key=lambda x: str(x).lower())
-        ]
+        key = f"author::{group_name}"
 
-        return ft.ExpansionTile(
-            title=ft.Text(f"{group_icon} {group_name} ({len(items)})", color=color("accent"),
-                           weight=ft.FontWeight.BOLD, font_family="Cormorant", size=18),
-            bgcolor=color("card"),
-            collapsed_bgcolor=color("card"),
-            controls=series_tiles,
-        )
+        def build_children():
+            return [
+                series_tile(group_name, name, series_groups[name])
+                for name in sorted(series_groups.keys(), key=lambda x: str(x).lower())
+            ]
+
+        return tree_branch(key, group_icon, group_name, len(items), "accent", "card", build_children)
 
     def group_items(books_with_idx, group_by):
         def group_key(book):
