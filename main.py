@@ -20,7 +20,7 @@ STAT_FILTER_MAP = {
 STAT_TAB_MAP = {"Authors": "tree", "Series": "tree"}
 
 NAV_ITEMS = [
-    ("tree", "🗼 Book Spire"),
+    ("tree", "✨ SpineVesper"),
     ("books", "📚 Books"),
     ("add", "➕ Add Book"),
     ("manage", "✏️ Edit / Delete"),
