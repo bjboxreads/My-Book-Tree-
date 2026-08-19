@@ -404,6 +404,10 @@ def main(page: ft.Page):
             state["tree_status"] = status_group.value
             state["tree_group"] = group_by_group.value
 
+            root_label_text.value = {
+                "All Books": "🗼 MY LIBRARY", "Read": "🗼 MY READ BOOKS", "Unread": "🗼 MY UNREAD BOOKS",
+            }[state["tree_status"]]
+
             lib = state["library"]
             if not lib:
                 results.controls = [ft.Text(
