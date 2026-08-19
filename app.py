@@ -310,6 +310,7 @@ summary .atree-pill {
     opacity: 0.85;
     z-index: 2;
     transition: transform .15s ease, opacity .15s ease;
+    cursor: pointer;
 }
 .atree-fav-heart:hover {
     opacity: 1;
@@ -401,9 +402,19 @@ def book_pill_html(book):
     Shared by both trees so a book looks identical everywhere.
 
     Also carries a small clickable heart in the corner that
-    toggles the book's Favorite flag (via a ?toggle_fav=<row id>
-    link, since these trees are static HTML — see the query-param
-    handling near the top of the script)."""
+    toggles the book's Favorite flag. This used to be a plain
+    <a href="?toggle_fav=..."> link, which forces the browser to
+    do a full document navigation/reload (all of Streamlit's JS
+    and CSS reload from scratch) — that's why clicking the star
+    used to blank the whole page out for a moment.
+
+    Instead, the click handler updates the URL with
+    history.pushState and fires a synthetic 'popstate' event.
+    Streamlit's frontend already listens for popstate (that's how
+    it supports browser back/forward), so this triggers a normal
+    in-app rerun — same ?toggle_fav=<row id> query param your
+    Python-side handler already reads, just without a hard page
+    reload."""
 
     title = html.escape(str(book.get('Title', '')))
     status = html.escape(str(book.get('Status', '') or ''))
@@ -422,7 +433,11 @@ def book_pill_html(book):
     is_favorite = bool(book.get('Favorite', False))
     heart_symbol = "★" if is_favorite else "☆"
     heart_html = (
-        f'<a class="atree-fav-heart" href="?toggle_fav={row_id}" '
+        f'<a class="atree-fav-heart" href="javascript:void(0)" '
+        f"onclick=\"(function(){{"
+        f"history.pushState(null,'','?toggle_fav={row_id}');"
+        f"window.dispatchEvent(new Event('popstate'));"
+        f"}})();return false;\" "
         f'title="Toggle favorite">{heart_symbol}</a>'
     )
 
@@ -449,14 +464,14 @@ def book_pill_html(book):
 # ============================================================
 # TREE OPEN/CLOSE PERSISTENCE
 #
-# Every rerun (e.g. clicking the favorite heart, which is a
-# plain <a href="?toggle_fav=..."> link and therefore forces a
-# real page reload) rebuilds the tree's HTML from scratch, so
-# every <details> would normally snap back to closed. This
-# stores which sections are open in the browser's localStorage
-# and restores them right after the new HTML lands, so toggling
-# a favorite (or anything else that triggers a rerun) doesn't
-# collapse whatever you had open.
+# Every rerun (e.g. clicking the favorite heart, which now
+# triggers a normal in-app rerun via popstate rather than a full
+# page reload) rebuilds the tree's HTML from scratch, so every
+# <details> would normally snap back to closed. This stores which
+# sections are open in the browser's localStorage and restores
+# them right after the new HTML lands, so toggling a favorite (or
+# anything else that triggers a rerun) doesn't collapse whatever
+# you had open.
 #
 # It's injected as an invisible <svg onload="..."> rather than a
 # <script> tag, because <script> elements inserted via innerHTML
@@ -714,15 +729,16 @@ if "library" not in st.session_state:
 
 # ------------------------------------------------------------
 # FAVORITE TOGGLE — handles clicks on the little heart icon in
-# the tree pills. Those are plain <a href="?toggle_fav=..."> a
-# links (the trees are static HTML, so there's no Python click
-# handler to attach otherwise) — this picks up the query param
-# on the resulting rerun, flips that row's Favorite flag, saves,
-# and clears the URL so refreshing the page doesn't re-toggle it.
-# The rerun this triggers still happens, but tree_open_state_script
-# (see above) restores whichever author/series sections were open
-# right after the new HTML lands, so it no longer feels like the
-# whole tree collapsed.
+# the tree pills. Those are now triggered via history.pushState +
+# a synthetic popstate event (see book_pill_html / the comment
+# above tree_open_state_script) rather than a real <a href> link
+# click, so Streamlit picks this up as a normal in-app rerun
+# instead of a full page reload. This picks up the ?toggle_fav=
+# query param on that rerun, flips that row's Favorite flag,
+# saves, and clears the URL so refreshing the page doesn't
+# re-toggle it. tree_open_state_script (see above) restores
+# whichever author/series sections were open right after the new
+# HTML lands, so it doesn't feel like the whole tree collapsed.
 # ------------------------------------------------------------
 
 if "toggle_fav" in st.query_params:
