@@ -89,8 +89,9 @@ def main(page: ft.Page):
             bgcolor=color("card"),
             border=ft.border.all(1, color("accent")),
             border_radius=pill_radius(),
-            padding=ft.padding.symmetric(horizontal=10, vertical=12),
+            padding=ft.padding.symmetric(horizontal=6, vertical=12),
             alignment=ft.alignment.center,
+            width=106,
             on_click=on_click,
             ink=True,
         )
@@ -916,7 +917,7 @@ def main(page: ft.Page):
         ]
         page.update()
 
-    page.add(body)
+    page.add(ft.SafeArea(content=body))
     render()
 
 
