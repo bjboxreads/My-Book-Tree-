@@ -69,7 +69,7 @@ def main(page: ft.Page):
 
     def nav_bar():
         items = [
-            ("tree", "✨ Book Spire"),
+            ("tree", "✨ SpineVesper"),
             ("books", "📚 Books"),
             ("add", "➕ Add Book"),
             ("import", "📥 Import"),
