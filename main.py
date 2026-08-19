@@ -20,7 +20,7 @@ STAT_FILTER_MAP = {
 STAT_TAB_MAP = {"Authors": "tree", "Series": "tree"}
 
 NAV_ITEMS = [
-    ("tree", "SpineVesper"),
+    ("tree", "🗼 Book Spire"),
     ("books", "📚 Books"),
     ("add", "➕ Add Book"),
     ("manage", "✏️ Edit / Delete"),
@@ -31,6 +31,7 @@ NAV_ITEMS = [
 def main(page: ft.Page):
     page.title = APP_TITLE
     page.padding = 0
+    page.scroll = ft.ScrollMode.AUTO
     page.fonts = {
         "Cormorant": "https://fonts.gstatic.com/s/cormorantgaramond/v16/co3bmX5slCNuHLi8bLeY9MK7whWMhyjYrEtGhtRXO0k.ttf",
         "Baskerville": "https://fonts.gstatic.com/s/librebaskerville/v14/kmKnZrc3Hgbbcjq75U4uslyuy4kn0qNZaxLBpg.ttf",
@@ -50,7 +51,7 @@ def main(page: ft.Page):
         "fetch_message": None,  # (type, text)
     }
 
-    body = ft.Column(scroll=ft.ScrollMode.AUTO)
+    body = ft.Column()
 
     def T():
         return data.THEMES[state["theme_name"]]
@@ -79,7 +80,8 @@ def main(page: ft.Page):
                 [
                     ft.Text(str(number), size=24, weight=ft.FontWeight.BOLD,
                              color=color("accent"), font_family="Cormorant"),
-                    ft.Text(label, size=12, color=color("text"), font_family="Baskerville"),
+                    ft.Text(label, size=11, color=color("text"), font_family="Baskerville",
+                             no_wrap=True, text_align=ft.TextAlign.CENTER),
                 ],
                 horizontal_alignment=ft.CrossAxisAlignment.CENTER,
                 spacing=2,
@@ -87,8 +89,7 @@ def main(page: ft.Page):
             bgcolor=color("card"),
             border=ft.border.all(1, color("accent")),
             border_radius=pill_radius(),
-            padding=14,
-            expand=True,
+            padding=ft.padding.symmetric(horizontal=10, vertical=12),
             alignment=ft.alignment.center,
             on_click=on_click,
             ink=True,
@@ -106,7 +107,7 @@ def main(page: ft.Page):
             (total, "Books"), (authors, "Authors"), (series_count, "Series"),
             (read_count, "Read"), (unread_count, "Unread"), (favorites, "Favorites"),
         ]
-        return ft.Row([stat_tile(n, l) for n, l in pairs], spacing=8)
+        return ft.Row([stat_tile(n, l) for n, l in pairs], spacing=8, wrap=True, run_spacing=8)
 
     def nav_bar():
         buttons = []
@@ -121,7 +122,7 @@ def main(page: ft.Page):
                     expand=True,
                 )
             )
-        return ft.Row(buttons, spacing=6)
+        return ft.Row(buttons, spacing=6, wrap=True, run_spacing=6)
 
     def switch_tab(key):
         state["tab"] = key
