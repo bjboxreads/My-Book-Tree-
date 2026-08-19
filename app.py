@@ -5,6 +5,7 @@ import re
 import html
 import os
 import shutil
+import time
 from concurrent.futures import ThreadPoolExecutor, as_completed
 
 
@@ -138,6 +139,26 @@ def load_library():
             pass
 
     return pd.DataFrame(columns=LIBRARY_COLUMNS)
+
+
+def clean_isbn(raw):
+    """Clean a raw ISBN cell into digits (+ optional trailing
+    check-digit X for ISBN-10).
+
+    Goodreads exports wrap ISBNs like ="043935806X" — an Excel
+    "force text" formula meant to stop spreadsheet apps from
+    mangling the value as a number. Strip that wrapper first,
+    then keep only digits and a trailing X/x check digit.
+    Stripping ALL non-digit characters (the old behavior) also
+    stripped the X, silently corrupting every X-checksum
+    ISBN-10 into a garbage number."""
+    s = str(raw).strip()
+    if s.lower() in ("nan", "none"):
+        return ""
+    s = re.sub(r'^="?', '', s)
+    s = re.sub(r'"?$', '', s)
+    s = re.sub(r'[^0-9Xx]', '', s)
+    return s.upper()
 
 
 def clean_author_series(df):
@@ -1009,250 +1030,190 @@ if theme_choice != st.session_state.theme:
 # request is the correct behavior here.
 # ============================================================
 
-def get_cover(title, author="", isbn=""):
+def _http_get_with_backoff(url, params=None, timeout=4, max_retries=2):
+    """requests.get with basic exponential backoff on HTTP 429
+    (rate-limited) responses. Google Books and Open Library are
+    called here without an API key, so they share a strict
+    per-IP limit — on a large import, concurrent workers with no
+    backoff just kept hammering through the 429s, which is what
+    quietly turned later books into permanent blanks instead of
+    slowing down and succeeding on retry."""
 
-    isbn = re.sub(r"\D", "", str(isbn))
+    delay = 0.5
 
-    # Try ISBN first
-    if isbn:
-
-        url = (
-            f"https://covers.openlibrary.org/"
-            f"b/isbn/{isbn}-L.jpg"
-        )
+    for attempt in range(max_retries + 1):
 
         try:
-            # HEAD instead of GET — we only need to confirm the
-            # cover exists and has real content, not download it
-            # here (the <img> tag fetches it again when rendered).
-            response = requests.head(
-                url,
-                timeout=3,
-                allow_redirects=True,
-            )
-
-            content_length = int(
-                response.headers.get("Content-Length", 0)
-            )
-
-            if (
-                response.status_code == 200
-                and content_length > 1000
-            ):
-                return url
-
+            response = requests.get(url, params=params, timeout=timeout)
         except Exception:
-            pass
+            return None
 
-    # Open Library search
-    try:
+        if response.status_code == 429 and attempt < max_retries:
+            time.sleep(delay)
+            delay *= 2
+            continue
 
-        response = requests.get(
+        return response
+
+    return None
+
+
+def _metadata_cache():
+    """Session-scoped cache of fetch_book_metadata() results,
+    keyed by cleaned ISBN (preferred) or normalized title+author.
+    Ensures the same book is never queried twice in a session —
+    across import, the 'fetch missing' buttons, and manual adds —
+    even though each of those goes through a separate code path."""
+
+    if "book_metadata_cache" not in st.session_state:
+        st.session_state.book_metadata_cache = {}
+
+    return st.session_state.book_metadata_cache
+
+
+def fetch_book_metadata(title, author="", isbn=""):
+    """Fetch cover, description, genre, publisher, and page count
+    for one book in a single external request wherever possible,
+    instead of the three independent requests get_cover/
+    get_description/get_genre used to fire for the same book.
+    Google Books' volumes payload already carries all of those
+    fields together, so one GET covers cover+description+genre+
+    publisher+pages at once; Open Library is only queried as a
+    fallback for whichever pieces Google Books didn't have.
+
+    Results are cached per session (see _metadata_cache) so a
+    book already looked up — via import, a 'fetch missing'
+    button, or a manual add — is never queried again."""
+
+    isbn = clean_isbn(isbn)
+    clean_title = clean_title_for_lookup(title)
+
+    cache_key = isbn if isbn else f"{clean_title.lower()}|{str(author).lower()}"
+
+    cache = _metadata_cache()
+
+    if cache_key in cache:
+        return cache[cache_key]
+
+    result = {
+        "cover": "",
+        "description": "",
+        "genre": "",
+        "publisher": "",
+        "pages": "",
+    }
+
+    # ---- Google Books: one call covers cover/description/genre/
+    # publisher/pages together. ISBN-13, then ISBN-10 (an ISBN
+    # ending in X is ISBN-10), then title+author. ----
+
+    query = f"isbn:{isbn}" if isbn else f"{clean_title} {author}"
+
+    response = _http_get_with_backoff(
+        "https://www.googleapis.com/books/v1/volumes",
+        params={"q": query, "maxResults": 1},
+        timeout=4,
+    )
+
+    if response is not None and response.status_code == 200:
+
+        items = response.json().get("items", [])
+
+        if items:
+
+            info = items[0].get("volumeInfo", {})
+
+            image = info.get("imageLinks", {}).get("thumbnail")
+            if image:
+                result["cover"] = image.replace("http://", "https://")
+
+            description = info.get("description", "")
+            if description:
+                result["description"] = description.strip()
+
+            categories = info.get("categories", [])
+            if categories:
+                # Google often returns something like
+                # "Fiction / Fantasy / Epic" — keep just the
+                # first, most general segment.
+                genre = str(categories[0]).split("/")[0].strip()
+                if genre:
+                    result["genre"] = genre
+
+            publisher = info.get("publisher", "")
+            if publisher:
+                result["publisher"] = publisher.strip()
+
+            page_count = info.get("pageCount")
+            if page_count:
+                result["pages"] = page_count
+
+    # ---- Open Library fallback: only for whatever Google Books
+    # didn't provide, and only one more call (fields=subject
+    # covers genre; cover_i covers the cover in the same call). ----
+
+    if not result["cover"] or not result["genre"]:
+
+        ol_response = _http_get_with_backoff(
             "https://openlibrary.org/search.json",
             params={
-                "title": title,
+                "title": clean_title,
                 "author": author,
+                "fields": "cover_i,subject",
                 "limit": 1,
             },
             timeout=4,
         )
 
-        if response.status_code == 200:
+        if ol_response is not None and ol_response.status_code == 200:
 
-            docs = response.json().get(
-                "docs",
-                [],
-            )
+            docs = ol_response.json().get("docs", [])
 
             if docs:
 
-                cover_id = docs[0].get(
-                    "cover_i"
-                )
+                if not result["cover"]:
+                    cover_id = docs[0].get("cover_i")
+                    if cover_id:
+                        result["cover"] = (
+                            "https://covers.openlibrary.org/"
+                            f"b/id/{cover_id}-L.jpg"
+                        )
 
-                if cover_id:
+                if not result["genre"]:
+                    subjects = docs[0].get("subject", [])
+                    if subjects:
+                        genre = str(subjects[0]).strip()
+                        if genre:
+                            result["genre"] = genre
 
-                    return (
-                        "https://covers.openlibrary.org/"
-                        f"b/id/{cover_id}-L.jpg"
-                    )
+    cache[cache_key] = result
 
-    except Exception:
-        pass
+    return result
 
-    # Google Books fallback
-    try:
 
-        response = requests.get(
-            "https://www.googleapis.com/books/v1/volumes",
-            params={
-                "q": f"{title} {author}",
-                "maxResults": 1,
-            },
-            timeout=4,
-        )
-
-        if response.status_code == 200:
-
-            items = response.json().get(
-                "items",
-                [],
-            )
-
-            if items:
-
-                image = (
-                    items[0]
-                    .get("volumeInfo", {})
-                    .get("imageLinks", {})
-                    .get("thumbnail")
-                )
-
-                if image:
-
-                    return image.replace(
-                        "http://",
-                        "https://",
-                    )
-
-    except Exception:
-        pass
-
-    return ""
+def get_cover(title, author="", isbn=""):
+    return fetch_book_metadata(title, author, isbn).get("cover", "")
 
 
 def get_description(title, author=""):
-    """Fetch a short book description from Google Books — this
-    is what topic/theme search (e.g. searching "Christmas") runs
-    against, so a book turns up even when the title itself
-    doesn't mention the theme."""
-
-    try:
-
-        response = requests.get(
-            "https://www.googleapis.com/books/v1/volumes",
-            params={
-                "q": f"{title} {author}",
-                "maxResults": 1,
-            },
-            timeout=4,
-        )
-
-        if response.status_code == 200:
-
-            items = response.json().get(
-                "items",
-                [],
-            )
-
-            if items:
-
-                description = (
-                    items[0]
-                    .get("volumeInfo", {})
-                    .get("description", "")
-                )
-
-                if description:
-                    return description.strip()
-
-    except Exception:
-        pass
-
-    return ""
+    """Fetch a short book description — this is what topic/theme
+    search (e.g. searching "Christmas") runs against, so a book
+    turns up even when the title itself doesn't mention the
+    theme."""
+    return fetch_book_metadata(title, author, "").get("description", "")
 
 
 def get_genre(title, author=""):
-    """Fetch a genre for a book — first from Google Books'
-    'categories' field, then from Open Library's 'subject' field
-    if Google has nothing. This two-source fallback matters:
-    Google Books only has 'categories' when the publisher
-    supplied that metadata, which in practice is missing for a
-    large share of books (especially older, indie, or backlist
-    titles) — so relying on it alone left most books unmatched
-    even though the lookup "succeeded". Open Library's subject
-    headings are far more consistently populated, even if the
-    labels are less polished (e.g. "Fantasy fiction" instead of
-    "Fantasy")."""
-
-    # ---- Google Books ----
-    try:
-
-        response = requests.get(
-            "https://www.googleapis.com/books/v1/volumes",
-            params={
-                "q": f"{title} {author}",
-                "maxResults": 1,
-            },
-            timeout=4,
-        )
-
-        if response.status_code == 200:
-
-            items = response.json().get(
-                "items",
-                [],
-            )
-
-            if items:
-
-                categories = (
-                    items[0]
-                    .get("volumeInfo", {})
-                    .get("categories", [])
-                )
-
-                if categories:
-
-                    # Google often returns something like
-                    # "Fiction / Fantasy / Epic" — keep just the
-                    # first, most general segment.
-                    genre = str(categories[0]).split("/")[0].strip()
-
-                    if genre:
-                        return genre
-
-    except Exception:
-        pass
-
-    # ---- Open Library fallback ----
-    # Requesting the "subject" field explicitly, since it isn't
-    # included in a plain search.json call by default.
-    try:
-
-        response = requests.get(
-            "https://openlibrary.org/search.json",
-            params={
-                "title": title,
-                "author": author,
-                "fields": "subject",
-                "limit": 1,
-            },
-            timeout=4,
-        )
-
-        if response.status_code == 200:
-
-            docs = response.json().get(
-                "docs",
-                [],
-            )
-
-            if docs:
-
-                subjects = docs[0].get("subject", [])
-
-                if subjects:
-
-                    genre = str(subjects[0]).strip()
-
-                    if genre:
-                        return genre
-
-    except Exception:
-        pass
-
-    return ""
+    """Fetch a genre for a book, from Google Books' 'categories'
+    field or (if that's empty) Open Library's 'subject' field.
+    This two-source fallback matters: Google Books only has
+    'categories' when the publisher supplied that metadata, which
+    in practice is missing for a large share of books — so relying
+    on it alone left most books unmatched even though the lookup
+    "succeeded". Open Library's subject headings are far more
+    consistently populated, even if the labels are less polished
+    (e.g. "Fantasy fiction" instead of "Fantasy")."""
+    return fetch_book_metadata(title, author, "").get("genre", "")
 
 
 def fetch_row_metadata(
@@ -1264,19 +1225,25 @@ def fetch_row_metadata(
     want_description,
     want_genre,
 ):
-    """Fetch a cover / description / genre for one row in a
-    single worker call, so the import ThreadPoolExecutor can do
-    all of it at once instead of separate passes. Genre is only
-    looked up when the row doesn't already have one (e.g. from a
-    file's own Genre column) — fetching shouldn't clobber genre
-    data that was already there."""
+    """Fetch cover / description / genre for one row in a single
+    worker call, so the import ThreadPoolExecutor does one cached
+    network lookup per book (via fetch_book_metadata) instead of
+    up to three independent requests. Genre is only kept when the
+    row doesn't already have one (e.g. from a file's own Genre
+    column) — fetching shouldn't clobber genre data that was
+    already there."""
 
-    cover = get_cover(title, author, isbn) if want_cover else ""
-    description = get_description(title, author) if want_description else ""
+    if not (want_cover or want_description or want_genre):
+        return "", "", ""
+
+    metadata = fetch_book_metadata(title, author, isbn)
+
+    cover = metadata["cover"] if want_cover else ""
+    description = metadata["description"] if want_description else ""
 
     genre = ""
     if want_genre and not str(current_genre).strip():
-        genre = get_genre(title, author)
+        genre = metadata["genre"]
 
     return cover, description, genre
 
@@ -1360,6 +1327,31 @@ def detect_series_number(title):
                 pass
 
     return None
+
+
+def clean_title_for_lookup(title):
+    """Strip Goodreads-style series annotations — e.g.
+    "Mockingjay (The Hunger Games, #3)" — down to just
+    "Mockingjay" before using the title in an external API
+    search. These are the same parenthetical/bracket patterns
+    detect_series() matches to populate the Series column;
+    left in place, neither Google Books nor Open Library's
+    title search is fuzzy enough to reliably match through the
+    clutter."""
+
+    text = str(title)
+
+    patterns = [
+        r"\([^()]*#\s*\d+(?:\.\d+)?[^()]*\)",
+        r"\[[^\[\]]*#\s*\d+(?:\.\d+)?[^\[\]]*\]",
+        r"\([^()]*\bBook\s+\d+(?:\.\d+)?[^()]*\)",
+        r"\[[^\[\]]*\bBook\s+\d+(?:\.\d+)?[^\[\]]*\]",
+    ]
+
+    for pattern in patterns:
+        text = re.sub(pattern, "", text, flags=re.IGNORECASE)
+
+    return re.sub(r"\s+", " ", text).strip(" ,-:")
 
 
 def safe_id(text):
@@ -1558,11 +1550,16 @@ def import_books(
         ]
     )
 
-    isbn_col = find_column(
+    isbn13_col = find_column(
         [
             "isbn13",
-            "isbn",
             "isbn 13",
+        ]
+    )
+
+    isbn_col = find_column(
+        [
+            "isbn",
         ]
     )
 
@@ -1670,21 +1667,34 @@ def import_books(
             author = "Unknown Author"
 
         # ISBN
+        #
+        # Goodreads exports wrap ISBNs like ="043935806X" (an
+        # Excel "force text" formula) to stop spreadsheet apps
+        # from mangling them as numbers. clean_isbn() strips that
+        # wrapper first, then keeps only digits and a trailing
+        # X/x check digit (ISBN-10's check digit can legitimately
+        # be X — stripping ALL non-digits, as before, silently
+        # corrupted every X-checksum ISBN into a garbage number).
+        #
+        # ISBN13 and ISBN are also both read here (when present)
+        # with ISBN13 preferred and ISBN as a per-row fallback,
+        # since Goodreads exports frequently have only one of the
+        # two populated per book — using a single column and
+        # never falling back threw away real, usable ISBNs.
 
-        isbn = ""
+        isbn13 = (
+            clean_isbn(row.get(isbn13_col, ""))
+            if isbn13_col
+            else ""
+        )
 
-        if isbn_col:
+        isbn10 = (
+            clean_isbn(row.get(isbn_col, ""))
+            if isbn_col
+            else ""
+        )
 
-            isbn = re.sub(
-                r"\D",
-                "",
-                str(
-                    row.get(
-                        isbn_col,
-                        "",
-                    )
-                ),
-            )
+        isbn = isbn13 or isbn10
 
         # GENRE
 
@@ -2871,115 +2881,6 @@ elif st.session_state.active_tab == "books":
 
             display_ancestry_tree(books, group_by=books_group_choice)
 
-            with st.expander("🔍 Debug: test genre lookup on 3 books"):
-
-                st.caption(
-                    "Runs a live lookup against Google Books and "
-                    "Open Library for a few of your actual books "
-                    "and shows exactly what comes back, so we can "
-                    "see whether it's a network/rate-limit problem "
-                    "or a genuine lack of genre data."
-                )
-
-                if st.button(
-                    "Run test",
-                    key="debug_genre_test_btn",
-                ):
-
-                    sample = library.head(3)
-
-                    for _, row in sample.iterrows():
-
-                        test_title = row["Title"]
-                        test_author = row["Author"]
-
-                        st.markdown(
-                            f"**{test_title}** — {test_author}"
-                        )
-
-                        # Google Books
-                        try:
-                            gb_resp = requests.get(
-                                "https://www.googleapis.com/books/v1/volumes",
-                                params={
-                                    "q": f"{test_title} {test_author}",
-                                    "maxResults": 1,
-                                },
-                                timeout=6,
-                            )
-                            st.write(
-                                f"Google Books — HTTP "
-                                f"{gb_resp.status_code}"
-                            )
-                            if gb_resp.status_code == 200:
-                                gb_items = gb_resp.json().get(
-                                    "items", []
-                                )
-                                if gb_items:
-                                    gb_cats = (
-                                        gb_items[0]
-                                        .get("volumeInfo", {})
-                                        .get("categories", [])
-                                    )
-                                    st.write(
-                                        f"→ categories found: {gb_cats!r}"
-                                    )
-                                else:
-                                    st.write("→ no items matched")
-                            else:
-                                st.write(
-                                    f"→ response body: "
-                                    f"{gb_resp.text[:300]!r}"
-                                )
-                        except Exception as error:
-                            st.write(
-                                f"Google Books — request failed: "
-                                f"{error!r}"
-                            )
-
-                        # Open Library
-                        try:
-                            ol_resp = requests.get(
-                                "https://openlibrary.org/search.json",
-                                params={
-                                    "title": test_title,
-                                    "author": test_author,
-                                    "fields": "subject",
-                                    "limit": 1,
-                                },
-                                timeout=6,
-                            )
-                            st.write(
-                                f"Open Library — HTTP "
-                                f"{ol_resp.status_code}"
-                            )
-                            if ol_resp.status_code == 200:
-                                ol_docs = ol_resp.json().get(
-                                    "docs", []
-                                )
-                                if ol_docs:
-                                    ol_subjects = ol_docs[0].get(
-                                        "subject", []
-                                    )
-                                    st.write(
-                                        f"→ subjects found: "
-                                        f"{ol_subjects[:5]!r}"
-                                    )
-                                else:
-                                    st.write("→ no docs matched")
-                            else:
-                                st.write(
-                                    f"→ response body: "
-                                    f"{ol_resp.text[:300]!r}"
-                                )
-                        except Exception as error:
-                            st.write(
-                                f"Open Library — request failed: "
-                                f"{error!r}"
-                            )
-
-                        st.divider()
-
             missing_covers = len(
                 books[books["Cover"].fillna("") == ""]
             )
@@ -3188,11 +3089,7 @@ elif st.session_state.active_tab == "add":
                         else None
                     ),
                     "Genre": actual_genre,
-                    "ISBN": re.sub(
-                        r"\D",
-                        "",
-                        isbn,
-                    ),
+                    "ISBN": clean_isbn(isbn),
                     "My Rating": rating,
                     "Status": status,
                     "Favorite": favorite,
