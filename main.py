@@ -86,7 +86,7 @@ def main(page: ft.Page):
                     expand=True,
                 )
             )
-        return ft.Row(buttons, spacing=8, wrap=True)
+        return ft.Row(buttons, spacing=8)
 
     def switch_tab(key):
         state["tab"] = key
