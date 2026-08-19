@@ -245,24 +245,36 @@ def status_stripe_color(status):
 
 _metadata_cache = {}
 
+# Records the last thing that went wrong talking to Google Books /
+# OpenLibrary (exception text or a non-200 status). Every network
+# failure used to be swallowed silently, which made "nothing is
+# fetching" impossible to diagnose from the app alone. UI code can
+# read this after a fetch run to show the real reason.
+last_network_error = None
+
 
 def _http_get_with_backoff(url, params=None, timeout=6, max_retries=3):
+    global last_network_error
     delay = 0.75
     for attempt in range(max_retries + 1):
         try:
             response = requests.get(
                 url, params=params, timeout=timeout, headers=HTTP_HEADERS
             )
-        except Exception:
+        except Exception as error:
+            last_network_error = f"{type(error).__name__}: {error}"
             if attempt < max_retries:
                 time.sleep(delay)
                 delay *= 2
                 continue
             return None
         if response.status_code in (429, 500, 502, 503) and attempt < max_retries:
+            last_network_error = f"HTTP {response.status_code} from {url}"
             time.sleep(delay)
             delay *= 2
             continue
+        if response.status_code != 200:
+            last_network_error = f"HTTP {response.status_code} from {url}"
         return response
     return None
 
@@ -481,6 +493,8 @@ def fetch_missing_metadata_parallel(library, indices, want_cover=True,
                                      want_pubinfo=True, on_progress=None):
     """Used right after an import — fills in whichever requested
     fields are still blank for the given (newly-added) indices."""
+    global last_network_error
+    last_network_error = None
     total = len(indices)
     if total == 0:
         return {"isbn": 0, "title_author": 0, "none": 0}
@@ -552,6 +566,8 @@ def fetch_missing_field(library, field, on_progress=None):
     """field: 'cover' | 'description' | 'genre' | 'pubinfo'.
     Mutates library in place. Returns (found, total)."""
 
+    global last_network_error
+    last_network_error = None
     indices = _missing_indices_for_field(library, field)
     total = len(indices)
     if total == 0:
