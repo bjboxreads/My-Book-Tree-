@@ -33,6 +33,13 @@ LIBRARY_COLUMNS = [
 
 GENERIC_GENRE_TERMS = {"fiction", "nonfiction", "non-fiction", "general"}
 
+# Identify ourselves to OpenLibrary / Google Books. OpenLibrary in
+# particular throttles/blocks requests with no User-Agent much more
+# aggressively than ones that identify the app.
+HTTP_HEADERS = {
+    "User-Agent": "StorySpire/1.0 (personal book library app; contact: n/a)",
+}
+
 # ============================================================
 # THEMES — same 10 palettes as the Streamlit app. Keys match
 # the CSS custom-property names used there (page/surface/
@@ -243,7 +250,9 @@ def _http_get_with_backoff(url, params=None, timeout=6, max_retries=3):
     delay = 0.75
     for attempt in range(max_retries + 1):
         try:
-            response = requests.get(url, params=params, timeout=timeout)
+            response = requests.get(
+                url, params=params, timeout=timeout, headers=HTTP_HEADERS
+            )
         except Exception:
             if attempt < max_retries:
                 time.sleep(delay)
@@ -316,10 +325,30 @@ def _openlibrary_lookup(title="", author="", isbn=""):
             return None
         if not edition:
             return None
+
+        # An ISBN edition record almost never carries "subject"
+        # itself -- subjects live on the parent Work. Follow the
+        # work link so genre can actually be filled from ISBN
+        # lookups instead of always coming back empty.
+        subjects = []
+        works = edition.get("works") or []
+        if works:
+            work_key = works[0].get("key")
+            if work_key:
+                work_response = _http_get_with_backoff(
+                    f"https://openlibrary.org{work_key}.json"
+                )
+                if work_response is not None and work_response.status_code == 200:
+                    try:
+                        work_data = work_response.json()
+                        subjects = work_data.get("subjects", []) or []
+                    except Exception:
+                        subjects = []
+
         covers = edition.get("covers") or []
         return {
             "cover_i": covers[0] if covers else None,
-            "subject": [],
+            "subject": subjects,
             "publisher": edition.get("publishers") or [],
             "number_of_pages_median": edition.get("number_of_pages"),
             "first_publish_year": edition.get("publish_date"),
@@ -457,7 +486,12 @@ def fetch_missing_metadata_parallel(library, indices, want_cover=True,
         return {"isbn": 0, "title_author": 0, "none": 0}
     done = 0
     stats = {"isbn": 0, "title_author": 0, "none": 0}
-    workers = min(8, max(2, total))
+    # Free/unauthenticated APIs (especially OpenLibrary) start
+    # throttling or dropping requests hard well before 8 concurrent
+    # connections, which on a big import (hundreds of books) shows
+    # up as most books simply never getting a cover/genre. 4 is a
+    # much safer ceiling.
+    workers = min(4, max(2, total))
 
     with ThreadPoolExecutor(max_workers=workers) as executor:
         future_to_index = {
@@ -531,7 +565,7 @@ def fetch_missing_field(library, field, on_progress=None):
             library[i]["Title"], library[i]["Author"], library[i]["ISBN"]
         )
 
-    with ThreadPoolExecutor(max_workers=min(8, max(2, total))) as executor:
+    with ThreadPoolExecutor(max_workers=min(4, max(2, total))) as executor:
         futures = [executor.submit(work, i) for i in indices]
         for future in as_completed(futures):
             i, metadata = future.result()
