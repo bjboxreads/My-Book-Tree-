@@ -1,14 +1,14 @@
 """
 StorySpire — data layer, pandas-free.
 
-Same logic as before (CSV persistence, ISBN cleaning, series
-detection, Google Books / OpenLibrary metadata fetching, Goodreads
-import parsing) but rewritten without pandas -- pandas has C
-extensions that don't compile for Android in the Flet/Flutter build,
-which is what was breaking the APK build.
+Same logic as the Streamlit version (CSV persistence, ISBN cleaning,
+series detection, Google Books / OpenLibrary metadata fetching,
+Goodreads/StoryGraph import parsing for CSV/XLSX/TXT/PDF) but
+rewritten without pandas -- pandas has C extensions that don't
+compile for Android in the Flet/Flutter build.
 
-The library is now a plain list of dicts (one dict per book) instead
-of a DataFrame. Each book dict has exactly LIBRARY_COLUMNS as keys.
+The library is a plain list of dicts (one dict per book) instead of
+a DataFrame. Each book dict has exactly LIBRARY_COLUMNS as keys.
 """
 
 import csv
@@ -33,6 +33,66 @@ LIBRARY_COLUMNS = [
 
 GENERIC_GENRE_TERMS = {"fiction", "nonfiction", "non-fiction", "general"}
 
+# ============================================================
+# THEMES — same 10 palettes as the Streamlit app. Keys match
+# the CSS custom-property names used there (page/surface/
+# surface2/card/text/muted/accent/accent2/line) so the rest of
+# the UI code can stay palette-agnostic.
+# ============================================================
+
+THEMES = {
+    "Emerald Grimoire": {
+        "page": "#051614", "surface": "#0C2B24", "surface2": "#124A3C",
+        "card": "#1B6650", "text": "#FFFBEF", "muted": "#B9D4C6",
+        "accent": "#F2C14E", "accent2": "#3FCDA8", "line": "#E0972E",
+    },
+    "Gilded Midnight": {
+        "page": "#04101F", "surface": "#0A2242", "surface2": "#123B6E",
+        "card": "#1B5493", "text": "#FFF9E8", "muted": "#B7CBE8",
+        "accent": "#FFC94D", "accent2": "#4FC3E8", "line": "#E8A426",
+    },
+    "Velvet Rose": {
+        "page": "#170512", "surface": "#2E0A24", "surface2": "#4F1140",
+        "card": "#731B5C", "text": "#FFF3F8", "muted": "#E3BFD2",
+        "accent": "#FF6F91", "accent2": "#C77DFF", "line": "#E23E75",
+    },
+    "Autumn Ember": {
+        "page": "#1C0D04", "surface": "#361708", "surface2": "#5E2A0C",
+        "card": "#873F13", "text": "#FFF4DE", "muted": "#E8C79A",
+        "accent": "#FFB238", "accent2": "#FF6A3D", "line": "#D9601F",
+    },
+    "Moonlit Violet": {
+        "page": "#08071A", "surface": "#12103A", "surface2": "#221D66",
+        "card": "#362D93", "text": "#FFFAEE", "muted": "#C9C2ED",
+        "accent": "#FFD54F", "accent2": "#9D7BFF", "line": "#7A5CE0",
+    },
+    "Verdant Garden": {
+        "page": "#04191C", "surface": "#093733", "surface2": "#0E5652",
+        "card": "#157A70", "text": "#FFFAE9", "muted": "#BFE0D6",
+        "accent": "#FFCD3C", "accent2": "#FF7A5C", "line": "#E85A3E",
+    },
+    "Old World Atlas": {
+        "page": "#0F1A18", "surface": "#1C2F2A", "surface2": "#2E4C41",
+        "card": "#456B55", "text": "#FFF6DC", "muted": "#D2DABF",
+        "accent": "#F0BB4E", "accent2": "#B7D25C", "line": "#D68C2E",
+    },
+    "Arcane Spell": {
+        "page": "#080916", "surface": "#151637", "surface2": "#232463",
+        "card": "#332F94", "text": "#FFFFFF", "muted": "#C9C9F2",
+        "accent": "#FFD23F", "accent2": "#4FE8DD", "line": "#B15CFF",
+    },
+    "Scarlet Manor": {
+        "page": "#180505", "surface": "#340A0A", "surface2": "#5C1010",
+        "card": "#831A1A", "text": "#FFF6E8", "muted": "#EFC7B0",
+        "accent": "#FFC145", "accent2": "#FF7D5C", "line": "#E33A2E",
+    },
+    "Obsidian Vale": {
+        "page": "#050505", "surface": "#0F0D0D", "surface2": "#1A1616",
+        "card": "#241E1E", "text": "#F2EDEA", "muted": "#8C8080",
+        "accent": "#8A1F2B", "accent2": "#9C9C9C", "line": "#5C141C",
+    },
+}
+
 STATUS_STRIPE = {
     "Read": "accent2",
     "Currently Reading": "accent",
@@ -52,7 +112,10 @@ def normalize_book(book):
     for col in LIBRARY_COLUMNS:
         if col == "Favorite":
             v = out[col]
-            out[col] = str(v).strip().lower() in ("true", "1", "1.0", "yes") if isinstance(v, str) else bool(v)
+            out[col] = (
+                str(v).strip().lower() in ("true", "1", "1.0", "yes")
+                if isinstance(v, str) else bool(v)
+            )
         else:
             v = out[col]
             out[col] = "" if v is None else str(v)
@@ -163,8 +226,15 @@ def clean_title_for_lookup(title):
 
 
 def status_stripe_color(status):
+    """Returns a THEME key ('accent'/'accent2'/'muted') — caller
+    resolves it against the active palette."""
     return STATUS_STRIPE.get(str(status).strip(), "muted")
 
+
+# ============================================================
+# METADATA LOOKUP (Google Books + OpenLibrary), unchanged logic
+# from the Streamlit version.
+# ============================================================
 
 _metadata_cache = {}
 
@@ -273,6 +343,10 @@ def _openlibrary_lookup(title="", author="", isbn=""):
 
 
 def fetch_book_metadata(title, author="", isbn=""):
+    """Cover, description, genre, publisher, page count, and
+    publication date for one book. ISBN first (most reliable),
+    then title/author fallback for whatever's still missing."""
+
     isbn = clean_isbn(isbn)
     clean_title = clean_title_for_lookup(title)
     cache_key = _metadata_cache_key(title, author, isbn)
@@ -374,12 +448,15 @@ def fetch_book_metadata(title, author="", isbn=""):
 
 
 def fetch_missing_metadata_parallel(library, indices, want_cover=True,
-                                      want_description=True, want_genre=True,
-                                      want_pubinfo=True, on_progress=None):
+                                     want_description=True, want_genre=True,
+                                     want_pubinfo=True, on_progress=None):
+    """Used right after an import — fills in whichever requested
+    fields are still blank for the given (newly-added) indices."""
     total = len(indices)
     if total == 0:
-        return library
+        return {"isbn": 0, "title_author": 0, "none": 0}
     done = 0
+    stats = {"isbn": 0, "title_author": 0, "none": 0}
     workers = min(8, max(2, total))
 
     with ThreadPoolExecutor(max_workers=workers) as executor:
@@ -411,12 +488,87 @@ def fetch_missing_metadata_parallel(library, indices, want_cover=True,
                 if not str(library[i].get("Publication Date") or "").strip():
                     library[i]["Publication Date"] = metadata.get("publication_date", "")
 
+            stats[metadata.get("matched_by", "none")] = stats.get(metadata.get("matched_by", "none"), 0) + 1
             done += 1
             if on_progress:
                 on_progress(done, total)
 
-    return library
+    return stats
 
+
+# One-field "fetch missing X" helpers, mirroring the Streamlit
+# Books-tab buttons (fetch_missing_covers / _descriptions /
+# _genres / _publisher_pages there).
+
+def _missing_indices_for_field(library, field):
+    if field == "pubinfo":
+        return [
+            i for i, b in enumerate(library)
+            if not (
+                str(b.get("Publisher") or "").strip()
+                and str(b.get("Pages") or "").strip()
+                and str(b.get("Publication Date") or "").strip()
+            )
+        ]
+    key = {"cover": "Cover", "description": "Description", "genre": "Genre"}[field]
+    return [i for i, b in enumerate(library) if not str(b.get(key) or "").strip()]
+
+
+def fetch_missing_field(library, field, on_progress=None):
+    """field: 'cover' | 'description' | 'genre' | 'pubinfo'.
+    Mutates library in place. Returns (found, total)."""
+
+    indices = _missing_indices_for_field(library, field)
+    total = len(indices)
+    if total == 0:
+        return 0, 0
+
+    found = 0
+    done = 0
+
+    def work(i):
+        return i, fetch_book_metadata(
+            library[i]["Title"], library[i]["Author"], library[i]["ISBN"]
+        )
+
+    with ThreadPoolExecutor(max_workers=min(8, max(2, total))) as executor:
+        futures = [executor.submit(work, i) for i in indices]
+        for future in as_completed(futures):
+            i, metadata = future.result()
+            got = False
+
+            if field == "cover" and metadata.get("cover"):
+                library[i]["Cover"] = metadata["cover"]
+                got = True
+            elif field == "description" and metadata.get("description"):
+                library[i]["Description"] = metadata["description"]
+                got = True
+            elif field == "genre" and metadata.get("genre"):
+                library[i]["Genre"] = metadata["genre"]
+                got = True
+            elif field == "pubinfo":
+                if not str(library[i].get("Publisher") or "").strip() and metadata.get("publisher"):
+                    library[i]["Publisher"] = metadata["publisher"]
+                    got = True
+                if not str(library[i].get("Pages") or "").strip() and metadata.get("pages"):
+                    library[i]["Pages"] = metadata["pages"]
+                    got = True
+                if not str(library[i].get("Publication Date") or "").strip() and metadata.get("publication_date"):
+                    library[i]["Publication Date"] = metadata["publication_date"]
+                    got = True
+
+            if got:
+                found += 1
+            done += 1
+            if on_progress:
+                on_progress(done, total)
+
+    return found, total
+
+
+# ============================================================
+# IMPORT — CSV, TXT, XLSX (openpyxl, pure-Python), PDF (pypdf).
+# ============================================================
 
 def load_rows_from_path(path):
     name = path.lower()
@@ -428,8 +580,34 @@ def load_rows_from_path(path):
         except Exception as error:
             return None, f"Could not read this CSV file: {error}"
 
-    elif name.endswith((".xlsx", ".xls")):
-        return None, "Excel files aren't supported -- please save/export as CSV and upload that instead."
+    elif name.endswith((".xlsx", ".xlsm")):
+        try:
+            import openpyxl
+        except ImportError:
+            return None, "Excel import needs the `openpyxl` package -- add `openpyxl` to requirements.txt."
+        try:
+            wb = openpyxl.load_workbook(path, read_only=True, data_only=True)
+            ws = wb.active
+            rows_iter = ws.iter_rows(values_only=True)
+            try:
+                header = [str(h).strip() if h is not None else "" for h in next(rows_iter)]
+            except StopIteration:
+                return None, "This Excel file has no rows."
+            rows = []
+            for raw_row in rows_iter:
+                row = {}
+                for col_name, value in zip(header, raw_row):
+                    if not col_name:
+                        continue
+                    row[col_name] = "" if value is None else value
+                if any(str(v).strip() for v in row.values()):
+                    rows.append(row)
+            wb.close()
+            if not rows:
+                return None, "No rows found in this Excel file."
+            return rows, None
+        except Exception as error:
+            return None, f"Could not read this Excel file: {error}"
 
     elif name.endswith(".txt"):
         try:
@@ -451,11 +629,44 @@ def load_rows_from_path(path):
         except Exception as error:
             return None, f"Could not read this text file: {error}"
 
+    elif name.endswith(".pdf"):
+        try:
+            import pypdf
+        except ImportError:
+            return None, "PDF import needs the `pypdf` package -- add `pypdf` to requirements.txt."
+        try:
+            reader = pypdf.PdfReader(path)
+            lines = []
+            for page in reader.pages:
+                text = page.extract_text() or ""
+                lines.extend(text.splitlines())
+
+            rows = []
+            for line in lines:
+                line = line.strip()
+                if not line or len(line) < 3:
+                    continue
+                parts = re.split(r"\s+-\s+|\s+by\s+", line, maxsplit=1, flags=re.IGNORECASE)
+                if len(parts) == 2:
+                    rows.append({"Title": parts[0].strip(), "Author": parts[1].strip()})
+                else:
+                    rows.append({"Title": line, "Author": ""})
+
+            if not rows:
+                return None, "No readable text found in this PDF."
+            return rows, None
+        except Exception as error:
+            return None, f"Could not read this PDF file: {error}"
+
     else:
         return None, "Unsupported file type."
 
 
 def import_books_from_rows(rows, existing_library, merge=True):
+    """merge=True -> add only new (title, author) pairs, keep
+    everything else untouched. merge=False -> replace the whole
+    library with what's in this file."""
+
     if not rows:
         return None, 0, 0, [], "No books were found in the file."
 
