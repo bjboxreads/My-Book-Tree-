@@ -1,5 +1,5 @@
 """
-StorySpire — Flet version, pandas-free.
+SpineVesper — Flet version, pandas-free.
 
 Run locally:      flet run main.py
 Build the APK:     flet build apk
@@ -16,7 +16,7 @@ THEME = {
 
 
 def main(page: ft.Page):
-    page.title = "StorySpire"
+    page.title = "SpineVesper"
     page.bgcolor = THEME["page"]
     page.padding = 0
     page.scroll = ft.ScrollMode.AUTO
