@@ -9,7 +9,7 @@ import flet as ft
 import data
 
 APP_TITLE = "SpineVesper"
-APP_TAGLINE = 
+APP_TAGLINE = "a library that rises one story at a time"
 
 STAT_FILTER_MAP = {
     "Books": "All",
