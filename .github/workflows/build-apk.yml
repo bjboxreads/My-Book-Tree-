@@ -11,10 +11,7 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: "3.11"
-      - uses: subosito/flutter-action@v2
-        with:
-          flutter-version: "3.24.5"
-      - name: Install dependencies
+      - name: Install Flet
         run: pip install -r requirements.txt
       - name: Build APK
         run: flet build apk --verbose
