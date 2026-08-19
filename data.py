@@ -1,18 +1,21 @@
 """
-StorySpire — data layer.
+StorySpire — data layer, pandas-free.
 
-This is your original Streamlit app's logic (CSV persistence, ISBN
-cleaning, series detection, metadata fetching from Google Books /
-OpenLibrary) with every st.* call removed. Nothing in here changed
-functionally — it's the same functions, just returning values
-instead of writing to st.session_state / st.error directly.
+Same logic as before (CSV persistence, ISBN cleaning, series
+detection, Google Books / OpenLibrary metadata fetching, Goodreads
+import parsing) but rewritten without pandas -- pandas has C
+extensions that don't compile for Android in the Flet/Flutter build,
+which is what was breaking the APK build.
+
+The library is now a plain list of dicts (one dict per book) instead
+of a DataFrame. Each book dict has exactly LIBRARY_COLUMNS as keys.
 """
 
+import csv
 import os
 import re
 import shutil
 import time
-import pandas as pd
 import requests
 from concurrent.futures import ThreadPoolExecutor, as_completed
 
@@ -28,12 +31,6 @@ LIBRARY_COLUMNS = [
     "Publisher", "Pages", "Publication Date", "Date Read",
 ]
 
-TEXT_LIBRARY_COLUMNS = [
-    "Title", "Author", "Series", "Genre", "ISBN", "Status", "Cover",
-    "Description", "Tags", "Publisher", "Pages", "Publication Date",
-    "Date Read",
-]
-
 GENERIC_GENRE_TERMS = {"fiction", "nonfiction", "non-fiction", "general"}
 
 STATUS_STRIPE = {
@@ -43,31 +40,39 @@ STATUS_STRIPE = {
 }
 
 
-def normalize_library_columns(df):
-    df = df.copy()
-    for column in LIBRARY_COLUMNS:
-        if column not in df.columns:
-            df[column] = "" if column != "Favorite" else False
-    df = df[LIBRARY_COLUMNS]
-    for column in TEXT_LIBRARY_COLUMNS:
-        df[column] = df[column].astype(object)
-        df[column] = df[column].apply(
-            lambda v: ""
-            if (v is None or (isinstance(v, float) and pd.isna(v)))
-            else str(v)
-        )
-        df[column] = df[column].replace(["nan", "None"], "")
-    return df
+def blank_book():
+    book = {col: "" for col in LIBRARY_COLUMNS}
+    book["Favorite"] = False
+    return book
 
 
-def save_library(df):
+def normalize_book(book):
+    out = blank_book()
+    out.update({k: v for k, v in book.items() if k in LIBRARY_COLUMNS})
+    for col in LIBRARY_COLUMNS:
+        if col == "Favorite":
+            v = out[col]
+            out[col] = str(v).strip().lower() in ("true", "1", "1.0", "yes") if isinstance(v, str) else bool(v)
+        else:
+            v = out[col]
+            out[col] = "" if v is None else str(v)
+            if out[col] in ("nan", "None"):
+                out[col] = ""
+    return out
+
+
+def save_library(library):
     try:
         if os.path.exists(LIBRARY_FILE):
             try:
                 shutil.copy(LIBRARY_FILE, LIBRARY_BACKUP_FILE)
             except Exception:
                 pass
-        df.to_csv(LIBRARY_FILE, index=False)
+        with open(LIBRARY_FILE, "w", newline="", encoding="utf-8") as f:
+            writer = csv.DictWriter(f, fieldnames=LIBRARY_COLUMNS)
+            writer.writeheader()
+            for book in library:
+                writer.writerow(normalize_book(book))
     except Exception:
         pass
 
@@ -75,16 +80,12 @@ def save_library(df):
 def load_library():
     if os.path.exists(LIBRARY_FILE):
         try:
-            df = pd.read_csv(LIBRARY_FILE)
-            df = normalize_library_columns(df)
-            df["Favorite"] = (
-                df["Favorite"].astype(str).str.strip().str.lower()
-                .isin(["true", "1", "1.0"])
-            )
-            return df
+            with open(LIBRARY_FILE, "r", newline="", encoding="utf-8") as f:
+                reader = csv.DictReader(f)
+                return [normalize_book(row) for row in reader]
         except Exception:
             pass
-    return pd.DataFrame(columns=LIBRARY_COLUMNS)
+    return []
 
 
 def clean_isbn(raw):
@@ -97,24 +98,19 @@ def clean_isbn(raw):
     return s.upper()
 
 
-def clean_author_series(df):
-    df = df.copy()
-    df["Author"] = (
-        df["Author"].fillna("Unknown Author").astype(str)
-        .replace(["", "nan", "None"], "Unknown Author")
-    )
-    df["Series"] = (
-        df["Series"].fillna("Standalone").astype(str)
-        .replace(["", "nan", "None"], "Standalone")
-    )
-    return df
+def clean_author(value):
+    v = str(value or "").strip()
+    return v if v and v.lower() not in ("nan", "none") else "Unknown Author"
 
 
-def clean_genre_column(series):
-    return (
-        series.fillna("").astype(str).str.strip()
-        .replace(["", "nan", "None"], "Unknown Genre")
-    )
+def clean_series(value):
+    v = str(value or "").strip()
+    return v if v and v.lower() not in ("nan", "none") else "Standalone"
+
+
+def clean_genre(value):
+    v = str(value or "").strip()
+    return v if v and v.lower() not in ("nan", "none") else "Unknown Genre"
 
 
 def detect_series(title):
@@ -169,8 +165,6 @@ def clean_title_for_lookup(title):
 def status_stripe_color(status):
     return STATUS_STRIPE.get(str(status).strip(), "muted")
 
-
-# ---------------- metadata fetching (Google Books / OpenLibrary) ----------------
 
 _metadata_cache = {}
 
@@ -379,15 +373,12 @@ def fetch_book_metadata(title, author="", isbn=""):
     return result
 
 
-def fetch_missing_metadata_parallel(library_df, indices, want_cover=True,
+def fetch_missing_metadata_parallel(library, indices, want_cover=True,
                                       want_description=True, want_genre=True,
                                       want_pubinfo=True, on_progress=None):
-    """Threaded metadata fetch for a batch of row indices. Calls
-    on_progress(done, total) after each completion so the UI can
-    update a progress bar. Mutates and returns library_df."""
     total = len(indices)
     if total == 0:
-        return library_df
+        return library
     done = 0
     workers = min(8, max(2, total))
 
@@ -395,9 +386,7 @@ def fetch_missing_metadata_parallel(library_df, indices, want_cover=True,
         future_to_index = {
             executor.submit(
                 fetch_book_metadata,
-                library_df.loc[i, "Title"],
-                library_df.loc[i, "Author"],
-                library_df.loc[i, "ISBN"],
+                library[i]["Title"], library[i]["Author"], library[i]["ISBN"],
             ): i
             for i in indices
         }
@@ -408,48 +397,39 @@ def fetch_missing_metadata_parallel(library_df, indices, want_cover=True,
             except Exception:
                 metadata = {}
 
-            if want_cover and not str(library_df.loc[i, "Cover"] or "").strip():
-                library_df.loc[i, "Cover"] = metadata.get("cover", "")
-            if want_description and not str(library_df.loc[i, "Description"] or "").strip():
-                library_df.loc[i, "Description"] = metadata.get("description", "")
-            if want_genre and not str(library_df.loc[i, "Genre"] or "").strip():
-                library_df.loc[i, "Genre"] = metadata.get("genre", "")
+            if want_cover and not str(library[i].get("Cover") or "").strip():
+                library[i]["Cover"] = metadata.get("cover", "")
+            if want_description and not str(library[i].get("Description") or "").strip():
+                library[i]["Description"] = metadata.get("description", "")
+            if want_genre and not str(library[i].get("Genre") or "").strip():
+                library[i]["Genre"] = metadata.get("genre", "")
             if want_pubinfo:
-                if not str(library_df.loc[i, "Publisher"] or "").strip():
-                    library_df.loc[i, "Publisher"] = metadata.get("publisher", "")
-                if not str(library_df.loc[i, "Pages"] or "").strip():
-                    library_df.loc[i, "Pages"] = metadata.get("pages", "")
-                if not str(library_df.loc[i, "Publication Date"] or "").strip():
-                    library_df.loc[i, "Publication Date"] = metadata.get("publication_date", "")
+                if not str(library[i].get("Publisher") or "").strip():
+                    library[i]["Publisher"] = metadata.get("publisher", "")
+                if not str(library[i].get("Pages") or "").strip():
+                    library[i]["Pages"] = metadata.get("pages", "")
+                if not str(library[i].get("Publication Date") or "").strip():
+                    library[i]["Publication Date"] = metadata.get("publication_date", "")
 
             done += 1
             if on_progress:
                 on_progress(done, total)
 
-    return library_df
+    return library
 
 
-# ---------------- import parsing ----------------
-
-def load_dataframe_from_path(path):
-    """Read an uploaded file (csv/xlsx/txt) from a local path into a
-    DataFrame. Returns (df, error_message)."""
+def load_rows_from_path(path):
     name = path.lower()
 
     if name.endswith(".csv"):
         try:
-            return pd.read_csv(path, low_memory=False), None
-        except Exception:
-            try:
-                return pd.read_csv(path, encoding="latin-1", low_memory=False), None
-            except Exception as error:
-                return None, f"Could not read this CSV file: {error}"
+            with open(path, "r", newline="", encoding="utf-8", errors="ignore") as f:
+                return list(csv.DictReader(f)), None
+        except Exception as error:
+            return None, f"Could not read this CSV file: {error}"
 
     elif name.endswith((".xlsx", ".xls")):
-        try:
-            return pd.read_excel(path), None
-        except Exception as error:
-            return None, f"Could not read this Excel file: {error}"
+        return None, "Excel files aren't supported -- please save/export as CSV and upload that instead."
 
     elif name.endswith(".txt"):
         try:
@@ -467,7 +447,7 @@ def load_dataframe_from_path(path):
                     rows.append({"Title": line, "Author": ""})
             if not rows:
                 return None, "No lines found in this text file."
-            return pd.DataFrame(rows), None
+            return rows, None
         except Exception as error:
             return None, f"Could not read this text file: {error}"
 
@@ -475,13 +455,11 @@ def load_dataframe_from_path(path):
         return None, "Unsupported file type."
 
 
-def import_books_from_df(df, existing_library, merge=True):
-    """Same matching/merge logic as the Streamlit version. Returns
-    (combined_df, added_count, skipped_count, new_row_indices) —
-    new_row_indices is what you then pass to
-    fetch_missing_metadata_parallel."""
+def import_books_from_rows(rows, existing_library, merge=True):
+    if not rows:
+        return None, 0, 0, [], "No books were found in the file."
 
-    columns = {str(c).strip().lower(): c for c in df.columns}
+    columns = {str(c).strip().lower(): c for c in rows[0].keys()}
 
     def find_column(names):
         for name in names:
@@ -501,17 +479,15 @@ def import_books_from_df(df, existing_library, merge=True):
     tags_col = find_column(["tags", "keywords", "themes"])
 
     if not title_col:
-        return None, 0, 0, [], "No Title column found in this file."
+        return None, 0, 0, [], "I couldn't find a Title column in this file."
 
-    books = []
-    for _, row in df.iterrows():
+    imported = []
+    for row in rows:
         title = str(row.get(title_col, "")).strip()
         if not title or title.lower() == "nan":
             continue
 
-        author = "Unknown Author"
-        if author_col:
-            author = str(row.get(author_col, "")).strip()
+        author = str(row.get(author_col, "")).strip() if author_col else ""
         if not author or author.lower() == "nan":
             author = "Unknown Author"
 
@@ -544,7 +520,7 @@ def import_books_from_df(df, existing_library, merge=True):
         if series_number_col:
             try:
                 value = row.get(series_number_col)
-                if pd.notna(value):
+                if value not in (None, ""):
                     series_number = float(value)
             except Exception:
                 pass
@@ -555,7 +531,7 @@ def import_books_from_df(df, existing_library, merge=True):
         if rating_col:
             try:
                 value = row.get(rating_col)
-                if pd.notna(value):
+                if value not in (None, ""):
                     parsed_rating = float(value)
                     if parsed_rating > 0:
                         rating = parsed_rating
@@ -572,36 +548,35 @@ def import_books_from_df(df, existing_library, merge=True):
             elif "to-read" in shelf or "want" in shelf or "wishlist" in shelf:
                 status = "Want to Read"
 
-        books.append({
+        book = blank_book()
+        book.update({
             "Title": title, "Author": author, "Series": series,
-            "Series Number": series_number, "Genre": genre, "ISBN": isbn,
-            "My Rating": rating, "Status": status, "Favorite": False,
-            "Cover": "", "Description": "", "Tags": tags, "Publisher": "",
-            "Pages": "", "Publication Date": "", "Date Read": "",
+            "Series Number": series_number if series_number is not None else "",
+            "Genre": genre, "ISBN": isbn,
+            "My Rating": rating if rating is not None else "",
+            "Status": status, "Favorite": False, "Tags": tags,
         })
+        imported.append(book)
 
-    imported_df = pd.DataFrame(books)
-    if imported_df.empty:
+    if not imported:
         return None, 0, 0, [], "No books were found in the file."
 
-    def make_key(title, author):
-        return (str(title).strip().lower(), str(author).strip().lower())
+    def make_key(book):
+        return (str(book["Title"]).strip().lower(), str(book["Author"]).strip().lower())
 
-    if merge and not existing_library.empty:
-        existing_keys = {make_key(t, a) for t, a in zip(existing_library["Title"], existing_library["Author"])}
-        is_new_mask = imported_df.apply(lambda r: make_key(r["Title"], r["Author"]) not in existing_keys, axis=1)
-        new_rows = imported_df[is_new_mask].reset_index(drop=True)
-        skipped_count = len(imported_df) - len(new_rows)
-        combined = pd.concat([existing_library, new_rows], ignore_index=True)
+    if merge and existing_library:
+        existing_keys = {make_key(b) for b in existing_library}
+        new_rows = [b for b in imported if make_key(b) not in existing_keys]
+        skipped_count = len(imported) - len(new_rows)
+        combined = existing_library + new_rows
         fetch_start = len(existing_library)
     else:
-        new_rows = imported_df
+        new_rows = imported
         skipped_count = 0
-        combined = imported_df.reset_index(drop=True)
+        combined = list(imported)
         fetch_start = 0
 
     added_count = len(new_rows)
-    combined = normalize_library_columns(combined)
     new_indices = list(range(fetch_start, fetch_start + added_count))
 
     return combined, added_count, skipped_count, new_indices, None
