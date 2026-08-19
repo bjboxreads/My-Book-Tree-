@@ -1,5 +1,5 @@
 """
-StorySpire — data layer, pandas-free.
+SpineVesper — data layer, pandas-free.
 
 Same logic as the Streamlit version (CSV persistence, ISBN cleaning,
 series detection, Google Books / OpenLibrary metadata fetching,
@@ -16,6 +16,7 @@ import os
 import re
 import shutil
 import time
+import difflib
 import requests
 from concurrent.futures import ThreadPoolExecutor, as_completed
 
@@ -244,6 +245,7 @@ def status_stripe_color(status):
 # ============================================================
 
 _metadata_cache = {}
+_google_books_cooldown_until = 0.0
 
 # Records the last thing that went wrong talking to Google Books /
 # OpenLibrary (exception text or a non-200 status). Every network
@@ -313,10 +315,22 @@ def _pick_genre_from_subjects(subjects):
 
 
 def _google_books_lookup(query):
+    # Google Books' anonymous tier rate-limits per IP quickly and
+    # a per-request 3-retry backoff isn't enough to ride it out
+    # under bulk import load. Once we see a 429, back the whole
+    # batch off from Google for a while instead of hammering it
+    # from every worker thread.
+    global _google_books_cooldown_until
+    if time.time() < _google_books_cooldown_until:
+        return None
+
     response = _http_get_with_backoff(
         "https://www.googleapis.com/books/v1/volumes",
         params={"q": query, "maxResults": 1},
     )
+    if response is not None and response.status_code == 429:
+        _google_books_cooldown_until = time.time() + 30
+        return None
     if response is None or response.status_code != 200:
         return None
     try:
@@ -370,7 +384,7 @@ def _openlibrary_lookup(title="", author="", isbn=""):
         "https://openlibrary.org/search.json",
         params={
             "title": title, "author": author,
-            "fields": "cover_i,subject,publisher,first_publish_year,number_of_pages_median",
+            "fields": "title,author_name,cover_i,subject,publisher,first_publish_year,number_of_pages_median",
             "limit": 1,
         },
     )
@@ -383,12 +397,95 @@ def _openlibrary_lookup(title="", author="", isbn=""):
     return docs[0] if docs else None
 
 
-def fetch_book_metadata(title, author="", isbn=""):
-    """Cover, description, genre, publisher, page count, and
-    publication date for one book. ISBN first (most reliable),
-    then title/author fallback for whatever's still missing."""
+def _openlibrary_books_api_lookup(isbn):
+    """A second, separate OpenLibrary endpoint (their "Books API",
+    keyed by bibkey) from the /isbn/ edition record used above --
+    it's populated independently and often has a cover, subjects,
+    or publisher the edition record is missing, so it's genuinely
+    an extra source rather than just a repeat call."""
+    response = _http_get_with_backoff(
+        "https://openlibrary.org/api/books",
+        params={"bibkeys": f"ISBN:{isbn}", "jscmd": "data", "format": "json"},
+    )
+    if response is None or response.status_code != 200:
+        return None
+    try:
+        payload = response.json()
+    except Exception:
+        return None
+    return payload.get(f"ISBN:{isbn}") or None
 
-    isbn = clean_isbn(isbn)
+
+def _fill_from_openlibrary_books_api(result, doc):
+    if not doc:
+        return
+    if not result["cover"]:
+        cover = doc.get("cover") or {}
+        image = cover.get("large") or cover.get("medium") or cover.get("small")
+        if image:
+            result["cover"] = image
+    if not result["genre"]:
+        subjects = [s.get("name", "") for s in (doc.get("subjects") or []) if isinstance(s, dict)]
+        genre = _pick_genre_from_subjects(subjects)
+        if genre:
+            result["genre"] = genre
+    if not result["publisher"]:
+        publishers = doc.get("publishers") or []
+        if publishers:
+            result["publisher"] = str(publishers[0].get("name", "")).strip()
+    if not result["pages"] and doc.get("number_of_pages"):
+        result["pages"] = doc["number_of_pages"]
+    if not result["publication_date"] and doc.get("publish_date"):
+        result["publication_date"] = str(doc["publish_date"])
+
+
+def _normalize_loose(text):
+    text = str(text or "").lower()
+    text = re.sub(r"[^\w\s]", " ", text)
+    return re.sub(r"\s+", " ", text).strip()
+
+
+def _is_plausible_match(wanted_title, wanted_author, candidate_title, candidate_authors):
+    """Title/author search results aren't guaranteed to be the
+    right book (unlike an ISBN hit) -- reject results that don't
+    actually look like the book we searched for before using them."""
+    wt = _normalize_loose(wanted_title)
+    ct = _normalize_loose(candidate_title)
+    if not wt or not ct:
+        return False
+    title_ratio = difflib.SequenceMatcher(None, wt, ct).ratio()
+    if title_ratio < 0.6 and wt not in ct and ct not in wt:
+        return False
+
+    wanted_author_norm = _normalize_loose(wanted_author)
+    if not wanted_author_norm or wanted_author_norm == "unknown author":
+        return True  # nothing to check the author against
+
+    candidate_authors = candidate_authors or []
+    for cand in candidate_authors:
+        cand_norm = _normalize_loose(cand)
+        if not cand_norm:
+            continue
+        if cand_norm in wanted_author_norm or wanted_author_norm in cand_norm:
+            return True
+        # last-name overlap catches "J.R.R. Tolkien" vs "Tolkien"
+        wanted_last = wanted_author_norm.split()[-1] if wanted_author_norm.split() else ""
+        if wanted_last and wanted_last in cand_norm:
+            return True
+    return False
+
+
+def fetch_book_metadata(title, author="", isbn="", isbn13="", isbn10=""):
+    """Cover, description, genre, publisher, page count, and
+    publication date for one book. Tries ISBN-13, then ISBN-10,
+    then falls back to a verified title/author search -- and for
+    each step, keeps trying additional sources for whatever
+    fields are still missing rather than stopping at the first
+    source that returns anything."""
+
+    isbn13 = clean_isbn(isbn13)
+    isbn10 = clean_isbn(isbn10)
+    isbn = isbn13 or isbn10 or clean_isbn(isbn)
     clean_title = clean_title_for_lookup(title)
     cache_key = _metadata_cache_key(title, author, isbn)
 
@@ -453,18 +550,43 @@ def fetch_book_metadata(title, author="", isbn=""):
             result["publisher"], result["pages"], result["publication_date"],
         ])
 
-    if isbn and still_missing_fields():
-        info = _google_books_lookup(f"isbn:{isbn}")
-        if info:
-            fill_from_google(info)
-            result["matched_by"] = "isbn"
+    # ---- ISBN path (exact identifier -- no matching needed) ----
+    # Tries every source in turn, each one only filling whatever
+    # fields the previous sources didn't have.
+    for candidate_isbn in [i for i in (isbn13, isbn10) if i]:
+        if not still_missing_fields():
+            break
 
-    if isbn and still_missing_fields():
-        doc = _openlibrary_lookup(isbn=isbn)
+        doc = _openlibrary_lookup(isbn=candidate_isbn)
         if doc:
             fill_from_openlibrary(doc)
-            if result["matched_by"] == "none":
-                result["matched_by"] = "isbn"
+            result["matched_by"] = "isbn"
+
+        if still_missing_fields():
+            books_api_doc = _openlibrary_books_api_lookup(candidate_isbn)
+            if books_api_doc:
+                _fill_from_openlibrary_books_api(result, books_api_doc)
+                if result["matched_by"] == "none":
+                    result["matched_by"] = "isbn"
+
+        if still_missing_fields():
+            info = _google_books_lookup(f"isbn:{candidate_isbn}")
+            if info:
+                fill_from_google(info)
+                if result["matched_by"] == "none":
+                    result["matched_by"] = "isbn"
+
+        if result["matched_by"] == "isbn":
+            break  # this ISBN found the book; don't also try the other one
+
+    # ---- Title/author fallback -- only used if ISBN matching
+    # failed entirely, and every candidate result is checked
+    # against the wanted title/author before being accepted. ----
+    if still_missing_fields() and result["matched_by"] == "none" and clean_title.strip():
+        doc = _openlibrary_lookup(title=clean_title, author=author)
+        if doc and _is_plausible_match(clean_title, author, doc.get("title", ""), doc.get("author_name", [])):
+            fill_from_openlibrary(doc)
+            result["matched_by"] = "title_author"
 
     if still_missing_fields() and clean_title.strip():
         query = (
@@ -472,15 +594,8 @@ def fetch_book_metadata(title, author="", isbn=""):
             if str(author).strip() else f"intitle:{clean_title}"
         )
         info = _google_books_lookup(query)
-        if info:
+        if info and _is_plausible_match(clean_title, author, info.get("title", ""), info.get("authors", [])):
             fill_from_google(info)
-            if result["matched_by"] == "none":
-                result["matched_by"] = "title_author"
-
-    if still_missing_fields() and clean_title.strip():
-        doc = _openlibrary_lookup(title=clean_title, author=author)
-        if doc:
-            fill_from_openlibrary(doc)
             if result["matched_by"] == "none":
                 result["matched_by"] = "title_author"
 
