@@ -1,5 +1,5 @@
 """
-StorySpire — Flet version, pandas-free.
+SpineVesper — Flet version, pandas-free.
 
 Run locally:      flet run main.py
 Build the APK:     flet build apk
@@ -8,8 +8,8 @@ Build the APK:     flet build apk
 import flet as ft
 import data
 
-APP_TITLE = "StorySpire"
-APP_TAGLINE = "a library that rises one story at a time"
+APP_TITLE = "SpineVesper"
+APP_TAGLINE = 
 
 STAT_FILTER_MAP = {
     "Books": "All",
@@ -20,7 +20,7 @@ STAT_FILTER_MAP = {
 STAT_TAB_MAP = {"Authors": "tree", "Series": "tree"}
 
 NAV_ITEMS = [
-    ("tree", "🗼 Book Spire"),
+    ("tree", "SpineVesper"),
     ("books", "📚 Books"),
     ("add", "➕ Add Book"),
     ("manage", "✏️ Edit / Delete"),
@@ -31,7 +31,6 @@ NAV_ITEMS = [
 def main(page: ft.Page):
     page.title = APP_TITLE
     page.padding = 0
-    page.scroll = ft.ScrollMode.AUTO
     page.fonts = {
         "Cormorant": "https://fonts.gstatic.com/s/cormorantgaramond/v16/co3bmX5slCNuHLi8bLeY9MK7whWMhyjYrEtGhtRXO0k.ttf",
         "Baskerville": "https://fonts.gstatic.com/s/librebaskerville/v14/kmKnZrc3Hgbbcjq75U4uslyuy4kn0qNZaxLBpg.ttf",
@@ -51,7 +50,7 @@ def main(page: ft.Page):
         "fetch_message": None,  # (type, text)
     }
 
-    body = ft.Column(expand=True, scroll=ft.ScrollMode.AUTO)
+    body = ft.Column(scroll=ft.ScrollMode.AUTO)
 
     def T():
         return data.THEMES[state["theme_name"]]
