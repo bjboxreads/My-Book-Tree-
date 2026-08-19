@@ -1,14 +1,11 @@
 """
-StorySpire — Flet version.
+StorySpire — Flet version, pandas-free.
 
-Same app, same data, rebuilt UI. Run locally with:
-    flet run main.py
-Build an APK with:
-    flet build apk
+Run locally:      flet run main.py
+Build the APK:     flet build apk
 """
 
 import flet as ft
-import pandas as pd
 import data
 
 THEME = {
@@ -23,12 +20,9 @@ def main(page: ft.Page):
     page.bgcolor = THEME["page"]
     page.padding = 0
     page.scroll = ft.ScrollMode.AUTO
-    page.fonts = {
-        "Cormorant": "https://fonts.gstatic.com/s/cormorantgaramond/v16/co3bmX5slCNuHLi8bLeY9MK7whWMhyjYrEtI.ttf",
-    }
 
     state = {
-        "library": data.load_library(),
+        "library": data.load_library(),  # list of dicts
         "tab": "books",
     }
 
@@ -40,7 +34,7 @@ def main(page: ft.Page):
         return ft.Container(
             content=ft.Column(
                 [
-                    ft.Text(str(number), size=22, color=THEME["accent"], font_family="Cormorant"),
+                    ft.Text(str(number), size=22, color=THEME["accent"]),
                     ft.Text(label, size=12, color=THEME["text"]),
                 ],
                 horizontal_alignment=ft.CrossAxisAlignment.CENTER,
@@ -56,11 +50,11 @@ def main(page: ft.Page):
     def stats_row():
         lib = state["library"]
         total = len(lib)
-        authors = lib["Author"].nunique() if total else 0
-        series_count = lib[lib["Series"] != "Standalone"]["Series"].nunique() if total else 0
-        read_count = len(lib[lib["Status"] == "Read"]) if total else 0
-        unread_count = len(lib[lib["Status"] == "Want to Read"]) if total else 0
-        favorites = len(lib[lib["Favorite"] == True]) if total else 0
+        authors = len({b["Author"] for b in lib}) if total else 0
+        series_count = len({b["Series"] for b in lib if b["Series"] != "Standalone"}) if total else 0
+        read_count = sum(1 for b in lib if b["Status"] == "Read")
+        unread_count = sum(1 for b in lib if b["Status"] == "Want to Read")
+        favorites = sum(1 for b in lib if b["Favorite"])
         return ft.Row(
             [
                 stat(total, "Books"), stat(authors, "Authors"),
@@ -94,17 +88,16 @@ def main(page: ft.Page):
         state["tab"] = key
         render()
 
-    def book_card(row):
-        title = str(row.get("Title", ""))
-        author = str(row.get("Author", ""))
-        status = str(row.get("Status", ""))
-        genre = str(row.get("Genre", "") or "")
-        cover = str(row.get("Cover", "") or "")
-        is_fav = bool(row.get("Favorite", False))
-        idx = row.name
+    def book_card(book, idx):
+        title = str(book.get("Title", ""))
+        author = str(book.get("Author", ""))
+        status = str(book.get("Status", ""))
+        genre = str(book.get("Genre", "") or "")
+        cover = str(book.get("Cover", "") or "")
+        is_fav = bool(book.get("Favorite", False))
 
         def toggle_fav(e, i=idx):
-            state["library"].loc[i, "Favorite"] = not bool(state["library"].loc[i, "Favorite"])
+            state["library"][i]["Favorite"] = not bool(state["library"][i]["Favorite"])
             data.save_library(state["library"])
             render()
 
@@ -147,17 +140,27 @@ def main(page: ft.Page):
             margin=ft.margin.only(bottom=6),
         )
 
-    def grouped_list(df, group_by):
-        col = df["Genre"].replace("", "Unknown Genre") if group_by == "Genre" else df["Author"]
+    def grouped_list(books_with_idx, group_by):
+        # books_with_idx: list of (idx, book) tuples, idx = position in state["library"]
+        def group_key(book):
+            if group_by == "Genre":
+                return data.clean_genre(book.get("Genre", ""))
+            return data.clean_author(book.get("Author", ""))
+
+        groups = {}
+        for idx, book in books_with_idx:
+            key = group_key(book)
+            groups.setdefault(key, []).append((idx, book))
+
         tiles = []
-        for group_value in sorted(col.unique(), key=lambda x: str(x).lower()):
-            group_df = df[col == group_value]
+        for key in sorted(groups.keys(), key=lambda x: str(x).lower()):
+            items = groups[key]
             tiles.append(
                 ft.ExpansionTile(
-                    title=ft.Text(f"{group_value} ({len(group_df)})", color=THEME["text"]),
+                    title=ft.Text(f"{key} ({len(items)})", color=THEME["text"]),
                     bgcolor=THEME["surface2"],
                     collapsed_bgcolor=THEME["surface2"],
-                    controls=[book_card(row) for _, row in group_df.iterrows()],
+                    controls=[book_card(book, idx) for idx, book in items],
                 )
             )
         return ft.Column(tiles, spacing=6)
@@ -165,29 +168,29 @@ def main(page: ft.Page):
     # ---------------- edit dialog ----------------
 
     def open_edit_dialog(idx):
-        row = state["library"].loc[idx]
-        title_f = ft.TextField(label="Title", value=str(row["Title"]))
-        author_f = ft.TextField(label="Author", value=str(row["Author"]))
-        series_f = ft.TextField(label="Series", value=str(row["Series"]))
-        genre_f = ft.TextField(label="Genre", value=str(row["Genre"]))
+        book = state["library"][idx]
+        title_f = ft.TextField(label="Title", value=str(book["Title"]))
+        author_f = ft.TextField(label="Author", value=str(book["Author"]))
+        series_f = ft.TextField(label="Series", value=str(book["Series"]))
+        genre_f = ft.TextField(label="Genre", value=str(book["Genre"]))
         status_f = ft.Dropdown(
             label="Status",
-            value=str(row["Status"]),
+            value=str(book["Status"]),
             options=[ft.dropdown.Option(s) for s in ["Want to Read", "Currently Reading", "Read"]],
         )
 
         def save(e):
-            state["library"].loc[idx, "Title"] = title_f.value
-            state["library"].loc[idx, "Author"] = author_f.value
-            state["library"].loc[idx, "Series"] = series_f.value
-            state["library"].loc[idx, "Genre"] = genre_f.value
-            state["library"].loc[idx, "Status"] = status_f.value
+            state["library"][idx]["Title"] = title_f.value
+            state["library"][idx]["Author"] = author_f.value
+            state["library"][idx]["Series"] = series_f.value
+            state["library"][idx]["Genre"] = genre_f.value
+            state["library"][idx]["Status"] = status_f.value
             data.save_library(state["library"])
             page.close(dlg)
             render()
 
         def delete(e):
-            state["library"] = state["library"].drop(index=idx).reset_index(drop=True)
+            state["library"].pop(idx)
             data.save_library(state["library"])
             page.close(dlg)
             render()
@@ -226,31 +229,33 @@ def main(page: ft.Page):
         results = ft.Column()
 
         def apply_filters(e=None):
-            df = state["library"].copy()
-            if df.empty:
+            lib = state["library"]
+            if not lib:
                 results.controls = [ft.Text("No books yet — add or import some.", color=THEME["muted"])]
                 page.update()
                 return
 
+            items = list(enumerate(lib))
+
             if status_f.value == "Favorites":
-                df = df[df["Favorite"] == True]
+                items = [(i, b) for i, b in items if b["Favorite"]]
             elif status_f.value != "All":
-                df = df[df["Status"] == status_f.value]
+                items = [(i, b) for i, b in items if b["Status"] == status_f.value]
 
             q = (search_f.value or "").strip().lower()
             if q:
-                searchable = (
-                    df["Title"].fillna("").astype(str) + " " + df["Author"].fillna("").astype(str)
-                    + " " + df["Series"].fillna("").astype(str) + " " + df["Genre"].fillna("").astype(str)
-                    + " " + df["Tags"].fillna("").astype(str) + " " + df["ISBN"].fillna("").astype(str)
-                ).str.lower()
-                df = df[searchable.str.contains(q, na=False, regex=False)]
+                def matches(b):
+                    haystack = " ".join([
+                        b.get("Title", ""), b.get("Author", ""), b.get("Series", ""),
+                        b.get("Genre", ""), b.get("Tags", ""), b.get("ISBN", ""),
+                    ]).lower()
+                    return q in haystack
+                items = [(i, b) for i, b in items if matches(b)]
 
-            if df.empty:
-                results.controls = [ft.Text(f'No books matched "{q}".', color=THEME["muted"])]
+            if not items:
+                results.controls = [ft.Text(f'No books matched "{q}".' if q else "No books found.", color=THEME["muted"])]
             else:
-                df = data.clean_author_series(df)
-                results.controls = [grouped_list(df, group_f.value)]
+                results.controls = [grouped_list(items, group_f.value)]
             page.update()
 
         search_f.on_change = apply_filters
@@ -302,20 +307,17 @@ def main(page: ft.Page):
             metadata = data.fetch_book_metadata(title_f.value, author_f.value, isbn_f.value)
             actual_genre = (genre_f.value or "").strip() or metadata.get("genre", "")
 
-            new_book = {
+            new_book = data.blank_book()
+            new_book.update({
                 "Title": title_f.value.strip(), "Author": author_f.value.strip(),
                 "Series": (series_f.value or "").strip() or "Standalone",
-                "Series Number": None, "Genre": actual_genre,
-                "ISBN": data.clean_isbn(isbn_f.value), "My Rating": None,
+                "Genre": actual_genre, "ISBN": data.clean_isbn(isbn_f.value),
                 "Status": status_f.value, "Favorite": fav_f.value,
                 "Cover": metadata.get("cover", ""), "Description": metadata.get("description", ""),
-                "Tags": "", "Publisher": metadata.get("publisher", ""),
-                "Pages": metadata.get("pages", ""),
-                "Publication Date": metadata.get("publication_date", ""), "Date Read": "",
-            }
-            state["library"] = pd.concat(
-                [state["library"], pd.DataFrame([new_book])], ignore_index=True
-            )
+                "Publisher": metadata.get("publisher", ""), "Pages": metadata.get("pages", ""),
+                "Publication Date": metadata.get("publication_date", ""),
+            })
+            state["library"].append(new_book)
             data.save_library(state["library"])
 
             status_text.value = f'"{new_book["Title"]}" added to your spire!'
@@ -327,7 +329,7 @@ def main(page: ft.Page):
 
         return ft.Column(
             [
-                ft.Text("Add a Book", size=22, color=THEME["accent"], font_family="Cormorant"),
+                ft.Text("Add a Book", size=22, color=THEME["accent"]),
                 title_f, author_f, series_f, genre_f, isbn_f, status_f, fav_f,
                 ft.FilledButton("Add to My Spire", on_click=submit),
                 status_text,
@@ -338,7 +340,11 @@ def main(page: ft.Page):
     # ---------------- IMPORT TAB ----------------
 
     def import_tab():
-        status_text = ft.Text("", color=THEME["muted"])
+        status_text = ft.Text(
+            "Upload a Goodreads CSV or plain text list (CSV recommended — "
+            "Excel files aren't supported, export as CSV first).",
+            color=THEME["muted"],
+        )
         picked_path = {"path": None}
 
         def on_file_picked(e: ft.FilePickerResultEvent):
@@ -346,6 +352,7 @@ def main(page: ft.Page):
                 return
             picked_path["path"] = e.files[0].path
             status_text.value = f"✓ {e.files[0].name} selected"
+            status_text.color = THEME["muted"]
             page.update()
 
         file_picker = ft.FilePicker(on_result=on_file_picked)
@@ -358,15 +365,15 @@ def main(page: ft.Page):
                 page.update()
                 return
 
-            df, err = data.load_dataframe_from_path(picked_path["path"])
+            rows, err = data.load_rows_from_path(picked_path["path"])
             if err:
                 status_text.value = err
                 status_text.color = "red"
                 page.update()
                 return
 
-            combined, added, skipped, new_indices, err2 = data.import_books_from_df(
-                df, state["library"], merge=True
+            combined, added, skipped, new_indices, err2 = data.import_books_from_rows(
+                rows, state["library"], merge=True
             )
             if err2:
                 status_text.value = err2
@@ -396,16 +403,10 @@ def main(page: ft.Page):
 
         return ft.Column(
             [
-                ft.Text("Import Your Library", size=22, color=THEME["accent"], font_family="Cormorant"),
-                ft.Text(
-                    "Upload a Goodreads CSV, Excel spreadsheet, or plain text list.",
-                    color=THEME["muted"],
-                ),
+                ft.Text("Import Your Library", size=22, color=THEME["accent"]),
                 ft.ElevatedButton(
                     "Choose File",
-                    on_click=lambda e: file_picker.pick_files(
-                        allowed_extensions=["csv", "xlsx", "xls", "txt"]
-                    ),
+                    on_click=lambda e: file_picker.pick_files(allowed_extensions=["csv", "txt"]),
                 ),
                 ft.FilledButton("Raise My Spire", on_click=do_import),
                 status_text,
@@ -426,7 +427,7 @@ def main(page: ft.Page):
                         ft.Text(
                             "StorySpire",
                             size=40, weight=ft.FontWeight.BOLD,
-                            color=THEME["accent"], font_family="Cormorant",
+                            color=THEME["accent"],
                             text_align=ft.TextAlign.CENTER,
                         ),
                         ft.Text(
