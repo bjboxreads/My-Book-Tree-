@@ -337,10 +337,16 @@ def book_pill_html(book):
     status, genre, with a left-edge stripe colored by status.
 
     The small star in the corner toggles the book's Favorite flag
-    via a ?toggle_fav=<row id> link — raw HTML injected through
-    st.html has no other way to call back into the Python app
-    without reintroducing a real Streamlit widget per book (which
-    is what the whole tree structure below is built to avoid)."""
+    via a ?toggle_fav=<row id> query param — raw HTML injected
+    through st.html has no other way to call back into the Python
+    app without reintroducing a real Streamlit widget per book
+    (which is what the whole tree structure below is built to
+    avoid). The param is set with history.pushState + a dispatched
+    popstate event instead of a plain <a href> navigation, so
+    Streamlit's frontend picks up the new query param and reruns
+    the script over the existing session, instead of the browser
+    doing a full page navigation/reload (which was the flash you
+    saw on every favorite click)."""
 
     title = html.escape(str(book.get('Title', '')))
     status = html.escape(str(book.get('Status', '') or ''))
@@ -359,8 +365,11 @@ def book_pill_html(book):
     is_favorite = bool(book.get('Favorite', False))
     heart_symbol = "★" if is_favorite else "☆"
     heart_html = (
-        f'<a class="atree-fav-heart" href="?toggle_fav={row_id}" '
-        f'title="Toggle favorite">{heart_symbol}</a>'
+        f'<a class="atree-fav-heart" href="#" title="Toggle favorite" '
+        f'onclick="event.preventDefault();'
+        f'history.pushState(null,\'\',\'?toggle_fav={row_id}\');'
+        f'window.dispatchEvent(new PopStateEvent(\'popstate\'));'
+        f'return false;">{heart_symbol}</a>'
     )
 
     if cover:
@@ -908,12 +917,41 @@ def _openlibrary_lookup(title="", author="", isbn=""):
             timeout=6,
             max_retries=3,
         )
-        if response is not None and response.status_code == 200:
-            try:
-                return response.json()
-            except Exception:
-                return None
-        return None
+        if response is None or response.status_code != 200:
+            return None
+        try:
+            edition = response.json()
+        except Exception:
+            return None
+        if not edition:
+            return None
+
+        # /isbn/{isbn}.json returns an OpenLibrary EDITION record,
+        # which uses completely different field names than the
+        # /search.json endpoint below: "covers" (a list of numeric
+        # cover IDs) instead of "cover_i", "publishers" (a list of
+        # strings) instead of "publisher", "number_of_pages" instead
+        # of "number_of_pages_median", and "publish_date" (a
+        # free-text string) instead of "first_publish_year". It also
+        # has no "subject" field at all -- subjects live on the WORK
+        # record, not the edition. fill_from_openlibrary() below only
+        # understands the search.json field names, so every real ISBN
+        # match against this endpoint was silently contributing
+        # nothing (cover/publisher/pages/date all stayed blank) even
+        # though the lookup had genuinely found the right book.
+        # Translate it into the same shape here so it works.
+        covers = edition.get("covers") or []
+
+        return {
+            "cover_i": covers[0] if covers else None,
+            "subject": [],
+            # fill_from_openlibrary() does publisher[0], so this has
+            # to stay a list -- same shape search.json's "publisher"
+            # field uses, not a pre-extracted string.
+            "publisher": edition.get("publishers") or [],
+            "number_of_pages_median": edition.get("number_of_pages"),
+            "first_publish_year": edition.get("publish_date"),
+        }
 
     response = _http_get_with_backoff(
         "https://openlibrary.org/search.json",
