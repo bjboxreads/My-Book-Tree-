@@ -1,4 +1,4 @@
-# StorySpire — Flet port
+# SpineVesper — Flet port
 
 ## What's here
 - `data.py` — your original logic (CSV save/load, ISBN cleaning, series
