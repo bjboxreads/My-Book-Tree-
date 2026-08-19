@@ -548,7 +548,8 @@ def main(page: ft.Page):
                 state["fetch_message"] = ("warning", f"Found {label} for {found} of {total} book(s). "
                                                        f"The rest had none available, or the lookup was rate-limited — try again in a bit.")
             else:
-                state["fetch_message"] = ("error", f"Couldn't find {label} for any of the {total} book(s) checked. Try again in a bit.")
+                reason = f" Last error: {data.last_network_error}" if data.last_network_error else ""
+                state["fetch_message"] = ("error", f"Couldn't find {label} for any of the {total} book(s) checked.{reason}")
             render()
 
         def apply_filters(e=None):
@@ -842,6 +843,8 @@ def main(page: ft.Page):
                     f"books stay in your library — use the \"Fetch missing...\" buttons "
                     f"on the Books tab to retry them anytime."
                 )
+                if stats.get("isbn", 0) == 0 and stats.get("title_author", 0) == 0 and data.last_network_error:
+                    file_info.value += f" Last error seen: {data.last_network_error}"
             else:
                 file_info.value = ""
 
