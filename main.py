@@ -425,7 +425,7 @@ def main(page: ft.Page):
                 content=ft.Column(
                     [
                         ft.Text(
-                            "StorySpire",
+                            "SpineVesper",
                             size=40, weight=ft.FontWeight.BOLD,
                             color=THEME["accent"],
                             text_align=ft.TextAlign.CENTER,
