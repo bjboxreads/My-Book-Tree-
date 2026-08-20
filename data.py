@@ -421,7 +421,10 @@ def _fill_from_openlibrary_books_api(result, doc):
         return
     if not result["cover"]:
         cover = doc.get("cover") or {}
-        image = cover.get("large") or cover.get("medium") or cover.get("small")
+        # Medium first, not large -- these render as small thumbnails
+        # in the app, and large covers cost real memory to decode on
+        # a phone once a series has more than a handful of books.
+        image = cover.get("medium") or cover.get("small") or cover.get("large")
         if image:
             result["cover"] = image
     if not result["genre"]:
@@ -530,7 +533,7 @@ def fetch_book_metadata(title, author="", isbn="", isbn13="", isbn10=""):
         if not result["cover"]:
             cover_id = doc.get("cover_i")
             if cover_id:
-                result["cover"] = f"https://covers.openlibrary.org/b/id/{cover_id}-L.jpg"
+                result["cover"] = f"https://covers.openlibrary.org/b/id/{cover_id}-M.jpg"
         if not result["genre"]:
             genre = _pick_genre_from_subjects(doc.get("subject", []))
             if genre:
@@ -552,8 +555,12 @@ def fetch_book_metadata(title, author="", isbn="", isbn13="", isbn10=""):
 
     # ---- ISBN path (exact identifier -- no matching needed) ----
     # Tries every source in turn, each one only filling whatever
-    # fields the previous sources didn't have.
-    for candidate_isbn in [i for i in (isbn13, isbn10) if i]:
+    # fields the previous sources didn't have. Built from isbn13,
+    # then isbn10, then the plain `isbn` arg (de-duplicated, order
+    # preserved) so this still runs correctly even for call sites
+    # that only ever pass a single collapsed `isbn` value.
+    candidate_isbns = list(dict.fromkeys(i for i in (isbn13, isbn10, isbn) if i))
+    for candidate_isbn in candidate_isbns:
         if not still_missing_fields():
             break
 
@@ -627,6 +634,7 @@ def fetch_missing_metadata_parallel(library, indices, want_cover=True,
             executor.submit(
                 fetch_book_metadata,
                 library[i]["Title"], library[i]["Author"], library[i]["ISBN"],
+                library[i].get("_isbn13", ""), library[i].get("_isbn10", ""),
             ): i
             for i in indices
         }
@@ -693,7 +701,8 @@ def fetch_missing_field(library, field, on_progress=None):
 
     def work(i):
         return i, fetch_book_metadata(
-            library[i]["Title"], library[i]["Author"], library[i]["ISBN"]
+            library[i]["Title"], library[i]["Author"], library[i]["ISBN"],
+            library[i].get("_isbn13", ""), library[i].get("_isbn10", ""),
         )
 
     with ThreadPoolExecutor(max_workers=min(4, max(2, total))) as executor:
@@ -932,6 +941,13 @@ def import_books_from_rows(rows, existing_library, merge=True):
             "My Rating": rating if rating is not None else "",
             "Status": status, "Favorite": False, "Tags": tags,
         })
+        # Transient only -- not in LIBRARY_COLUMNS, so normalize_book
+        # drops these before anything is written to the CSV. Kept in
+        # memory just long enough for the post-import metadata fetch
+        # to try ISBN-13 first, then ISBN-10, instead of only ever
+        # seeing whichever one got picked for the single "ISBN" column.
+        book["_isbn13"] = isbn13
+        book["_isbn10"] = isbn10
         imported.append(book)
 
     if not imported:
