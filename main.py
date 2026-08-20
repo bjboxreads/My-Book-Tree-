@@ -160,8 +160,24 @@ def main(page: ft.Page):
         is_fav = bool(book.get("Favorite", False))
 
         leading = (
-            ft.Image(src=cover, width=40, height=58, fit=ft.ImageFit.COVER,
-                      border_radius=ft.border_radius.only(top_left=3, top_right=8, bottom_left=3, bottom_right=8))
+            ft.Image(
+                src=cover, width=40, height=58, fit=ft.ImageFit.COVER,
+                border_radius=ft.border_radius.only(top_left=3, top_right=8, bottom_left=3, bottom_right=8),
+                # Without these, every cover decodes at full source
+                # resolution before being shrunk to a 40x58 box --
+                # fine for a couple of covers, but opening a big
+                # series loads dozens at once and can blow past
+                # available memory on a phone and crash the app.
+                # Capping the decode size (2x the display size, for
+                # sharpness on high-density screens) keeps memory use
+                # proportional to what's on screen instead of to the
+                # source image sizes.
+                cache_width=80, cache_height=116,
+                error_content=ft.Container(
+                    width=40, height=58, bgcolor=color("surface2"),
+                    border_radius=ft.border_radius.only(top_left=3, top_right=8, bottom_left=3, bottom_right=8),
+                ),
+            )
             if cover else
             ft.Container(width=40, height=58, bgcolor=color("surface2"),
                           border_radius=ft.border_radius.only(top_left=3, top_right=8, bottom_left=3, bottom_right=8))
