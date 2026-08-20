@@ -160,24 +160,8 @@ def main(page: ft.Page):
         is_fav = bool(book.get("Favorite", False))
 
         leading = (
-            ft.Image(
-                src=cover, width=40, height=58, fit=ft.ImageFit.COVER,
-                border_radius=ft.border_radius.only(top_left=3, top_right=8, bottom_left=3, bottom_right=8),
-                # Without these, every cover decodes at full source
-                # resolution before being shrunk to a 40x58 box --
-                # fine for a couple of covers, but opening a big
-                # series loads dozens at once and can blow past
-                # available memory on a phone and crash the app.
-                # Capping the decode size (2x the display size, for
-                # sharpness on high-density screens) keeps memory use
-                # proportional to what's on screen instead of to the
-                # source image sizes.
-                cache_width=80, cache_height=116,
-                error_content=ft.Container(
-                    width=40, height=58, bgcolor=color("surface2"),
-                    border_radius=ft.border_radius.only(top_left=3, top_right=8, bottom_left=3, bottom_right=8),
-                ),
-            )
+            ft.Image(src=cover, width=40, height=58, fit=ft.ImageFit.COVER,
+                      border_radius=ft.border_radius.only(top_left=3, top_right=8, bottom_left=3, bottom_right=8))
             if cover else
             ft.Container(width=40, height=58, bgcolor=color("surface2"),
                           border_radius=ft.border_radius.only(top_left=3, top_right=8, bottom_left=3, bottom_right=8))
@@ -268,7 +252,7 @@ def main(page: ft.Page):
         key = f"series::{author_name}::{series_name}"
 
         def build_children():
-            return [
+            rows = [
                 ft.Row(
                     [
                         ft.Text("└─", color=color("line"), size=13),
@@ -279,6 +263,17 @@ def main(page: ft.Page):
                 )
                 for idx, book in series_items
             ]
+            # A big series expanding into a plain, unbounded Column
+            # means every book card (cover image included) gets built
+            # and laid out in one synchronous pass -- fine for a
+            # handful of books, but this is what freezes/crashes the
+            # app on a large series. ListView only builds and paints
+            # what's actually on screen, so cost stays flat instead
+            # of scaling with series size. Small series are left as
+            # plain rows so their look/behavior doesn't change.
+            if len(rows) > 8:
+                return [ft.ListView(controls=rows, spacing=6, height=480)]
+            return rows
 
         return tree_branch(key, "📂", label, len(series_items), "text", "surface2", build_children)
 
